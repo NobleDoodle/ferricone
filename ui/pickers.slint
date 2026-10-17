@@ -1,0 +1,582 @@
+// The Subtitles tab's pickers: the color picker that opens from a color
+// field's swatch (a Grid of presets and custom colors, or a Spectrum with a
+// hue strip, a saturation/brightness square and a hex field; opacity under
+// both), and the font field, a dropdown that searches the installed
+// families as you type. Rust fills the globals (src/pickers.rs).
+
+import { Theme } from "theme.slint";
+import { Icon } from "icon.slint";
+import { Icons } from "icons.slint";
+
+export global Palette {
+    // Saved with +, newest first; right-click one to forget it.
+    in property <[color]> custom;
+    callback add-custom(color);
+    callback remove-custom(int);
+    // "#RRGGBB" keeps the fallback's opacity; "#RRGGBBAA" sets it.
+    pure callback parse-hex(string, color) -> color;
+    pure callback hex(color) -> string;
+    // The tab last used, 0 Grid or 1 Spectrum; the picker reopens on it.
+    in-out property <int> tab: 1;
+}
+
+// FERRICONE_OPEN_PANEL's `color-picker` / `font-picker` (src/diag.rs):
+// which picker opens by itself, for screenshots without a pointer.
+export global PickerDiag {
+    in property <string> open;
+}
+
+export global FontList {
+    // "Default", then the installed families matching the text.
+    callback search(string) -> [string];
+}
+
+// A checkerboard, for showing opacity.
+component Checkers inherits Rectangle {
+    in property <length> cell: 6px;
+    property <int> columns: ceil(self.width / self.cell);
+    property <int> rows: ceil(self.height / self.cell);
+
+    clip: true;
+    background: #cfcfcf;
+    for i in root.columns * root.rows: Rectangle {
+        property <int> column: mod(i, root.columns);
+        property <int> line: floor(i / root.columns);
+        x: self.column * root.cell;
+        y: self.line * root.cell;
+        width: root.cell;
+        height: root.cell;
+        background: mod(self.column + self.line, 2) == 0 ? #ffffff : transparent;
+    }
+}
+
+// A round white thumb with a dark edge.
+component Thumb inherits Rectangle {
+    width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    background: #f2f2f2;
+    border-width: 1px;
+    border-color: #00000059;
+    drop-shadow-blur: 4px;
+    drop-shadow-color: #00000066;
+}
+
+component PillButton inherits Rectangle {
+    in property <string> text;
+    in property <bool> primary;
+    callback clicked();
+
+    width: label.preferred-width + 24px;
+    height: 32px;
+    border-radius: 8px;
+    background: root.primary
+        ? (touch.has-hover ? Theme.accent-bright : Theme.accent-main)
+        : (touch.has-hover ? Theme.divider-bright : Theme.bg-a1);
+
+    label := Text {
+        text: root.text;
+        font-size: 14px;
+        font-weight: 600;
+        color: root.primary ? Theme.fg-b1 : Theme.fg-1;
+    }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+component Tabs inherits Rectangle {
+    in property <[string]> options;
+    in-out property <int> selected;
+
+    height: 32px;
+    border-radius: 8px;
+    background: Theme.bg-b2;
+    HorizontalLayout {
+        padding: 2px;
+        spacing: 2px;
+        for option[i] in root.options: Rectangle {
+            border-radius: 6px;
+            background: i == root.selected ? Theme.divider-bright : touch.has-hover ? Theme.bg-a2 : transparent;
+            Text {
+                text: option;
+                font-size: 13px;
+                font-weight: 600;
+                color: i == root.selected ? Theme.fg-1 : Theme.fg-a2;
+            }
+            touch := TouchArea { clicked => { root.selected = i; } }
+        }
+    }
+}
+
+// The picker's face, shown in a PopupWindow by ColorField. It starts from
+// `initial` each time it opens; Select hands the color over.
+export component ColorPicker inherits Rectangle {
+    in property <color> initial;
+    callback chosen(color);
+    callback cancel();
+
+    property <float> hue;
+    property <float> saturation;
+    property <float> value;
+    property <float> alpha: 1;
+    property <color> picked: hsv(root.hue, root.saturation, root.value, root.alpha);
+    // The grid, column by column: blues, greens, yellows, oranges, reds,
+    // purples, browns, whites and grays to black.
+    property <[color]> presets: [
+        #94bdf0, #5c9ce6, #3880e0, #1e6fd8, #1a5cb0,
+        #8ee89e, #5dd87b, #36c96a, #2db875, #24945e,
+        #f3e96b, #f2dc58, #f0cc2c, #ebb616, #dda00c,
+        #fac07a, #f9a548, #f57f0e, #dc6510, #ba4c0a,
+        #f26258, #e8434a, #d81e2c, #bb1e35, #9f1e31,
+        #de91de, #c35fc9, #9440ac, #8a3d9c, #613c82,
+        #cdae8d, #b88a62, #9b6f48, #865a3c, #5e4630,
+        #ffffff, #f2f2f2, #d9d9d9, #bfbfbf, #999999,
+        #77767b, #5e5c64, #3d3846, #241f31, #000000,
+    ];
+    property <length> cell: (root.width - 24px - 8 * 4px) / 9;
+
+    function load(c: color) {
+        let hsv = c.to-hsv();
+        // Grays have no hue of their own; keep the strip where it was.
+        if hsv.saturation > 0 && hsv.value > 0 {
+            root.hue = hsv.hue;
+        }
+        root.saturation = hsv.saturation;
+        root.value = hsv.value;
+        root.alpha = hsv.alpha;
+    }
+    function same(a: color, b: color) -> bool {
+        a.red == b.red && a.green == b.green && a.blue == b.blue
+    }
+
+    init => {
+        root.load(root.initial);
+        keys.focus();
+    }
+
+    // Fixed, so the PopupWindows holding it can be given the same size
+    // (a popup sized smaller takes clicks on the rest as outside, and closes).
+    width: 300px;
+    height: 380px;
+    border-radius: 12px;
+    background: Theme.bg-a3;
+    border-width: 1px;
+    border-color: Theme.divider-bright;
+    drop-shadow-offset-y: 8px;
+    drop-shadow-blur: 15px;
+    drop-shadow-color: Theme.shadow;
+
+    keys := FocusScope {
+        key-pressed(event) => {
+            if event.text == Key.Escape { root.cancel(); return accept; }
+            if event.text == Key.Return { root.chosen(root.picked); return accept; }
+            reject
+        }
+    }
+
+    body := VerticalLayout {
+        padding: 12px;
+        spacing: 12px;
+
+        HorizontalLayout {
+            PillButton { text: "Cancel"; clicked => { root.cancel(); } }
+            Text {
+                horizontal-stretch: 1;
+                text: "Select Color";
+                font-size: 15px;
+                font-weight: 600;
+                color: Theme.fg-1;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+            PillButton { text: "Select"; primary: true; clicked => { root.chosen(root.picked); } }
+        }
+
+        Tabs { options: ["Grid", "Spectrum"]; selected <=> Palette.tab; }
+
+        // Both tabs keep one height, so the popup doesn't jump.
+        Rectangle {
+            height: 236px;
+
+            if Palette.tab == 0: VerticalLayout {
+                spacing: 10px;
+                HorizontalLayout {
+                    spacing: 4px;
+                    for column in 9: Rectangle {
+                        width: root.cell;
+                        border-radius: 6px;
+                        clip: true;
+                        VerticalLayout {
+                            for row in 5: Rectangle {
+                                property <color> swatch: root.presets[column * 5 + row];
+                                height: 26px;
+                                background: self.swatch;
+                                border-width: root.same(self.swatch, root.picked) ? 2px : 0;
+                                border-color: self.swatch.to-hsv().value > 0.6 ? #000000 : #ffffff;
+                                TouchArea {
+                                    clicked => { root.load(parent.swatch.with-alpha(root.alpha)); }
+                                }
+                            }
+                        }
+                    }
+                }
+                Text { text: "Custom"; font-size: 13px; color: Theme.fg-a2; }
+                HorizontalLayout {
+                    alignment: start;
+                    spacing: 4px;
+                    Rectangle {
+                        width: root.cell;
+                        height: 30px;
+                        border-radius: 6px;
+                        background: add.has-hover ? Theme.divider-bright : Theme.bg-a1;
+                        Icon { icon: Icons.add; size: 20px; color: Theme.fg-1; }
+                        add := TouchArea { clicked => { Palette.add-custom(root.picked); } }
+                    }
+                    for swatch[i] in Palette.custom: Rectangle {
+                        width: root.cell;
+                        height: 30px;
+                        border-radius: 6px;
+                        clip: true;
+                        Checkers { cell: 5px; }
+                        Rectangle {
+                            background: swatch;
+                            if root.same(swatch, root.picked) && abs(swatch.alpha - root.alpha * 255) < 1: Icon {
+                                icon: Icons.check-selected;
+                                size: 18px;
+                                color: swatch.to-hsv().value > 0.6 && swatch.alpha > 128 ? #000000 : #ffffff;
+                            }
+                        }
+                        TouchArea {
+                            clicked => { root.load(swatch); }
+                            pointer-event(event) => {
+                                if event.button == PointerEventButton.right && event.kind == PointerEventKind.up {
+                                    Palette.remove-custom(i);
+                                }
+                            }
+                        }
+                    }
+                }
+                Rectangle { vertical-stretch: 1; }
+            }
+
+            if Palette.tab == 1: VerticalLayout {
+                spacing: 10px;
+                HorizontalLayout {
+                    spacing: 10px;
+                    height: 32px;
+                    Rectangle {
+                        width: 72px;
+                        border-radius: 6px;
+                        clip: true;
+                        Checkers { }
+                        Rectangle { background: root.picked; }
+                    }
+                    Rectangle {
+                        horizontal-stretch: 1;
+                        border-radius: 6px;
+                        border-width: 2px;
+                        border-color: hex.has-focus ? Theme.divider-bright : Theme.bg-a4;
+                        background: Theme.bg-b2;
+                        hex := TextInput {
+                            x: 12px;
+                            width: parent.width - 24px;
+                            vertical-alignment: center;
+                            font-size: 15px;
+                            color: Theme.fg-1;
+                            selection-background-color: Theme.bg-accent-bright;
+                            selection-foreground-color: Theme.fg-1;
+                            // Follows the color unless it's being typed in.
+                            property <color> shown: root.picked;
+                            changed shown => {
+                                if !self.has-focus {
+                                    self.text = Palette.hex(self.shown);
+                                }
+                            }
+                            init => { self.text = Palette.hex(root.picked); }
+                            accepted => {
+                                root.load(Palette.parse-hex(self.text, root.picked));
+                                self.text = Palette.hex(root.picked);
+                                keys.focus();
+                            }
+                            key-pressed(event) => {
+                                if event.text == Key.Escape {
+                                    self.text = Palette.hex(root.picked);
+                                    keys.focus();
+                                    return accept;
+                                }
+                                reject
+                            }
+                        }
+                    }
+                }
+                HorizontalLayout {
+                    spacing: 10px;
+                    // Hue, top to bottom.
+                    Rectangle {
+                        width: 14px;
+                        border-radius: 4px;
+                        background: @linear-gradient(180deg, #ff0000 0%, #ffff00 16.67%, #00ff00 33.33%, #00ffff 50%, #0000ff 66.67%, #ff00ff 83.33%, #ff0000 100%);
+                        Thumb {
+                            x: (parent.width - self.width) / 2;
+                            y: root.hue / 360 * (parent.height - self.height);
+                        }
+                        hue-touch := TouchArea {
+                            function at() { root.hue = clamp(self.mouse-y / self.height, 0, 1) * 359.9; }
+                            pointer-event(event) => { if event.kind == PointerEventKind.down { self.at(); } }
+                            moved => { self.at(); }
+                        }
+                    }
+                    // Saturation across, brightness up.
+                    Rectangle {
+                        horizontal-stretch: 1;
+                        border-radius: 4px;
+                        clip: true;
+                        background: @linear-gradient(90deg, #ffffff 0%, hsv(root.hue, 1, 1) 100%);
+                        Rectangle { background: @linear-gradient(180deg, #00000000 0%, #000000 100%); }
+                        Rectangle {
+                            x: root.saturation * parent.width;
+                            width: 1px;
+                            background: #ffffffa0;
+                        }
+                        Rectangle {
+                            y: (1 - root.value) * parent.height;
+                            height: 1px;
+                            background: #ffffffa0;
+                        }
+                        Rectangle {
+                            x: root.saturation * parent.width - 7px;
+                            y: (1 - root.value) * parent.height - 7px;
+                            width: 14px;
+                            height: 14px;
+                            border-radius: 7px;
+                            border-width: 2px;
+                            border-color: #ffffff;
+                            background: hsv(root.hue, root.saturation, root.value);
+                        }
+                        square-touch := TouchArea {
+                            function at() {
+                                root.saturation = clamp(self.mouse-x / self.width, 0, 1);
+                                root.value = 1 - clamp(self.mouse-y / self.height, 0, 1);
+                            }
+                            pointer-event(event) => { if event.kind == PointerEventKind.down { self.at(); } }
+                            moved => { self.at(); }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Opacity, under both tabs.
+        HorizontalLayout {
+            spacing: 10px;
+            Text {
+                text: "Opacity";
+                font-size: 13px;
+                color: Theme.fg-a2;
+                vertical-alignment: center;
+            }
+            Rectangle {
+                horizontal-stretch: 1;
+                height: 20px;
+                Rectangle {
+                    y: 2px;
+                    height: 16px;
+                    border-radius: 4px;
+                    clip: true;
+                    Checkers { cell: 5px; }
+                    Rectangle {
+                        background: @linear-gradient(90deg, root.picked.with-alpha(0) 0%, root.picked.with-alpha(1) 100%);
+                    }
+                }
+                Thumb {
+                    x: root.alpha * (parent.width - self.width);
+                    y: 1px;
+                }
+                alpha-touch := TouchArea {
+                    function at() { root.alpha = round(clamp(self.mouse-x / self.width, 0, 1) * 255) / 255; }
+                    pointer-event(event) => { if event.kind == PointerEventKind.down { self.at(); } }
+                    moved => { self.at(); }
+                }
+            }
+            Text {
+                width: 40px;
+                text: "\{round(root.alpha * 100)} %";
+                font-size: 13px;
+                color: Theme.fg-a2;
+                horizontal-alignment: right;
+                vertical-alignment: center;
+            }
+        }
+    }
+}
+
+// The font field: shows the family; clicking opens a list of the installed
+// families with a search field on top. Type to narrow it, ↑/↓ and Enter to
+// pick (Enter on no match takes the typed name, which fontconfig resolves),
+// Esc to close.
+export component FontField inherits Rectangle {
+    in property <string> text;
+    callback edited(string);
+
+    width: 180px;
+    height: 36px;
+    border-radius: 6px;
+    border-width: 2px;
+    border-color: face.has-hover ? Theme.divider-bright : Theme.bg-a4;
+    background: Theme.bg-b2;
+
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 6px;
+        Text {
+            text: root.text;
+            font-size: 14px;
+            color: Theme.fg-a2;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+            overflow: elide;
+        }
+        Icon { icon: Icons.chevron-down; size: 20px; y: (parent.height - self.height) / 2; }
+    }
+    face := TouchArea { clicked => { list.show(); } }
+    Timer {
+        interval: 600ms;
+        running: PickerDiag.open == "font-picker";
+        triggered => { self.running = false; list.show(); }
+    }
+
+    list := PopupWindow {
+        x: root.width - self.width;
+        y: root.height + 4px;
+        width: 280px;
+        height: 360px;
+        close-policy: close-on-click-outside;
+
+        panel := Rectangle {
+            property <[string]> found: [];
+            property <int> highlighted: 0;
+            property <length> row-height: 36px;
+
+            function search(text: string) {
+                self.found = FontList.search(text);
+                self.highlighted = 0;
+                rows.content-y = 0;
+            }
+            function pick(name: string) {
+                root.edited(name);
+                list.close();
+            }
+            // Keeps the highlighted row in view.
+            function reveal() {
+                let top = self.highlighted * self.row-height;
+                if top + rows.content-y < 0 {
+                    rows.content-y = -top;
+                } else if top + self.row-height + rows.content-y > rows.height {
+                    rows.content-y = rows.height - top - self.row-height;
+                }
+            }
+            init => {
+                self.search("");
+                query.focus();
+            }
+
+            border-radius: 8px;
+            background: Theme.bg-a4;
+            border-width: 1px;
+            border-color: Theme.divider-bright;
+            drop-shadow-offset-y: 8px;
+            drop-shadow-blur: 15px;
+            drop-shadow-color: Theme.shadow;
+
+            VerticalLayout {
+                padding: 6px;
+                spacing: 6px;
+                Rectangle {
+                    height: 36px;
+                    border-radius: 6px;
+                    background: Theme.bg-b2;
+                    HorizontalLayout {
+                        padding-left: 8px;
+                        padding-right: 10px;
+                        spacing: 6px;
+                        Icon { icon: Icons.search; size: 20px; y: (parent.height - self.height) / 2; }
+                        Rectangle {
+                            horizontal-stretch: 1;
+                            query := TextInput {
+                                vertical-alignment: center;
+                                font-size: 14px;
+                                color: Theme.fg-1;
+                                selection-background-color: Theme.bg-accent-bright;
+                                selection-foreground-color: Theme.fg-1;
+                                edited => { panel.search(self.text); }
+                                key-pressed(event) => {
+                                    if event.text == Key.Escape { list.close(); return accept; }
+                                    if event.text == Key.DownArrow {
+                                        panel.highlighted = min(panel.highlighted + 1, panel.found.length - 1);
+                                        panel.reveal();
+                                        return accept;
+                                    }
+                                    if event.text == Key.UpArrow {
+                                        panel.highlighted = max(panel.highlighted - 1, 0);
+                                        panel.reveal();
+                                        return accept;
+                                    }
+                                    if event.text == Key.Return {
+                                        panel.pick(panel.found.length > 0 ? panel.found[panel.highlighted] : self.text);
+                                        return accept;
+                                    }
+                                    reject
+                                }
+                            }
+                            if query.text == "": Text {
+                                text: "Search fonts";
+                                font-size: 14px;
+                                color: Theme.fg-a4;
+                                vertical-alignment: center;
+                                x: 0;
+                            }
+                        }
+                    }
+                }
+                rows := Flickable {
+                    vertical-stretch: 1;
+                    content-height: panel.found.length * panel.row-height;
+                    for name[i] in panel.found: Rectangle {
+                        y: i * 36px;
+                        height: 36px;
+                        border-radius: 4px;
+                        background: i == panel.highlighted || row.has-hover ? Theme.bg-a2 : transparent;
+                        HorizontalLayout {
+                            padding-left: 10px;
+                            padding-right: 8px;
+                            Text {
+                                text: name;
+                                font-size: 14px;
+                                color: name == root.text ? Theme.accent-main : Theme.fg-1;
+                                vertical-alignment: center;
+                                horizontal-stretch: 1;
+                                overflow: elide;
+                            }
+                            // A sample in the family itself; symbol fonts show
+                            // their symbols here instead of in the name.
+                            if name != "Default": Text {
+                                text: "Aa";
+                                font-family: name;
+                                font-size: 16px;
+                                color: Theme.fg-a2;
+                                vertical-alignment: center;
+                            }
+                            if name == root.text: Icon { icon: Icons.check-selected; size: 20px; y: (parent.height - self.height) / 2; }
+                        }
+                        row := TouchArea { clicked => { panel.pick(name); } }
+                    }
+                }
+                if panel.found.length == 0: Text {
+                    text: "No installed family matches; Enter uses the name as typed.";
+                    font-size: 12px;
+                    color: Theme.fg-a3;
+                    wrap: word-wrap;
+                }
+            }
+        }
+    }
+}

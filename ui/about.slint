@@ -1,0 +1,142 @@
+// About Ferricone: the logo in the accent, the name, version and engine,
+// and the credits. No Figma frame; built like the other dialogs (BG/A4 at
+// 95 %, radius 14, a 50 px BG/B2 header with close).
+
+import { Theme } from "theme.slint";
+import { Icon } from "icon.slint";
+import { Icons } from "icons.slint";
+
+component LinkButton inherits Rectangle {
+    in property <string> text;
+    callback clicked();
+
+    width: label.preferred-width + 24px;
+    height: 28px;
+    border-radius: 6px;
+    background: touch.has-hover ? Theme.bg-a1 : Theme.bg-a3;
+    label := Text { text: root.text; font-size: 13px; color: Theme.accent-main; }
+    touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+export component AboutDialog inherits Rectangle {
+    in property <string> version;
+    // libVLC's version, from libVLC itself.
+    in property <string> engine;
+    callback close();
+    // Opens a web page in the browser.
+    callback open-link(string);
+
+    height: body.preferred-height;
+    border-radius: 14px;
+    clip: true;
+    background: Theme.bg-a4.with-alpha(0.95);
+
+    init => { keys.focus(); }
+    keys := FocusScope {
+        key-pressed(event) => {
+            if event.text == Key.Escape || event.text == Key.Return { root.close(); return accept; }
+            accept
+        }
+    }
+    TouchArea { }
+
+    body := VerticalLayout {
+        Rectangle {
+            height: 50px;
+            background: Theme.bg-b2;
+            HorizontalLayout {
+                padding: 9px;
+                padding-left: 19px;
+                Text {
+                    horizontal-stretch: 1;
+                    text: "About Ferricone";
+                    font-size: 14px;
+                    color: Theme.fg-a2;
+                    vertical-alignment: center;
+                }
+                Rectangle {
+                    width: 32px;
+                    border-radius: 4px;
+                    background: close.has-hover ? Theme.bg-a1 : transparent;
+                    Icon { icon: Icons.close; }
+                    close := TouchArea { clicked => { root.close(); } }
+                }
+            }
+        }
+        VerticalLayout {
+            padding: 30px;
+            padding-top: 36px;
+            spacing: 14px;
+            HorizontalLayout {
+                alignment: center;
+                Image {
+                    width: 96px;
+                    height: 96px;
+                    source: @image-url("ferricone-symbolic.svg");
+                    colorize: Theme.accent-main;
+                }
+            }
+            Text {
+                text: "Ferricone Player";
+                font-size: 26px;
+                font-weight: 300;
+                color: Theme.fg-1;
+                horizontal-alignment: center;
+            }
+            Text {
+                text: "Version " + root.version;
+                font-size: 14px;
+                color: Theme.fg-a1;
+                horizontal-alignment: center;
+            }
+            Text {
+                text: "Plays with libVLC " + root.engine + ", with an interface in Rust and Slint.";
+                font-size: 13px;
+                color: Theme.fg-a3;
+                horizontal-alignment: center;
+                wrap: word-wrap;
+            }
+            Text {
+                text: "Free software under the GNU General Public License, version 3 or later.";
+                font-size: 13px;
+                color: Theme.fg-a3;
+                horizontal-alignment: center;
+                wrap: word-wrap;
+            }
+            HorizontalLayout {
+                alignment: center;
+                spacing: 10px;
+                LinkButton { text: "Website"; clicked => { root.open-link("https://nobledoodle.github.io/ferricone/"); } }
+                LinkButton { text: "Source Code"; clicked => { root.open-link("https://github.com/NobleDoodle/ferricone"); } }
+                LinkButton { text: "Report a Problem"; clicked => { root.open-link("https://github.com/NobleDoodle/ferricone/issues"); } }
+            }
+            Rectangle { height: 1px; background: Theme.divider-dim; }
+            Text {
+                text: "Interface design: “VLC Redesign” by Juxtopposed, from the Figma Community, under CC BY 4.0.";
+                font-size: 13px;
+                color: Theme.fg-a2;
+                horizontal-alignment: center;
+                wrap: word-wrap;
+            }
+            Text {
+                text: "VLC and the VLC cone are trademarks of VideoLAN. Ferricone is not made or endorsed by VideoLAN.";
+                font-size: 12px;
+                color: Theme.fg-a3;
+                horizontal-alignment: center;
+                wrap: word-wrap;
+            }
+            HorizontalLayout {
+                alignment: center;
+                padding-top: 10px;
+                Rectangle {
+                    width: 100px;
+                    height: 32px;
+                    border-radius: 6px;
+                    background: ok.has-hover ? Theme.accent-bright : Theme.accent-main;
+                    Text { text: "Close"; font-size: 14px; font-weight: 600; color: Theme.fg-b1; }
+                    ok := TouchArea { clicked => { root.close(); } }
+                }
+            }
+        }
+    }
+}

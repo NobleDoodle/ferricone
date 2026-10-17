@@ -1,0 +1,238 @@
+// Keyboard Shortcuts (Figma `Keyboard Shortcuts`, 1048 × 800, radius 14,
+// BG/A4 at 95 %): a 96 px BG/B2 header (the title and close, then a search
+// field), the Action / Hotkey columns over sections of 33 px rows, and
+// Cancel / Save. Clicking a key cap waits for the next key; a key another
+// action had moves here and leaves that one unassigned. Fixed keys (Esc,
+// Enter, the Ctrl shortcuts) show without a cap to click. Rust keeps the
+// draft until Save (src/shortcuts.rs). The design's Global Hotkey column is
+// left out: Wayland apps can't take keys from the whole desktop.
+
+import { Theme } from "theme.slint";
+import { Icon } from "icon.slint";
+import { Icons } from "icons.slint";
+
+export struct ShortcutRow {
+    // The section this row starts, or "".
+    section: string,
+    // The action's id (`Keys` property name), "" for a fixed key.
+    id: string,
+    label: string,
+    // The key's name ("Space", "←"); "" when unassigned.
+    name: string,
+}
+
+component Cap inherits Rectangle {
+    in property <string> text;
+    in property <bool> waiting;
+    in property <bool> fixed;
+    callback clicked();
+
+    height: 33px;
+    width: max(60px, label.preferred-width + 28px);
+    border-radius: 8px;
+    background: root.fixed ? transparent : root.waiting ? Theme.bg-accent-bright : touch.has-hover ? Theme.bg-a1 : Theme.bg-a3;
+    border-width: root.fixed ? 0 : 2px;
+    border-color: root.waiting ? Theme.accent-main : Theme.divider-bright;
+    label := Text {
+        text: root.waiting ? "Press a key…" : root.text == "" ? "None" : root.text;
+        font-size: 14px;
+        color: root.waiting ? Theme.accent-main : root.text == "" || root.fixed ? Theme.fg-a3 : Theme.fg-1;
+    }
+    touch := TouchArea {
+        enabled: !root.fixed;
+        mouse-cursor: root.fixed ? MouseCursor.default : MouseCursor.pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+component FooterButton inherits Rectangle {
+    in property <string> text;
+    in property <bool> primary;
+    callback clicked();
+
+    width: max(100px, label.preferred-width + 24px);
+    height: 32px;
+    border-radius: 6px;
+    background: root.primary ? Theme.bg-accent-bright : touch.has-hover ? Theme.bg-a1 : Theme.bg-a3;
+    label := Text {
+        text: root.text;
+        font-size: 14px;
+        font-weight: 600;
+        color: root.primary ? Theme.accent-main : Theme.fg-a2;
+    }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+export component ShortcutsDialog inherits Rectangle {
+    in property <[ShortcutRow]> rows;
+    // false: not a key that can be used (a lone modifier); keep waiting.
+    callback assign(int, string) -> bool;
+    callback reset();
+    callback save();
+    callback cancel();
+
+    // The row waiting for a key, -1 for none.
+    property <int> waiting: -1;
+    property <string> query;
+
+    width: 1048px;
+    height: 800px;
+    border-radius: 14px;
+    clip: true;
+    background: Theme.bg-a4.with-alpha(0.95);
+
+    init => { keys.focus(); }
+    keys := FocusScope {
+        key-pressed(event) => {
+            if root.waiting >= 0 {
+                if event.text == Key.Escape {
+                    root.waiting = -1;
+                    return accept;
+                }
+                // Ctrl, Alt and Super combinations stay the menus'.
+                if event.modifiers.control || event.modifiers.alt || event.modifiers.meta || event.text == Key.Return || event.text == "" {
+                    return accept;
+                }
+                if root.assign(root.waiting, event.text) {
+                    root.waiting = -1;
+                }
+                return accept;
+            }
+            if event.text == Key.Escape { root.cancel(); return accept; }
+            accept
+        }
+    }
+    TouchArea { }
+
+    VerticalLayout {
+        // Header.
+        Rectangle {
+            height: 96px;
+            background: Theme.bg-b2;
+            VerticalLayout {
+                padding: 9px;
+                spacing: 12px;
+                HorizontalLayout {
+                    height: 32px;
+                    padding-left: 10px;
+                    Text {
+                        horizontal-stretch: 1;
+                        text: "Keyboard Shortcuts";
+                        font-size: 14px;
+                        color: Theme.fg-a2;
+                        vertical-alignment: center;
+                    }
+                    Rectangle {
+                        width: 32px;
+                        border-radius: 4px;
+                        background: close.has-hover ? Theme.bg-a1 : transparent;
+                        Icon { icon: Icons.close; }
+                        close := TouchArea { clicked => { root.cancel(); } }
+                    }
+                }
+                Rectangle {
+                    height: 34px;
+                    border-radius: 6px;
+                    background: Theme.bg-a5;
+                    HorizontalLayout {
+                        padding-left: 8px;
+                        padding-right: 8px;
+                        spacing: 10px;
+                        Icon { icon: Icons.search; color: Theme.fg-a3; y: (parent.height - self.height) / 2; }
+                        Rectangle {
+                            horizontal-stretch: 1;
+                            search := TextInput {
+                                font-size: 14px;
+                                color: Theme.fg-1;
+                                vertical-alignment: center;
+                                selection-background-color: Theme.bg-accent-bright;
+                                selection-foreground-color: Theme.fg-1;
+                                edited => { root.query = self.text; }
+                                key-pressed(event) => {
+                                    if event.text == Key.Escape {
+                                        self.text = "";
+                                        root.query = "";
+                                        keys.focus();
+                                        return accept;
+                                    }
+                                    reject
+                                }
+                            }
+                            if search.text == "": Text { x: 0; text: "Search Keyboard Shortcuts…"; font-size: 14px; color: Theme.fg-a4; vertical-alignment: center; }
+                        }
+                    }
+                }
+            }
+        }
+
+        // The table.
+        VerticalLayout {
+            padding: 20px;
+            padding-bottom: 0;
+            spacing: 14px;
+            vertical-stretch: 1;
+            HorizontalLayout {
+                height: 25px;
+                Text { width: 488px; text: "Action"; font-size: 14px; color: Theme.fg-a3; vertical-alignment: center; }
+                Text { text: "Hotkey"; font-size: 14px; color: Theme.fg-a3; vertical-alignment: center; }
+            }
+            Flickable {
+                vertical-stretch: 1;
+                VerticalLayout {
+                    spacing: 14px;
+                    alignment: start;
+                    padding-bottom: 20px;
+                    for row[i] in root.rows: VerticalLayout {
+                        // Slint has no `contains`: removing the query changes a
+                        // string exactly when the string holds it.
+                        property <string> label: row.label.to-lowercase();
+                        property <string> q: root.query.to-lowercase();
+                        property <bool> shown: self.q == "" || self.label.replace-all(self.q, "") != self.label || row.name.to-lowercase() == self.q;
+                        visible: self.shown;
+                        height: self.shown ? self.preferred-height : 0;
+                        spacing: 14px;
+                        if row.section != "" && root.query == "": Text {
+                            height: 28px;
+                            text: row.section;
+                            font-size: 16px;
+                            color: Theme.fg-a1;
+                            vertical-alignment: bottom;
+                        }
+                        HorizontalLayout {
+                            height: 33px;
+                            Text {
+                                width: 488px;
+                                text: row.label;
+                                font-size: 14px;
+                                color: Theme.fg-a2;
+                                vertical-alignment: center;
+                            }
+                            HorizontalLayout {
+                                alignment: start;
+                                Cap {
+                                    text: row.name;
+                                    fixed: row.id == "";
+                                    waiting: root.waiting == i;
+                                    clicked => {
+                                        root.waiting = i;
+                                        keys.focus();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Footer.
+        HorizontalLayout {
+            padding: 20px;
+            spacing: 20px;
+            FooterButton { text: "Cancel"; clicked => { root.cancel(); } }
+            FooterButton { text: "Reset to Defaults"; clicked => { root.waiting = -1; root.reset(); } }
+            Rectangle { horizontal-stretch: 1; }
+            FooterButton { text: "Save"; primary: true; clicked => { root.save(); } }
+        }
+    }
+}

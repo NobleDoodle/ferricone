@@ -1,0 +1,152 @@
+// Menus (plan §3), built to the Figma measurements: the right-click menu
+// `6065:13616` and the ⋯ menu `6062:13354`. BG/A3 Transparent over the
+// blurred video, radius 10, padding 4, drop shadow 0/8/15; rows are the
+// `option` component (48 high, radius 6, BG/A2 on hover).
+import { Theme } from "theme.slint";
+import { Icon } from "icon.slint";
+import { Icons, IconLayers } from "icons.slint";
+import { Glass, VideoBox } from "glass.slint";
+
+export enum MenuAction {
+    none,
+    play, stop, previous, next, record, hide-ui,
+    playback, video, audio, subtitle, more-settings, playlist, open-media, quit,
+    open-file, open-folder, open-network, open-disc, open-capture, convert, open-recent,
+    profile, shortcuts, customize, settings, about,
+    show-queue, new-playlist, save-queue, open-playlist,
+    appearance, introduction,
+    // The library's menus (src/library/menu.rs).
+    play-all, shuffle, mark-watched, mark-unwatched, favorite, stream, add-to-queue,
+    add-to-playlist, to-playlist, show-in-files, go-to-source, add-subtitles, add-audio,
+    properties, export-playlist, add-file, add-folder,
+    // ⋯ › Open Recent's items (src/recent.rs) and its Show All.
+    open-recent-item, show-recent,
+}
+
+export struct MenuEntry {
+    action: MenuAction,
+    icon: IconLayers,
+    label: string,
+    // The shortcut, right-aligned in FG/A3.
+    hint: string,
+    // A chevron instead of the hint: the row opens more.
+    submenu: bool,
+    // A check mark instead of the hint.
+    check: bool,
+    // Not built yet: shown as in the design, dimmed.
+    disabled: bool,
+    divider-before: bool,
+    // Which one, for actions that repeat (open-playlist).
+    index: int,
+}
+
+// One `option`: icon 24 · label · hint or chevron; padding 2/14, gap 10.
+component MenuRow inherits Rectangle {
+    in property <MenuEntry> entry;
+    callback activated();
+    callback hovered();
+
+    height: 48px;
+    border-radius: 6px;
+    background: touch.has-hover && !root.entry.disabled ? Theme.bg-a2 : transparent;
+
+    HorizontalLayout {
+        padding-left: 14px;
+        padding-right: 14px;
+        padding-top: 2px;
+        padding-bottom: 2px;
+        spacing: 10px;
+
+        Rectangle {
+            width: 24px;
+            Icon { icon: root.entry.icon; opacity: root.entry.disabled ? 0.4 : 1; }
+        }
+        Text {
+            text: root.entry.label;
+            font-size: 14px;
+            color: root.entry.disabled ? Theme.fg-a4 : Theme.fg-a2;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+            overflow: elide;
+        }
+        if root.entry.submenu || root.entry.check: Rectangle {
+            width: 24px;
+            Icon {
+                icon: root.entry.submenu ? Icons.chevron-right : Icons.check;
+                opacity: root.entry.disabled ? 0.4 : 1;
+            }
+        }
+        // `overflow: clip` (the default) clips glyphs to the box, and some,
+        // such as the backslash in "Ctrl + \", reach past their advance width;
+        // `elide` draws them whole. The 2 px keep it from ever eliding.
+        if !root.entry.submenu && !root.entry.check: Text {
+            text: root.entry.hint;
+            font-size: 14px;
+            color: root.entry.disabled ? Theme.fg-a4 : Theme.fg-a3;
+            overflow: elide;
+            min-width: self.preferred-width + 2px;
+            horizontal-alignment: right;
+            vertical-alignment: center;
+        }
+    }
+
+    touch := TouchArea {
+        clicked => {
+            if !root.entry.disabled {
+                root.activated();
+            }
+        }
+        changed has-hover => {
+            if self.has-hover {
+                root.hovered();
+            }
+        }
+    }
+}
+
+export component Menu {
+    in property <[MenuEntry]> entries;
+    in property <VideoBox> video;
+    callback activated(MenuAction, int);
+    // The pointer moved onto a row; `y` is the row's top in the window.
+    callback hovered(MenuAction, length);
+
+    height: body.preferred-height;
+
+    // The rounded clip and the shadow on one inner element: Slint rounds a
+    // clip only where it is declared, and draws no shadow for a component root.
+    Rectangle {
+        border-radius: 10px;
+        clip: true;
+        drop-shadow-offset-y: 8px;
+        drop-shadow-blur: 15px;
+        drop-shadow-color: Theme.shadow;
+
+        Glass {
+            video: root.video;
+            tint: Theme.bg-a3-glass;
+        }
+
+        // Clicks between rows stay in the menu.
+        TouchArea { }
+
+        body := VerticalLayout {
+            padding: 4px;
+
+            for entry in root.entries: VerticalLayout {
+                if entry.divider-before: Rectangle {
+                    height: 1px;
+                    background: Theme.divider-dim;
+                }
+                MenuRow {
+                    entry: entry;
+                    activated => { root.activated(entry.action, entry.index); }
+                    hovered => { root.hovered(entry.action, self.absolute-position.y); }
+                }
+            }
+        }
+    }
+
+    // A submenu, placed beside this menu.
+    @children
+}

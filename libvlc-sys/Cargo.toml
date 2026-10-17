@@ -1,0 +1,7 @@
+[package]
+name = "libvlc-sys"
+version = "0.1.0"
+edition = "2024"
+description = "Raw FFI for the pinned libVLC 4"
+publish = false
+links = "vlc"

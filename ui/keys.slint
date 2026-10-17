@@ -1,0 +1,28 @@
+// The keys the player acts on, one per action, which the Keyboard Shortcuts
+// dialog changes (src/shortcuts.rs fills them from app.toml). `key` is the
+// key's text as Slint reports it, `name` how it is shown ("Space", "←").
+// Esc, Enter and the Ctrl shortcuts are fixed.
+
+export struct KeyBinding { key: string, name: string }
+
+export global Keys {
+    in property <KeyBinding> play-pause: { key: Key.Space, name: "Space" };
+    in property <KeyBinding> back: { key: Key.LeftArrow, name: "←" };
+    in property <KeyBinding> forward: { key: Key.RightArrow, name: "→" };
+    in property <KeyBinding> volume-up: { key: Key.UpArrow, name: "↑" };
+    in property <KeyBinding> volume-down: { key: Key.DownArrow, name: "↓" };
+    in property <KeyBinding> fullscreen: { key: "f", name: "F" };
+    in property <KeyBinding> mute: { key: "m", name: "M" };
+    in property <KeyBinding> audio-track: { key: "b", name: "B" };
+    in property <KeyBinding> subtitle-track: { key: "v", name: "V" };
+    in property <KeyBinding> slower: { key: "[", name: "[" };
+    in property <KeyBinding> faster: { key: "]", name: "]" };
+    in property <KeyBinding> audio-earlier: { key: "j", name: "J" };
+    in property <KeyBinding> audio-later: { key: "k", name: "K" };
+    in property <KeyBinding> subtitles-earlier: { key: "g", name: "G" };
+    in property <KeyBinding> subtitles-later: { key: "h", name: "H" };
+    in property <KeyBinding> stop: { key: "s", name: "S" };
+    in property <KeyBinding> previous: { key: "p", name: "P" };
+    in property <KeyBinding> next: { key: "n", name: "N" };
+    in property <KeyBinding> record: { key: "r", name: "R" };
+}

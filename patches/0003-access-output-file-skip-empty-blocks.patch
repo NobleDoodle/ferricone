@@ -1,0 +1,28 @@
+access_output/file: skip empty blocks instead of failing on them
+
+Write(), used for files opened for writing, treats write() returning 0 as
+an error. A zero-length block makes write() return 0, so the block chain is
+dropped and "cannot write: <stale errno>" is logged, often "Connection timed
+out". Transcoding audio to WAV hands the file output such blocks and floods
+the log, although the output is whole. The other write path in this file
+already skips empty blocks.
+
+diff --git i/modules/access_output/file.c w/modules/access_output/file.c
+index 45460b225d..07e26b0e11 100644
+--- i/modules/access_output/file.c
++++ w/modules/access_output/file.c
+@@ -82,6 +82,14 @@ static ssize_t Write( sout_access_out_t *p_access, block_t *p_buffer )
+ 
+     while( p_buffer )
+     {
++        if (p_buffer->i_buffer == 0)
++        {   /* write() of nothing returns 0, which is not an error */
++            block_t *p_next = p_buffer->p_next;
++            block_Release (p_buffer);
++            p_buffer = p_next;
++            continue;
++        }
++
+         ssize_t val = write(fd, p_buffer->p_buffer, p_buffer->i_buffer);
+         if (val <= 0)
+         {

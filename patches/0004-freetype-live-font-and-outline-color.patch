@@ -1,0 +1,78 @@
+freetype: take the font, text color and outline color while text shows
+
+A player that changes freetype-font or freetype-outline-color while it
+plays (through libvlc_media_player_set_filter_option(), patches/0001) never
+saw the change: FillDefaultStyles() reads them once, when the text renderer
+is created, while UpdateDefaultLiveStyles(), run before every Render(),
+re-reads only the text color, background and outline thickness.
+
+Read the outline color and the font family there too, and reload the
+default face when the family changed, as Render() already does when the
+size changes. Lines rendered after the change take it.
+
+Carried by Ferricone Player on top of VLC a5538c55; written for upstream.
+
+diff --git i/modules/text_renderer/freetype/freetype.c w/modules/text_renderer/freetype/freetype.c
+index ea67c8a3c4..99992751f2 100644
+--- i/modules/text_renderer/freetype/freetype.c
++++ w/modules/text_renderer/freetype/freetype.c
+@@ -707,17 +707,40 @@ static inline void RenderAXYZ( filter_t *p_filter,
+     }
+ }
+ 
+-static void UpdateDefaultLiveStyles( filter_t *p_filter )
++/* Re-reads the options a player may change while text is shown. Returns
++ * true when the font family changed, so the default face must be reloaded. */
++static bool UpdateDefaultLiveStyles( filter_t *p_filter )
+ {
+     filter_sys_t *p_sys = p_filter->p_sys;
+     text_style_t *p_style = p_sys->p_default_style;
++    bool b_new_family = false;
+ 
+     p_style->i_font_color = var_InheritInteger( p_filter, "freetype-color" );
++    p_style->i_outline_color = var_InheritInteger( p_filter, "freetype-outline-color" );
+ 
+     p_style->i_background_alpha = var_InheritInteger( p_filter, "freetype-background-opacity" );
+     p_style->i_background_color = var_InheritInteger( p_filter, "freetype-background-color" );
+ 
+     p_sys->i_outline_thickness = var_InheritInteger( p_filter, "freetype-outline-thickness" );
++
++#ifdef HAVE_GET_FONT_BY_FAMILY_NAME
++    char *psz_family = var_InheritString( p_filter, "freetype-font" );
++    if( !psz_family || !*psz_family )
++    {
++        free( psz_family );
++        psz_family = strdup( DEFAULT_FAMILY );
++    }
++    if( psz_family && ( !p_style->psz_fontname ||
++                        strcmp( psz_family, p_style->psz_fontname ) ) )
++    {
++        free( p_style->psz_fontname );
++        p_style->psz_fontname = psz_family;
++        b_new_family = true;
++    }
++    else
++        free( psz_family );
++#endif
++    return b_new_family;
+ }
+ 
+ static void FillDefaultStyles( filter_t *p_filter )
+@@ -1039,12 +1062,14 @@ static subpicture_region_t *Render( filter_t *p_filter,
+     bool b_grid = (p_region_in->text_flags & VLC_SUBPIC_TEXT_FLAG_GRID_MODE) != 0;
+     p_sys->i_scale = ( b_grid ) ? 100 : var_InheritInteger( p_filter, "sub-text-scale");
+ 
+-    UpdateDefaultLiveStyles( p_filter );
++    bool b_new_family = UpdateDefaultLiveStyles( p_filter );
+ 
+     int i_font_default_size = ConvertToLiveSize( p_filter, p_sys->p_default_style );
+-    if( !p_sys->p_faceid || i_font_default_size != p_sys->i_font_default_size )
++    if( !p_sys->p_faceid || b_new_family ||
++        i_font_default_size != p_sys->i_font_default_size )
+     {
+-        /* Update the default face to reflect changes in video size or text scaling */
++        /* Update the default face to reflect changes in video size, text
++         * scaling or font family */
+         p_sys->p_faceid = SelectAndLoadFace( p_filter, p_sys->p_default_style, ' ' );
+         if( !p_sys->p_faceid )
+         {

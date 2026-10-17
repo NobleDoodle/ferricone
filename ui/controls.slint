@@ -1,0 +1,647 @@
+// The player's title bar and control bar (plan §3), built to the Figma
+// measurements: Controls `491:1780`, title bar of Player `247:445`.
+import { Theme } from "theme.slint";
+import { Icon } from "icon.slint";
+import { Icons, IconLayers } from "icons.slint";
+import { Glass, VideoBox } from "glass.slint";
+
+// Figma "Icon Wrapper": 30×32, padding 4, radius 4, fill on hover.
+export component IconButton inherits Rectangle {
+    in property <IconLayers> icon;
+    in property <bool> enabled: true;
+    callback clicked();
+
+    width: 30px;
+    height: 32px;
+    border-radius: 4px;
+    background: touch.has-hover && root.enabled ? Theme.bg-a1 : transparent;
+
+    Icon {
+        icon: root.icon;
+        opacity: root.enabled ? 1 : 0.4;
+    }
+
+    touch := TouchArea {
+        enabled: root.enabled;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Figma "play": 54×28 accent block, radius 6; the only filled accent shape.
+component PlayButton inherits Rectangle {
+    in property <bool> playing;
+    callback clicked();
+
+    width: 54px;
+    height: 28px;
+    border-radius: 6px;
+    background: touch.has-hover ? Theme.accent-bright : Theme.accent-main;
+
+    Icon {
+        icon: root.playing ? Icons.pause : Icons.play;
+        color: Theme.fg-b1;
+    }
+
+    touch := TouchArea {
+        clicked => { root.clicked(); }
+    }
+}
+
+// Figma "Current Time" / "Duration": 76×28, radius 6, Inter 15 FG/A2.
+component TimeChip inherits Rectangle {
+    in property <string> text;
+    callback clicked();
+
+    width: 76px;
+    height: 28px;
+    border-radius: 6px;
+    background: touch.has-hover ? Theme.bg-a1 : transparent;
+
+    Text {
+        text: root.text;
+        color: Theme.fg-a2;
+        font-size: 15px;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+
+    touch := TouchArea {
+        clicked => { root.clicked(); }
+    }
+}
+
+// Seek track: 28 high, radius 6, BG/B2. The elapsed fill (BG/Accent Bright) is
+// inset 2 px and ends at the 8 px accent handle. Dragging previews and seeks
+// fast; releasing seeks precisely.
+// Waveform variant (Controls `2139:8124`): no fill; 2 px bars on a 5 px
+// pitch from x 6, centered, 2–14 high in steps of 2 by loudness, Accent/Dim
+// where played and FG/A4 ahead, and a 4 × 24 Accent/Main playhead.
+// A subtitle line in the timeline window, 0–1 across it.
+export struct CueBlock { start: float, end: float }
+
+// Subtitle timeline: the subtitle lines as blocks (white 14 %, radius 1)
+// along the whole track, which seeks as usual. Adjusting their timing turns
+// it into the Controls `sub timeline` variant (`3744:12361`): a window of
+// time around the playhead (fixed in the middle) whose blocks drag to shift
+// the subtitle delay, with zoom buttons at the ends (Accent/Dim, radius 4).
+component SeekBar inherits Rectangle {
+    in property <float> position;
+    in property <bool> timeline;
+    // Adjusting the subtitle timing: the zoomed window (implies `timeline`).
+    in property <bool> adjust;
+    in property <[CueBlock]> cues;
+    // A click in the timeline, 0–1 across the window.
+    callback seek-window(float);
+    // A cue dragged by this share of the window (`done` on release).
+    callback cue-dragged(float, bool);
+    // −1 widens the window, +1 narrows it.
+    callback zoom(int);
+    in property <bool> enabled: true;
+    in property <bool> waveform;
+    // 0–255 loudness along the item (src/waveform.rs); empty until known.
+    in property <[int]> levels;
+    // The pointer is over the track, at `pointer` (0–1).
+    out property <bool> hovered: touch.has-hover;
+    out property <float> pointer: clamp(touch.mouse-x / self.width, 0, 1);
+    callback seek(float, bool);
+    callback hover(float);
+
+    property <length> track: self.width - 4px;
+    property <float> shown: root.adjust ? 0.5 : touch.pressed ? self.pointer : root.position;
+    property <int> bars: max(0, floor((self.width - 10px) / 5px) + 1);
+    property <length> head-x: 2px + root.shown * (self.width - 8px);
+
+    height: 28px;
+    border-radius: 6px;
+    background: Theme.bg-b2;
+
+    if !root.waveform || root.timeline: Rectangle {
+        x: 2px;
+        y: 2px;
+        width: max(8px, root.shown * root.track);
+        height: parent.height - 4px;
+        border-radius: 4px;
+        background: Theme.bg-accent-bright;
+    }
+
+    if root.timeline: Rectangle {
+        for cue in root.cues: Rectangle {
+            property <length> left: 2px + clamp(cue.start, 0, 1) * root.track;
+            x: self.left;
+            y: 2px;
+            // On the whole track a line can be under a pixel wide.
+            width: max(root.adjust ? 2px : 1px, (clamp(cue.end, 0, 1) * root.track + 2px) - self.left);
+            height: 24px;
+            border-radius: 1px;
+            background: Theme.cue;
+        }
+    }
+
+    if !root.waveform || root.timeline: Rectangle {
+        x: 2px + max(0px, root.shown * root.track - 8px);
+        y: 2px;
+        width: 8px;
+        height: parent.height - 4px;
+        border-radius: 4px;
+        background: Theme.accent-main;
+    }
+
+    if root.waveform && !root.timeline: Rectangle {
+        for i in root.bars: Rectangle {
+            property <int> level: root.levels.length == 0 ? 0 : root.levels[floor(i * root.levels.length / root.bars)];
+            x: 6px + i * 5px;
+            width: 2px;
+            height: max(2px, round(self.level / 255 * 7) * 2px);
+            y: (root.height - self.height) / 2;
+            border-radius: 1px;
+            background: self.x < root.head-x ? Theme.accent-dim : Theme.fg-a4;
+            // A gap around the playhead.
+            visible: self.x + 2px < root.head-x - 3px || self.x > root.head-x + 7px;
+        }
+        Rectangle {
+            x: root.head-x;
+            y: 2px;
+            width: 4px;
+            height: 24px;
+            border-radius: 4px;
+            background: Theme.accent-main;
+        }
+    }
+
+    touch := TouchArea {
+        enabled: root.enabled;
+        moved => {
+            if self.pressed && !root.adjust {
+                root.seek(root.pointer, true);
+            }
+        }
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.move && !root.adjust {
+                root.hover(root.pointer);
+            }
+            if event.kind == PointerEventKind.up && event.button == PointerEventButton.left {
+                if root.adjust {
+                    root.seek-window(root.pointer);
+                } else {
+                    root.seek(root.pointer, false);
+                }
+            }
+        }
+    }
+
+    // While adjusting, the blocks drag; above the track's own touch area so
+    // they get the pointer first.
+    if root.adjust: Rectangle {
+        for cue in root.cues: TouchArea {
+            property <length> left: 2px + clamp(cue.start, 0, 1) * root.track;
+            property <length> from;
+            x: self.left;
+            y: 2px;
+            width: max(2px, (clamp(cue.end, 0, 1) * root.track + 2px) - self.left);
+            height: 24px;
+            mouse-cursor: MouseCursor.ew-resize;
+            pointer-event(event) => {
+                if event.kind == PointerEventKind.down { self.from = self.mouse-x; }
+                if event.kind == PointerEventKind.up { root.cue-dragged((self.mouse-x - self.from) / root.track, true); }
+            }
+            moved => {
+                if self.pressed { root.cue-dragged((self.mouse-x - self.from) / root.track, false); }
+            }
+        }
+    }
+
+    // Zoom buttons at the ends: 18 × 24, Accent/Dim, radius 4.
+    if root.adjust: Rectangle {
+        Rectangle {
+            x: 2px;
+            y: 2px;
+            width: 18px;
+            height: 24px;
+            border-radius: 4px;
+            background: Theme.accent-dim;
+            Text { text: "−"; font-size: 14px; color: Theme.fg-b1; }
+            TouchArea { clicked => { root.zoom(-1); } }
+        }
+        Rectangle {
+            x: parent.width - 20px;
+            y: 2px;
+            width: 18px;
+            height: 24px;
+            border-radius: 4px;
+            background: Theme.accent-dim;
+            Text { text: "+"; font-size: 14px; color: Theme.fg-b1; }
+            TouchArea { clicked => { root.zoom(1); } }
+        }
+    }
+}
+
+// Figma "volume": an even sideways triangle, 88 wide, from a 10 px tip at the
+// left to 27 px at the right, centered on the bar, corners rounded 3 px. The
+// fill sits 1.5 px inside (corners 2 px) and carries the volume gradient.
+// As in the design's 13 level variants, 0–100 % takes the first 63 px and the
+// 100–200 % boost the last 25 px.
+component VolumeWedge {
+    in property <float> volume;  // 0–2
+    in property <bool> muted;
+    callback set-volume(float);
+
+    property <float> level: clamp(root.volume, 0, 2);
+    property <float> fill-px: root.level <= 1 ? 63 * root.level : 63 + 25 * (root.level - 1);
+    // Half-heights at the tip and base, around y = 14, and their slope.
+    property <float> tip: 5;
+    property <float> base: 13.5;
+    property <float> slope: (root.base - root.tip) / 88;
+    property <float> r: 3;
+    // Fill: inset, its right edge at the level, corner radius 2.
+    property <float> inset: 1.5;
+    property <float> fr: 2;
+    property <float> fx0: root.inset;
+    property <float> fx1: max(root.fx0 + 2 * root.fr, root.fill-px);
+    property <float> fh0: root.tip - root.inset;
+    property <float> fh1: root.tip + root.slope * root.fx1 - root.inset;
+
+    width: 88px;
+    height: 28px;
+
+    Path {
+        width: 100%;
+        height: 100%;
+        viewbox-width: 88;
+        viewbox-height: 28;
+        fill: Theme.bg-b2;
+        MoveTo { x: 0; y: 14 - root.tip + root.r; }
+        QuadraticTo { control-x: 0; control-y: 14 - root.tip; x: root.r; y: 14 - root.tip - root.r * root.slope; }
+        LineTo { x: 88 - root.r; y: 14 - root.base + root.r * root.slope; }
+        QuadraticTo { control-x: 88; control-y: 14 - root.base; x: 88; y: 14 - root.base + root.r; }
+        LineTo { x: 88; y: 14 + root.base - root.r; }
+        QuadraticTo { control-x: 88; control-y: 14 + root.base; x: 88 - root.r; y: 14 + root.base - root.r * root.slope; }
+        LineTo { x: root.r; y: 14 + root.tip + root.r * root.slope; }
+        QuadraticTo { control-x: 0; control-y: 14 + root.tip; x: 0; y: 14 + root.tip - root.r; }
+        Close { }
+    }
+
+    Path {
+        visible: root.level > 0;
+        width: 100%;
+        height: 100%;
+        viewbox-width: 88;
+        viewbox-height: 28;
+        opacity: root.muted ? 0.35 : 1;
+        fill: @linear-gradient(90deg, Theme.volume-low 0%, Theme.volume-mid 58%, Theme.volume-high 79%, Theme.volume-max 100%);
+        MoveTo { x: root.fx0; y: 14 - root.fh0 + root.fr; }
+        QuadraticTo { control-x: root.fx0; control-y: 14 - root.fh0; x: root.fx0 + root.fr; y: 14 - root.fh0 - root.fr * root.slope; }
+        LineTo { x: root.fx1 - root.fr; y: 14 - root.fh1 + root.fr * root.slope; }
+        QuadraticTo { control-x: root.fx1; control-y: 14 - root.fh1; x: root.fx1; y: 14 - root.fh1 + root.fr; }
+        LineTo { x: root.fx1; y: 14 + root.fh1 - root.fr; }
+        QuadraticTo { control-x: root.fx1; control-y: 14 + root.fh1; x: root.fx1 - root.fr; y: 14 + root.fh1 - root.fr * root.slope; }
+        LineTo { x: root.fx0 + root.fr; y: 14 + root.fh0 + root.fr * root.slope; }
+        QuadraticTo { control-x: root.fx0; control-y: 14 + root.fh0; x: root.fx0; y: 14 + root.fh0 - root.fr; }
+        Close { }
+    }
+
+    // The design's 20 % black over the gradient.
+    Path {
+        visible: root.level > 0;
+        width: 100%;
+        height: 100%;
+        viewbox-width: 88;
+        viewbox-height: 28;
+        opacity: root.muted ? 0.35 : 1;
+        fill: Theme.volume-shade;
+        MoveTo { x: root.fx0; y: 14 - root.fh0 + root.fr; }
+        QuadraticTo { control-x: root.fx0; control-y: 14 - root.fh0; x: root.fx0 + root.fr; y: 14 - root.fh0 - root.fr * root.slope; }
+        LineTo { x: root.fx1 - root.fr; y: 14 - root.fh1 + root.fr * root.slope; }
+        QuadraticTo { control-x: root.fx1; control-y: 14 - root.fh1; x: root.fx1; y: 14 - root.fh1 + root.fr; }
+        LineTo { x: root.fx1; y: 14 + root.fh1 - root.fr; }
+        QuadraticTo { control-x: root.fx1; control-y: 14 + root.fh1; x: root.fx1 - root.fr; y: 14 + root.fh1 - root.fr * root.slope; }
+        LineTo { x: root.fx0 + root.fr; y: 14 + root.fh0 + root.fr * root.slope; }
+        QuadraticTo { control-x: root.fx0; control-y: 14 + root.fh0; x: root.fx0; y: 14 + root.fh0 - root.fr; }
+        Close { }
+    }
+
+    // The volume under x px from the left: the inverse of fill-px.
+    pure function volume-at(x: float) -> float {
+        return x <= 63 ? clamp(x, 0, 63) / 63 : 1 + (clamp(x, 63, 88) - 63) / 25;
+    }
+
+    touch := TouchArea {
+        moved => {
+            if self.pressed {
+                root.set-volume(root.volume-at(self.mouse-x / 1px));
+            }
+        }
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.down && event.button == PointerEventButton.left {
+                root.set-volume(root.volume-at(self.mouse-x / 1px));
+            }
+        }
+    }
+}
+
+// Title bar: 40 high, padding 6, gap 10, BG/A3 (BG/A3 Transparent over the
+// video when the UI is hidden). Left: app glyph · ⋯ · library dock · divider ·
+// folder crumb. Center: media title. Fullscreen lives at the control bar's
+// far right (Aaron's call; the design puts it here with the window buttons).
+export component TitleBar inherits Rectangle {
+    in property <string> title;
+    in property <string> folder;
+    in property <bool> glass;
+    in property <VideoBox> video;
+    // The pointer is anywhere over the bar, buttons included.
+    out property <bool> hovered: drag.has-hover;
+    callback start-move();
+    callback toggle-fullscreen();
+    // The ⋯ button: the open menu.
+    callback more();
+    // The library dock's button, and the folder crumb.
+    in property <bool> dock-open;
+    callback toggle-dock();
+    callback reveal-folder();
+
+    height: 40px;
+    background: root.glass ? transparent : Theme.bg-a3;
+
+    if root.glass: Glass {
+        video: root.video;
+        tint: Theme.bg-a3-glass;
+    }
+
+    // Dragging empty space moves the window; the buttons take their own clicks.
+    drag := TouchArea {
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.down && event.button == PointerEventButton.left {
+                root.start-move();
+            }
+        }
+        double-clicked => { root.toggle-fullscreen(); }
+
+        Text {
+            text: root.title;
+            color: Theme.fg-a2;
+            font-size: 14px;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+            overflow: elide;
+            x: 310px;
+            width: parent.width - 620px;
+        }
+
+        HorizontalLayout {
+            padding: 6px;
+            spacing: 7px;
+            alignment: start;
+
+            Rectangle {
+                width: 38px;
+                Image {
+                    source: @image-url("ferricone-symbolic.svg");
+                    colorize: Theme.accent-main;
+                    width: 22px;
+                    height: 22px;
+                }
+            }
+            // Figma `topbar`: ⋯ and the dock button 28 wide, 10 apart; the
+            // divider and the crumb follow without gaps.
+            HorizontalLayout {
+                HorizontalLayout {
+                    spacing: 10px;
+                    IconButton { icon: Icons.more; width: 28px; height: 28px; clicked => { root.more(); } }
+                    IconButton {
+                        icon: root.dock-open ? Icons.sidebar-active : Icons.sidebar-left;
+                        width: 28px;
+                        height: 28px;
+                        clicked => { root.toggle-dock(); }
+                    }
+                }
+                Icon { icon: Icons.divider; y: 2px; }
+                Rectangle {
+                height: 28px;
+                border-radius: 6px;
+                background: crumb.has-hover ? Theme.bg-a1 : transparent;
+                HorizontalLayout {
+                    padding-right: 8px;
+                    spacing: 4px;
+                    Icon { icon: Icons.folder; size: 28px; }
+                    Text {
+                        text: root.folder;
+                        color: Theme.fg-a2;
+                        font-size: 14px;
+                        vertical-alignment: center;
+                    }
+                }
+                crumb := TouchArea { clicked => { root.reveal-folder(); } }
+            }
+            }
+        }
+    }
+}
+
+// Which tab the tracks panel opens on.
+export enum TracksTab { video, audio, subtitles }
+
+// Control bar: 54 high, padding 11/20, gap 20, BG/A3 (BG/A3 Transparent over
+// the video when the UI is hidden) with a Divider/Dim top edge.
+export component ControlBar inherits Rectangle {
+    in property <bool> playing;
+    in property <bool> has-next;
+    // Music variant (Controls `4778:26181`): −15 s / +15 s around play, no
+    // subtitles button, and the waveform always.
+    in property <bool> music;
+    in property <bool> waveform;
+    in property <[int]> levels;
+    in property <bool> timeline;
+    in property <bool> timeline-adjust;
+    in property <[CueBlock]> cues;
+    callback seek-window(float);
+    callback cue-dragged(float, bool);
+    callback timeline-zoom(int);
+    in property <bool> seekable;
+    in property <float> position;
+    in property <string> time-text;
+    in property <string> length-text;
+    in property <float> volume;
+    in property <bool> muted;
+    in property <bool> glass;
+    in property <VideoBox> video;
+    // The open panel, so its button shows the active icon.
+    in property <bool> tracks-open;
+    in property <TracksTab> tracks-tab;
+    in property <bool> queue-open;
+    in property <bool> fullscreen;
+    in property <bool> settings-open;
+    out property <bool> hovered: hover.has-hover;
+    out property <bool> seek-hovered: seek-bar.hovered;
+    out property <float> seek-pointer: seek-bar.pointer;
+    // The seek track's left edge and width, in the window.
+    out property <length> seek-x: seek-bar.absolute-position.x;
+    out property <length> seek-width: seek-bar.width;
+    callback toggle-play();
+    callback previous();
+    callback next();
+    callback seek(float, bool);
+    callback set-volume(float);
+    callback toggle-mute();
+    callback toggle-remaining();
+    // The elapsed-time chip: the waveform on or off (video).
+    callback toggle-waveform();
+    callback jump(float);
+    callback seek-hover(float);
+    callback open-tracks(TracksTab);
+    callback toggle-queue();
+    callback toggle-fullscreen();
+    callback toggle-settings();
+
+    height: 54px;
+    background: root.glass ? transparent : Theme.bg-a3;
+
+    if root.glass: Glass {
+        video: root.video;
+        tint: Theme.bg-a3-glass;
+    }
+
+    hover := TouchArea {
+        Rectangle {
+            y: 0;
+            height: 1px;
+            background: Theme.divider-dim;
+        }
+
+        HorizontalLayout {
+            padding-top: 11px;
+            padding-bottom: 11px;
+            padding-left: 20px;
+            padding-right: 20px;
+            spacing: 20px;
+
+            HorizontalLayout {
+                spacing: 8px;
+                IconButton { icon: Icons.previous; height: 28px; clicked => { root.previous(); } }
+                if root.music: IconButton { icon: Icons.backward-15-sec; height: 28px; clicked => { root.jump(-15); } }
+                PlayButton { playing: root.playing; clicked => { root.toggle-play(); } }
+                if root.music: IconButton { icon: Icons.forward-15-sec; height: 28px; clicked => { root.jump(15); } }
+                IconButton { icon: Icons.next; height: 28px; enabled: root.has-next; clicked => { root.next(); } }
+            }
+
+            HorizontalLayout {
+                spacing: 8px;
+                horizontal-stretch: 1;
+                TimeChip {
+                    text: root.time-text;
+                    clicked => {
+                        if !root.music {
+                            root.toggle-waveform();
+                        }
+                    }
+                }
+                seek-bar := SeekBar {
+                    position: root.position;
+                    enabled: root.seekable;
+                    waveform: root.music || root.waveform;
+                    levels: root.levels;
+                    timeline: root.timeline;
+                    adjust: root.timeline && root.timeline-adjust;
+                    cues: root.cues;
+                    seek-window(at) => { root.seek-window(at); }
+                    cue-dragged(by, done) => { root.cue-dragged(by, done); }
+                    zoom(step) => { root.timeline-zoom(step); }
+                    seek(position, fast) => { root.seek(position, fast); }
+                    hover(position) => { root.seek-hover(position); }
+                }
+                TimeChip { text: root.length-text; clicked => { root.toggle-remaining(); } }
+            }
+
+            HorizontalLayout {
+                spacing: 8px;
+                Rectangle {
+                    width: 24px;
+                    Icon {
+                        icon: Icons.volume-high;
+                        opacity: root.muted ? 0.4 : 1;
+                    }
+                    TouchArea { clicked => { root.toggle-mute(); } }
+                }
+                VolumeWedge {
+                    volume: root.volume;
+                    muted: root.muted;
+                    set-volume(v) => { root.set-volume(v); }
+                }
+            }
+
+            HorizontalLayout {
+                spacing: 12px;
+                IconButton {
+                    icon: root.tracks-open && root.tracks-tab == TracksTab.audio ? Icons.audio-active : Icons.audio;
+                    clicked => { root.open-tracks(TracksTab.audio); }
+                }
+                if !root.music: IconButton {
+                    icon: root.tracks-open && root.tracks-tab == TracksTab.subtitles ? Icons.subtitles-active : Icons.subtitles;
+                    clicked => { root.open-tracks(TracksTab.subtitles); }
+                }
+                IconButton {
+                    icon: root.settings-open ? Icons.playback-settings-active : Icons.playback-settings;
+                    clicked => { root.toggle-settings(); }
+                }
+            }
+
+            HorizontalLayout {
+                spacing: 12px;
+                IconButton {
+                    icon: root.queue-open ? Icons.lists-active : Icons.lists;
+                    clicked => { root.toggle-queue(); }
+                }
+                IconButton {
+                    icon: root.fullscreen ? Icons.fullscreen-active : Icons.fullscreen;
+                    clicked => { root.toggle-fullscreen(); }
+                }
+            }
+        }
+    }
+}
+
+// The seek preview, Figma `thumbnail` `2151:9673`: 272 × 189, radius 14,
+// BG/A3 Transparent over the blurred video, padding 10, gap 10: the frame
+// (252 × 142, radius 4) over the time (Inter 15 FG/A2).
+export component SeekPreview {
+    in property <image> frame;
+    in property <bool> ready;
+    in property <string> time;
+    in property <VideoBox> video;
+
+    width: 272px;
+    height: 189px;
+
+    Rectangle {
+        border-radius: 14px;
+        clip: true;
+
+        Glass {
+            video: root.video;
+            tint: Theme.bg-a3-glass;
+        }
+
+        VerticalLayout {
+            padding: 10px;
+            spacing: 10px;
+
+            Rectangle {
+                height: 142px;
+                border-radius: 4px;
+                clip: true;
+                background: Theme.video-bg;
+                Image {
+                    source: root.frame;
+                    width: parent.width;
+                    height: parent.height;
+                    image-fit: contain;
+                    opacity: root.ready ? 1 : 0.4;
+                }
+            }
+            Text {
+                text: root.time;
+                font-size: 15px;
+                color: Theme.fg-a2;
+                horizontal-alignment: center;
+            }
+        }
+    }
+}

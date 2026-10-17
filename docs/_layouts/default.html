@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ site.title }} — a media player for Linux</title>
+  <meta name="description" content="{{ site.description }}">
+  <meta property="og:title" content="{{ site.title }}">
+  <meta property="og:description" content="{{ site.description }}">
+  <meta property="og:image" content="{{ site.url }}{{ site.baseurl }}/assets/demo.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="{{ '/assets/ferricone-icon.svg' | relative_url }}" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ '/assets/site.css' | relative_url }}">
+</head>
+<body>
+  <header class="nav">
+    <a class="brand" href="{{ '/' | relative_url }}"><img src="{{ '/assets/ferricone-icon.svg' | relative_url }}" alt=""> Ferricone</a>
+    <nav>
+      <a href="#features">Features</a>
+      <a href="#download">Download</a>
+      <a href="#build">Build</a>
+      <a class="gh" href="https://github.com/{{ site.repository }}">GitHub</a>
+    </nav>
+  </header>
+  {{ content }}
+  <footer>
+    <p>Ferricone Player {{ site.version }} · free software under the <a href="https://github.com/{{ site.repository }}/blob/main/LICENSE">GPL 3.0 or later</a>.</p>
+    <p class="fine">Interface design after “VLC Redesign” by Juxtopposed (Figma Community, <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>).
+      Plays with libVLC by VideoLAN. “VLC” and the cone are VideoLAN trademarks; Ferricone is not made or endorsed by VideoLAN.</p>
+  </footer>
+  <script>
+    document.querySelectorAll('[data-copy]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var text = b.parentElement.querySelector('code').innerText;
+        navigator.clipboard.writeText(text).then(function () {
+          b.textContent = 'Copied';
+          setTimeout(function () { b.textContent = 'Copy'; }, 1400);
+        });
+      });
+    });
+    document.querySelectorAll('.tabs button').forEach(function (t) {
+      t.addEventListener('click', function () {
+        var box = t.closest('.shots');
+        box.querySelectorAll('.tabs button').forEach(function (o) {
+          var on = o === t;
+          o.classList.toggle('on', on);
+          o.setAttribute('aria-selected', on);
+        });
+        box.querySelectorAll('figure').forEach(function (f) { f.hidden = f.dataset.shot !== t.dataset.shot; });
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,293 @@
+// Add Subtitles (Figma `Add Subtitles to Playlist/Folder`, 1048 × 800,
+// radius 14, BG/A4 at 95 %): a 50 px BG/B2 header, then the target (To
+// This File / Folder) and source dropdowns and where subtitles are looked
+// for, with Browse; the list (for a file, subtitle files to tick; for a
+// folder, each video and its subtitle, changeable); Cancel / Save. Rust
+// finds and matches the files (src/addsubs.rs).
+
+import { Theme } from "theme.slint";
+import { Icon } from "icon.slint";
+import { Icons } from "icons.slint";
+import { Dropdown } from "settings.slint";
+
+export struct SubFileRow { name: string, detail: string, chosen: bool }
+export struct SubPairRow { video: string, options: [string], selected: int }
+
+component Button inherits Rectangle {
+    in property <string> text;
+    in property <bool> primary;
+    callback clicked();
+
+    width: max(100px, label.preferred-width + 24px);
+    height: 32px;
+    border-radius: 6px;
+    background: root.primary ? Theme.bg-accent-bright : touch.has-hover ? Theme.bg-a1 : Theme.bg-a3;
+    label := Text {
+        text: root.text;
+        font-size: 14px;
+        font-weight: 600;
+        color: root.primary ? Theme.accent-main : Theme.fg-a2;
+    }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+export component AddSubtitlesDialog inherits Rectangle {
+    in property <bool> folder-mode;
+    in property <string> location;
+    in property <[SubFileRow]> files;
+    in property <[SubPairRow]> pairs;
+    in property <string> note;
+    // From OpenSubtitles: the search, its language, the results.
+    in property <bool> online;
+    in property <string> query;
+    in property <[string]> languages;
+    in property <int> language;
+    in property <[SubFileRow]> results;
+    in property <bool> busy;
+    callback set-online(bool);
+    callback search(string, int);
+    callback toggle-result(int);
+    callback set-folder-mode(bool);
+    callback toggle(int);
+    callback pick(int, int);
+    callback browse();
+    callback save();
+    callback cancel();
+
+    width: 1048px;
+    height: 800px;
+    border-radius: 14px;
+    clip: true;
+    background: Theme.bg-a4.with-alpha(0.95);
+
+    init => { keys.focus(); }
+    keys := FocusScope {
+        key-pressed(event) => {
+            if event.text == Key.Escape { root.cancel(); return accept; }
+            if event.text == Key.Return { root.save(); return accept; }
+            accept
+        }
+    }
+    TouchArea { }
+
+    VerticalLayout {
+        Rectangle {
+            height: 50px;
+            background: Theme.bg-b2;
+            HorizontalLayout {
+                padding: 9px;
+                padding-left: 19px;
+                Text {
+                    horizontal-stretch: 1;
+                    text: "Add Subtitles";
+                    font-size: 14px;
+                    color: Theme.fg-a2;
+                    vertical-alignment: center;
+                }
+                Rectangle {
+                    width: 32px;
+                    border-radius: 4px;
+                    background: close.has-hover ? Theme.bg-a1 : transparent;
+                    Icon { icon: Icons.close; }
+                    close := TouchArea { clicked => { root.cancel(); } }
+                }
+            }
+        }
+
+        VerticalLayout {
+            padding: 20px;
+            spacing: 20px;
+            vertical-stretch: 1;
+
+            // Target, source, and where.
+            HorizontalLayout {
+                height: 36px;
+                spacing: 10px;
+                Dropdown {
+                    width: 200px;
+                    height: 36px;
+                    options: ["To This File", "To This Folder"];
+                    selected: root.folder-mode ? 1 : 0;
+                    chosen(i) => { root.set-folder-mode(i == 1); }
+                }
+                Dropdown {
+                    width: 230px;
+                    height: 36px;
+                    options: ["From Computer", "From OpenSubtitles"];
+                    selected: root.online ? 1 : 0;
+                    chosen(i) => { root.set-online(i == 1); }
+                }
+                if !root.online: Rectangle {
+                    horizontal-stretch: 1;
+                    border-radius: 6px;
+                    background: Theme.bg-b2;
+                    Text {
+                        x: 12px;
+                        width: parent.width - 24px;
+                        text: root.location;
+                        font-size: 14px;
+                        color: Theme.fg-a2;
+                        vertical-alignment: center;
+                        overflow: elide;
+                    }
+                }
+                if !root.online: Button { text: root.folder-mode ? "Look Elsewhere" : "Browse"; clicked => { root.browse(); } }
+                // The search: words (the title, prefilled) and a language.
+                if root.online: HorizontalLayout {
+                    horizontal-stretch: 1;
+                    spacing: 10px;
+                    Rectangle {
+                        horizontal-stretch: 1;
+                        border-radius: 6px;
+                        border-width: 2px;
+                        border-color: query-input.has-focus ? Theme.divider-bright : Theme.bg-a4;
+                        background: Theme.bg-b2;
+                        query-input := TextInput {
+                            x: 12px;
+                            width: parent.width - 24px;
+                            text: root.query;
+                            font-size: 14px;
+                            color: Theme.fg-1;
+                            vertical-alignment: center;
+                            selection-background-color: Theme.bg-accent-bright;
+                            selection-foreground-color: Theme.fg-1;
+                            accepted => { root.search(self.text, language-pick.selected); }
+                        }
+                    }
+                    language-pick := Dropdown {
+                        width: 200px;
+                        height: 36px;
+                        options: root.languages;
+                        selected: root.language;
+                        chosen(i) => { root.search(query-input.text, i); }
+                    }
+                    Button {
+                        text: "Search";
+                        clicked => { root.search(query-input.text, language-pick.selected); }
+                    }
+                }
+            }
+
+            if root.note != "": Text {
+                text: root.note;
+                font-size: 14px;
+                color: Theme.fg-a3;
+                wrap: word-wrap;
+            }
+
+            Flickable {
+                vertical-stretch: 1;
+                VerticalLayout {
+                    alignment: start;
+                    spacing: 4px;
+                    // OpenSubtitles: tick the results to download.
+                    if root.online: VerticalLayout {
+                        spacing: 4px;
+                        for found[i] in root.results: Rectangle {
+                            height: 48px;
+                            border-radius: 6px;
+                            background: found.chosen ? Theme.bg-accent-bright : found-touch.has-hover ? Theme.bg-a2 : transparent;
+                            HorizontalLayout {
+                                padding-left: 14px;
+                                padding-right: 14px;
+                                spacing: 12px;
+                                Rectangle {
+                                    width: 18px;
+                                    height: 18px;
+                                    y: (parent.height - self.height) / 2;
+                                    border-radius: 4px;
+                                    border-width: 2px;
+                                    border-color: found.chosen ? Theme.accent-main : Theme.fg-a3;
+                                    background: found.chosen ? Theme.accent-main : transparent;
+                                    if found.chosen: Icon { icon: Icons.check-selected; size: 16px; color: Theme.fg-b1; }
+                                }
+                                VerticalLayout {
+                                    horizontal-stretch: 1;
+                                    alignment: center;
+                                    Text {
+                                        text: found.name;
+                                        font-size: 14px;
+                                        color: found.chosen ? Theme.accent-main : Theme.fg-a1;
+                                        overflow: elide;
+                                    }
+                                    Text { text: found.detail; font-size: 12px; color: Theme.fg-a3; overflow: elide; }
+                                }
+                            }
+                            found-touch := TouchArea { clicked => { root.toggle-result(i); } }
+                        }
+                    }
+                    // A file: tick the subtitle files to add.
+                    if !root.online && !root.folder-mode: VerticalLayout {
+                        spacing: 4px;
+                        for file[i] in root.files: Rectangle {
+                            height: 36px;
+                            border-radius: 6px;
+                            background: file.chosen ? Theme.bg-accent-bright : row.has-hover ? Theme.bg-a2 : transparent;
+                            HorizontalLayout {
+                                padding-left: 14px;
+                                padding-right: 14px;
+                                spacing: 12px;
+                                Rectangle {
+                                    width: 18px;
+                                    height: 18px;
+                                    y: (parent.height - self.height) / 2;
+                                    border-radius: 4px;
+                                    border-width: 2px;
+                                    border-color: file.chosen ? Theme.accent-main : Theme.fg-a3;
+                                    background: file.chosen ? Theme.accent-main : transparent;
+                                    if file.chosen: Icon { icon: Icons.check-selected; size: 16px; color: Theme.fg-b1; }
+                                }
+                                Text {
+                                    horizontal-stretch: 1;
+                                    text: file.name;
+                                    font-size: 14px;
+                                    color: file.chosen ? Theme.accent-main : Theme.fg-a1;
+                                    vertical-alignment: center;
+                                    overflow: elide;
+                                }
+                            }
+                            row := TouchArea { clicked => { root.toggle(i); } }
+                        }
+                    }
+                    // A folder: each video and its subtitle.
+                    if !root.online && root.folder-mode: VerticalLayout {
+                        spacing: 4px;
+                        for pair[i] in root.pairs: HorizontalLayout {
+                            height: 40px;
+                            spacing: 20px;
+                            Text {
+                                width: 479px;
+                                text: pair.video;
+                                font-size: 14px;
+                                color: Theme.fg-a1;
+                                vertical-alignment: center;
+                                overflow: elide;
+                            }
+                            Dropdown {
+                                horizontal-stretch: 1;
+                                height: 36px;
+                                y: 2px;
+                                options: pair.options;
+                                selected: pair.selected;
+                                chosen(o) => { root.pick(i, o); }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        HorizontalLayout {
+            padding: 20px;
+            Button { text: "Cancel"; clicked => { root.cancel(); } }
+            Rectangle { horizontal-stretch: 1; }
+            Button {
+                text: root.busy ? "Working…" : root.online ? "Download" : "Save";
+                primary: true;
+                clicked => {
+                    if !root.busy { root.save(); }
+                }
+            }
+        }
+    }
+}

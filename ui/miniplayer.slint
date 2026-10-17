@@ -1,0 +1,222 @@
+// The miniplayer (Figma `Miniplayer`, 391 × 339): playback while the full
+// library is open. BG/A3, radius 14, padding 8, gap 20: the video (375 ×
+// 211, radius 6, a 2 px BG/B2 edge; hovering darkens it 60 % and shows
+// −10 s, play/pause and +10 s in the middle, back-to-player and stop at the
+// top right), the seek bar (16 high, BG/B2, radius 6, the BG/Accent Bright
+// fill and an accent thumb on hover), then the title (Inter 16 FG/A1) and
+// the folder. It sits in a bottom corner; drag it to the other one, or up
+// to go back to the player.
+
+import { Theme } from "theme.slint";
+import { Icon } from "icon.slint";
+import { Icons, IconLayers } from "icons.slint";
+
+component OverlayButton inherits Rectangle {
+    in property <IconLayers> icon;
+    in property <length> size: 43px;
+    callback clicked();
+
+    width: root.size + 11px;
+    height: root.size + 7px;
+    border-radius: 7px;
+    background: touch.has-hover ? #ffffff1f : transparent;
+    Icon { icon: root.icon; size: root.size; color: Theme.fg-1; }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+export component MiniPlayer inherits Rectangle {
+    in property <image> frame;
+    in property <bool> has-video;
+    in property <image> cover;
+    in property <string> title;
+    in property <string> folder;
+    in property <bool> playing;
+    in property <bool> seekable;
+    in property <float> position;
+    // The window's width, for which corner a drop lands in.
+    in property <length> area-width;
+    // How far it is being dragged from its corner.
+    out property <length> drag-x;
+    out property <length> drag-y;
+    out property <bool> dragging: grab.pressed;
+    callback toggle-play();
+    callback jump(float);
+    callback seek(float, bool);
+    callback expand();
+    callback stop();
+    callback reveal-folder();
+    // Dropped: true for the left corner.
+    callback dropped(bool);
+
+    // A drag ended: far enough up goes back to the player, else to the
+    // nearer bottom corner.
+    function released() {
+        let up = root.drag-y < -150px;
+        let left = root.x + root.width / 2 < root.area-width / 2;
+        root.drag-x = 0;
+        root.drag-y = 0;
+        if up {
+            root.expand();
+        } else {
+            root.dropped(left);
+        }
+    }
+
+    width: 391px;
+    height: 339px;
+    border-radius: 14px;
+    background: Theme.bg-a3;
+    drop-shadow-offset-y: 8px;
+    drop-shadow-blur: 24px;
+    drop-shadow-color: Theme.shadow;
+
+    // Dragging anywhere that isn't a button moves it.
+    grab := TouchArea {
+        mouse-cursor: self.pressed ? MouseCursor.grabbing : MouseCursor.default;
+        moved => {
+            root.drag-x += self.mouse-x - self.pressed-x;
+            root.drag-y += self.mouse-y - self.pressed-y;
+        }
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.up && event.button == PointerEventButton.left {
+                root.released();
+            }
+        }
+        double-clicked => { root.expand(); }
+    }
+
+    VerticalLayout {
+        padding: 8px;
+        spacing: 20px;
+
+        VerticalLayout {
+            spacing: 4px;
+            screen := Rectangle {
+                height: 211px;
+                border-radius: 6px;
+                border-width: 2px;
+                border-color: Theme.bg-b2;
+                clip: true;
+                background: Theme.video-bg;
+                if root.has-video: Image {
+                    source: root.frame;
+                    width: parent.width;
+                    height: parent.height;
+                    image-fit: contain;
+                }
+                if !root.has-video && root.cover.width > 0: Image {
+                    source: root.cover;
+                    width: parent.width;
+                    height: parent.height;
+                    image-fit: ImageFit.cover;
+                }
+                if !root.has-video && root.cover.width == 0: Icon { icon: Icons.music; size: 48px; color: Theme.fg-a4; }
+
+                hover := TouchArea {
+                    clicked => { root.toggle-play(); }
+                    double-clicked => { root.expand(); }
+                    moved => {
+                        root.drag-x += self.mouse-x - self.pressed-x;
+                        root.drag-y += self.mouse-y - self.pressed-y;
+                    }
+                    pointer-event(event) => {
+                        if event.kind == PointerEventKind.up && (abs(root.drag-x) > 4px || abs(root.drag-y) > 4px) {
+                            root.released();
+                        }
+                    }
+                }
+                if hover.has-hover && !hover.pressed: Rectangle {
+                    background: #00000099;
+                    HorizontalLayout {
+                        alignment: center;
+                        spacing: 18px;
+                        OverlayButton { y: (parent.height - self.height) / 2; icon: Icons.backward-10-sec; clicked => { root.jump(-10); } }
+                        OverlayButton { y: (parent.height - self.height) / 2; icon: root.playing ? Icons.pause : Icons.play; clicked => { root.toggle-play(); } }
+                        OverlayButton { y: (parent.height - self.height) / 2; icon: Icons.forward-10-sec; clicked => { root.jump(10); } }
+                    }
+                    HorizontalLayout {
+                        x: parent.width - self.width - 8px;
+                        y: 8px;
+                        height: 30px;
+                        spacing: 4px;
+                        OverlayButton { size: 24px; icon: Icons.maximize; clicked => { root.expand(); } }
+                        OverlayButton { size: 24px; icon: Icons.close; clicked => { root.stop(); } }
+                    }
+                }
+            }
+            // The seek bar.
+            Rectangle {
+                height: 16px;
+                border-radius: 6px;
+                background: Theme.bg-b2;
+                property <float> shown: seek.pressed ? clamp(seek.mouse-x / self.width, 0, 1) : clamp(root.position, 0, 1);
+                Rectangle {
+                    x: 2px;
+                    y: 2px;
+                    width: max(8px, (parent.width - 4px) * parent.shown);
+                    height: 12px;
+                    border-radius: 4px;
+                    background: Theme.bg-accent-bright;
+                }
+                if seek.has-hover || seek.pressed: Rectangle {
+                    x: 2px + max(0px, (parent.width - 4px) * parent.shown - 8px);
+                    y: 2px;
+                    width: 8px;
+                    height: 12px;
+                    border-radius: 4px;
+                    background: Theme.accent-main;
+                }
+                seek := TouchArea {
+                    enabled: root.seekable;
+                    moved => { root.seek(clamp(self.mouse-x / self.width, 0, 1), true); }
+                    pointer-event(event) => {
+                        if event.kind == PointerEventKind.up && event.button == PointerEventButton.left {
+                            root.seek(clamp(self.mouse-x / self.width, 0, 1), false);
+                        }
+                    }
+                }
+            }
+        }
+
+        VerticalLayout {
+            padding-top: 4px;
+            padding-bottom: 4px;
+            padding-left: 8px;
+            padding-right: 8px;
+            spacing: 14px;
+            Text {
+                text: root.title;
+                font-size: 16px;
+                color: Theme.fg-a1;
+                overflow: elide;
+            }
+            HorizontalLayout {
+                height: 32px;
+                spacing: 20px;
+                Rectangle {
+                    horizontal-stretch: 1;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        alignment: start;
+                        if root.folder != "": Icon { icon: Icons.folder; y: (parent.height - self.height) / 2; }
+                        Text {
+                            text: root.folder;
+                            font-size: 16px;
+                            color: crumb.has-hover ? Theme.fg-1 : Theme.fg-a1;
+                            vertical-alignment: center;
+                            overflow: elide;
+                        }
+                    }
+                    crumb := TouchArea { clicked => { root.reveal-folder(); } }
+                }
+                Rectangle {
+                    width: 30px;
+                    border-radius: 4px;
+                    background: back.has-hover ? Theme.bg-a1 : transparent;
+                    Icon { icon: Icons.maximize; }
+                    back := TouchArea { clicked => { root.expand(); } }
+                }
+            }
+        }
+    }
+}

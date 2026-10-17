@@ -1,0 +1,462 @@
+// The Settings window (Figma `Settings - …`, 1048 × 865, radius 14, BG/B1
+// at 95 %): a 50 px BG/B2 header (search 200 × 34 on BG/A5, the page title,
+// close), a 216 px navigation column (a BG/A4 card, padding 6, gap 8: group
+// names in FG/A3 and 188 × 40 page entries, the chosen one on BG/A1 in FG/1),
+// and the page (padding 20/24): sections of rows, a 16 px FG/2 title over
+// 42 px rows of an FG/A2 label with an info icon and a 320 px control on the
+// right; Advanced Options (a 38 px BG/A4 bar) opens the rest. Rust builds
+// the rows (src/preferences.rs).
+
+import { Theme, Appearance } from "theme.slint";
+import { Icon } from "icon.slint";
+import { Icons, IconLayers } from "icons.slint";
+import { Toggle, Dropdown, ValueField, RangeSlider, Segmented } from "settings.slint";
+import { ColorPicker } from "pickers.slint";
+
+export enum SettingKind { toggle, choice, segmented, slider, text, button, accents, note }
+
+export struct SettingItem {
+    id: string,
+    kind: SettingKind,
+    label: string,
+    // Shown under the label when its info icon is clicked.
+    info: string,
+    on: bool,
+    options: [string],
+    selected: int,
+    // A text field's text, a button's label, a slider's value.
+    value: string,
+    position: float,
+    // Under a slider.
+    labels: [string],
+    disabled: bool,
+    // A text field that hides what is typed (a key, a password).
+    secret: bool,
+}
+
+export struct SettingGroup {
+    title: string,
+    // Under Advanced Options.
+    advanced: bool,
+    items: [SettingItem],
+}
+
+component NavEntry inherits Rectangle {
+    in property <IconLayers> icon;
+    in property <string> text;
+    in property <bool> chosen;
+    callback clicked();
+
+    height: 40px;
+    border-radius: 2px;
+    background: root.chosen ? Theme.bg-a1 : touch.has-hover ? Theme.bg-a2 : transparent;
+    HorizontalLayout {
+        padding: 4px;
+        spacing: 8px;
+        Icon { icon: root.icon; y: (parent.height - self.height) / 2; }
+        Text {
+            text: root.text;
+            font-size: 14px;
+            color: root.chosen ? Theme.fg-1 : Theme.fg-a2;
+            vertical-alignment: center;
+        }
+    }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+component GroupName inherits Text {
+    height: 33px;
+    font-size: 14px;
+    color: Theme.fg-a3;
+    vertical-alignment: center;
+    x: 10px;
+}
+
+component SmallButton inherits Rectangle {
+    in property <string> text;
+    in property <bool> enabled: true;
+    callback clicked();
+
+    width: max(76px, label.preferred-width + 24px);
+    height: 32px;
+    border-radius: 6px;
+    background: touch.has-hover && root.enabled ? Theme.bg-a1 : Theme.bg-a3;
+    opacity: root.enabled ? 1 : 0.4;
+    label := Text { text: root.text; font-size: 14px; color: Theme.fg-a2; }
+    touch := TouchArea { enabled: root.enabled; clicked => { root.clicked(); } }
+}
+
+// The accents as in the Figma `Values` bar: nine 20 px swatches in a 320 ×
+// 36 BG/B2 bar, the chosen one on BG/Accent Bright; then any color.
+component AccentBar inherits Rectangle {
+    in property <bool> enabled: true;
+
+    width: 320px;
+    height: 36px;
+    border-radius: 6px;
+    background: Theme.bg-b2;
+    opacity: root.enabled ? 1 : 0.4;
+    HorizontalLayout {
+        padding: 2px;
+        spacing: 0;
+        for swatch in Appearance.accents: Rectangle {
+            border-radius: 4px;
+            background: Appearance.accent == swatch && !Appearance.custom-accent ? Theme.bg-accent-bright : touch.has-hover && root.enabled ? Theme.bg-a2 : transparent;
+            Rectangle { width: 20px; height: 20px; border-radius: 1px; background: swatch; }
+            touch := TouchArea { enabled: root.enabled; clicked => { Appearance.set-accent(swatch); } }
+        }
+        Rectangle {
+            border-radius: 4px;
+            background: Appearance.custom-accent ? Theme.bg-accent-bright : custom.has-hover && root.enabled ? Theme.bg-a2 : transparent;
+            if Appearance.custom-accent: Rectangle { width: 20px; height: 20px; border-radius: 1px; background: Appearance.accent; }
+            if !Appearance.custom-accent: Text { text: "+"; font-size: 18px; color: Theme.fg-a2; }
+            custom := TouchArea { enabled: root.enabled; clicked => { picker.show(); } }
+            picker := PopupWindow {
+                x: parent.width - 300px;
+                y: parent.height + 4px;
+                width: 300px;
+                height: 380px;
+                close-policy: close-on-click-outside;
+                ColorPicker {
+                    initial: Appearance.accent;
+                    chosen(c) => {
+                        Appearance.set-accent(c.with-alpha(1));
+                        picker.close();
+                    }
+                    cancel => { picker.close(); }
+                }
+            }
+        }
+    }
+}
+
+// One setting: the label (with its info icon, which shows the explanation
+// under it), and its control on the right.
+component Row inherits VerticalLayout {
+    in property <SettingItem> item;
+    callback toggled(bool);
+    callback chosen(int);
+    callback slid(float, bool);
+    callback typed(string);
+    callback pressed();
+
+    property <bool> explained;
+    property <bool> wide: root.item.kind == SettingKind.slider || root.item.kind == SettingKind.note;
+
+    padding-top: 5px;
+    padding-bottom: 5px;
+    spacing: 6px;
+    opacity: root.item.disabled ? 0.45 : 1;
+
+    HorizontalLayout {
+        spacing: 10px;
+        min-height: 32px;
+        // Label and info.
+        HorizontalLayout {
+            horizontal-stretch: 1;
+            spacing: 10px;
+            alignment: start;
+            Text {
+                text: root.item.label;
+                font-size: 14px;
+                color: root.item.kind == SettingKind.note ? Theme.fg-a3 : Theme.fg-a2;
+                vertical-alignment: center;
+                wrap: word-wrap;
+                max-width: root.item.kind == SettingKind.note ? 560px : 400px;
+            }
+            if root.item.info != "": Rectangle {
+                width: 18px;
+                Icon {
+                    icon: Icons.info;
+                    size: 18px;
+                    color: root.explained ? Theme.accent-main : info-touch.has-hover ? Theme.fg-a1 : Theme.fg-a3;
+                }
+                info-touch := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => { root.explained = !root.explained; }
+                }
+            }
+        }
+        // The control.
+        if root.item.kind == SettingKind.toggle: VerticalLayout {
+            alignment: center;
+            Toggle {
+                on: root.item.on;
+                enabled: !root.item.disabled;
+                toggled(on) => { root.toggled(on); }
+            }
+        }
+        if root.item.kind == SettingKind.choice: Dropdown {
+            width: 320px;
+            height: 36px;
+            options: root.item.options;
+            selected: root.item.selected;
+            enabled: !root.item.disabled;
+            chosen(i) => { root.chosen(i); }
+        }
+        if root.item.kind == SettingKind.segmented: Segmented {
+            width: 320px;
+            height: 36px;
+            options: root.item.options;
+            selected: root.item.selected;
+            chosen(i) => {
+                if !root.item.disabled { root.chosen(i); }
+            }
+        }
+        if root.item.kind == SettingKind.text: ValueField {
+            width: 320px;
+            secret: root.item.secret;
+            text: root.item.value;
+            enabled: !root.item.disabled;
+            edited(t) => { root.typed(t); }
+        }
+        if root.item.kind == SettingKind.button || (root.item.kind == SettingKind.note && root.item.value != ""): VerticalLayout {
+            alignment: center;
+            SmallButton {
+                text: root.item.value;
+                enabled: !root.item.disabled;
+                clicked => { root.pressed(); }
+            }
+        }
+        if root.item.kind == SettingKind.accents: AccentBar { enabled: !root.item.disabled; }
+        if root.item.kind == SettingKind.slider: Text {
+            text: root.item.value;
+            font-size: 14px;
+            color: Theme.fg-a3;
+            vertical-alignment: center;
+        }
+    }
+    if root.item.kind == SettingKind.slider: HorizontalLayout {
+        alignment: end;
+        RangeSlider {
+            width: 320px;
+            value: root.item.position;
+            labels: root.item.labels;
+            ticks: root.item.labels.length;
+            enabled: !root.item.disabled;
+            moved(at, done) => { root.slid(at, done); }
+        }
+    }
+    if root.explained: Text {
+        text: root.item.info;
+        font-size: 12px;
+        color: Theme.fg-a3;
+        wrap: word-wrap;
+    }
+}
+
+export component PreferencesDialog inherits Rectangle {
+    // The page: 0 General, 1 Interface, 2 Privacy, 3 Controls, 4 Playback,
+    // 5 Video, 6 Audio, 7 Subtitles, 8 Library, 9 Network, 10 Performance,
+    // 11 Recording, 12 Extensions.
+    in property <int> page;
+    in property <string> title;
+    in property <[SettingGroup]> groups;
+    // Search results are shown (all of them, advanced or not).
+    in property <bool> searching;
+    callback show-page(int);
+    callback search(string);
+    callback close();
+    callback toggled(string, bool);
+    callback chosen(string, int);
+    callback slid(string, float, bool);
+    callback typed(string, string);
+    callback pressed(string);
+
+    property <bool> advanced;
+    changed page => {
+        root.advanced = false;
+        content.content-y = 0;
+    }
+
+    width: 1048px;
+    height: 865px;
+    border-radius: 14px;
+    clip: true;
+    background: Theme.bg-b1-glass;
+
+    init => { keys.focus(); }
+    keys := FocusScope {
+        key-pressed(event) => {
+            if event.text == Key.Escape { root.close(); return accept; }
+            accept
+        }
+    }
+    TouchArea { }
+
+    VerticalLayout {
+        // Header.
+        Rectangle {
+            height: 50px;
+            background: Theme.bg-b2;
+            HorizontalLayout {
+                padding-left: 8px;
+                padding-right: 14px;
+                spacing: 32px;
+                Rectangle {
+                    y: 8px;
+                    width: 200px;
+                    height: 34px;
+                    border-radius: 6px;
+                    background: Theme.bg-a5;
+                    HorizontalLayout {
+                        padding-left: 8px;
+                        padding-right: 8px;
+                        spacing: 10px;
+                        Icon { icon: Icons.search; color: Theme.fg-a3; y: (parent.height - self.height) / 2; }
+                        Rectangle {
+                            horizontal-stretch: 1;
+                            query := TextInput {
+                                font-size: 14px;
+                                color: Theme.fg-1;
+                                vertical-alignment: center;
+                                selection-background-color: Theme.bg-accent-bright;
+                                selection-foreground-color: Theme.fg-1;
+                                edited => { root.search(self.text); }
+                                key-pressed(event) => {
+                                    if event.text == Key.Escape {
+                                        if self.text == "" { root.close(); return accept; }
+                                        self.text = "";
+                                        root.search("");
+                                        return accept;
+                                    }
+                                    reject
+                                }
+                            }
+                            if query.text == "": Text { x: 0; text: "Search"; font-size: 14px; color: Theme.fg-a4; vertical-alignment: center; }
+                        }
+                    }
+                }
+                Text {
+                    horizontal-stretch: 1;
+                    text: root.title;
+                    font-size: 16px;
+                    color: Theme.fg-a1;
+                    vertical-alignment: center;
+                    overflow: elide;
+                }
+                Rectangle {
+                    y: 9px;
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 4px;
+                    background: close-touch.has-hover ? Theme.bg-a1 : transparent;
+                    Icon { icon: Icons.close; }
+                    close-touch := TouchArea { clicked => { root.close(); } }
+                }
+            }
+        }
+
+        HorizontalLayout {
+            // Navigation.
+            Rectangle {
+                width: 216px;
+                VerticalLayout {
+                    padding: 8px;
+                    Rectangle {
+                        border-radius: 6px;
+                        background: Theme.bg-a4;
+                        Flickable {
+                            VerticalLayout {
+                                padding: 6px;
+                                spacing: 8px;
+                                alignment: start;
+                                GroupName { text: "App"; }
+                                NavEntry { text: "General"; icon: root.page == 0 ? Icons.preferences-active : Icons.preferences; chosen: root.page == 0 && !root.searching; clicked => { root.show-page(0); } }
+                                NavEntry { text: "Interface"; icon: root.page == 1 ? Icons.interface-active : Icons.interface; chosen: root.page == 1 && !root.searching; clicked => { root.show-page(1); } }
+                                NavEntry { text: "Privacy"; icon: root.page == 2 ? Icons.privacy-active : Icons.privacy; chosen: root.page == 2 && !root.searching; clicked => { root.show-page(2); } }
+                                NavEntry { text: "Controls"; icon: root.page == 3 ? Icons.hotkeys-active : Icons.hotkeys; chosen: root.page == 3 && !root.searching; clicked => { root.show-page(3); } }
+                                GroupName { text: "Media"; }
+                                NavEntry { text: "Playback"; icon: root.page == 4 ? Icons.playback-settings-active : Icons.playback-settings; chosen: root.page == 4 && !root.searching; clicked => { root.show-page(4); } }
+                                NavEntry { text: "Video"; icon: root.page == 5 ? Icons.video-active : Icons.video; chosen: root.page == 5 && !root.searching; clicked => { root.show-page(5); } }
+                                NavEntry { text: "Audio"; icon: root.page == 6 ? Icons.audio-active : Icons.audio; chosen: root.page == 6 && !root.searching; clicked => { root.show-page(6); } }
+                                NavEntry { text: "Subtitles"; icon: root.page == 7 ? Icons.subtitles-active : Icons.subtitles; chosen: root.page == 7 && !root.searching; clicked => { root.show-page(7); } }
+                                NavEntry { text: "Library"; icon: root.page == 8 ? Icons.folder-active : Icons.folder; chosen: root.page == 8 && !root.searching; clicked => { root.show-page(8); } }
+                                GroupName { text: "System"; }
+                                NavEntry { text: "Network"; icon: root.page == 9 ? Icons.streaming-active : Icons.streaming; chosen: root.page == 9 && !root.searching; clicked => { root.show-page(9); } }
+                                NavEntry { text: "Performance"; icon: root.page == 10 ? Icons.speed-active : Icons.speed; chosen: root.page == 10 && !root.searching; clicked => { root.show-page(10); } }
+                                NavEntry { text: "Recording"; icon: root.page == 11 ? Icons.record-active : Icons.record; chosen: root.page == 11 && !root.searching; clicked => { root.show-page(11); } }
+                                NavEntry { text: "Extensions"; icon: root.page == 12 ? Icons.plugins-active : Icons.plugins; chosen: root.page == 12 && !root.searching; clicked => { root.show-page(12); } }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // The page.
+            content := Flickable {
+                horizontal-stretch: 1;
+                VerticalLayout {
+                    padding-top: 20px;
+                    padding-bottom: 40px;
+                    padding-left: 24px;
+                    padding-right: 24px;
+                    spacing: 20px;
+                    alignment: start;
+                    if root.searching && root.groups.length == 0: Text {
+                        text: "No setting matches.";
+                        font-size: 14px;
+                        color: Theme.fg-a3;
+                    }
+                    // The page's sections (all matches while searching) …
+                    for group in root.groups: VerticalLayout {
+                        visible: !group.advanced || root.searching;
+                        // Hidden groups take no room.
+                        height: self.visible ? self.preferred-height : 0;
+                        if group.title != "": Text {
+                            height: 39px;
+                            text: group.title;
+                            font-size: 16px;
+                            color: Theme.fg-2;
+                            vertical-alignment: center;
+                        }
+                        for item in group.items: Row {
+                            item: item;
+                            toggled(on) => { root.toggled(item.id, on); }
+                            chosen(i) => { root.chosen(item.id, i); }
+                            slid(at, done) => { root.slid(item.id, at, done); }
+                            typed(t) => { root.typed(item.id, t); }
+                            pressed => { root.pressed(item.id); }
+                        }
+                    }
+                    // … Advanced Options, when the page has any …
+                    if !root.searching && root.has-advanced: Rectangle {
+                        height: 38px;
+                        border-radius: 2px;
+                        background: advanced-touch.has-hover ? Theme.bg-a2 : Theme.bg-a4;
+                        HorizontalLayout {
+                            alignment: center;
+                            spacing: 6px;
+                            Text { text: "Advanced Options"; font-size: 14px; color: Theme.fg-a2; vertical-alignment: center; }
+                            Icon { icon: root.advanced ? Icons.chevron-up : Icons.chevron-down; size: 20px; y: (parent.height - self.height) / 2; }
+                        }
+                        advanced-touch := TouchArea { clicked => { root.advanced = !root.advanced; } }
+                    }
+                    // … and what it opens.
+                    for group in root.groups: VerticalLayout {
+                        visible: group.advanced && root.advanced && !root.searching;
+                        height: self.visible ? self.preferred-height : 0;
+                        if group.title != "": Text {
+                            height: 39px;
+                            text: group.title;
+                            font-size: 16px;
+                            color: Theme.fg-2;
+                            vertical-alignment: center;
+                        }
+                        for item in group.items: Row {
+                            item: item;
+                            toggled(on) => { root.toggled(item.id, on); }
+                            chosen(i) => { root.chosen(item.id, i); }
+                            slid(at, done) => { root.slid(item.id, at, done); }
+                            typed(t) => { root.typed(item.id, t); }
+                            pressed => { root.pressed(item.id); }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Rust says whether the page has advanced groups.
+    in property <bool> has-advanced;
+}

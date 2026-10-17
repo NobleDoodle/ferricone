@@ -1,0 +1,97 @@
+---
+layout: default
+---
+<main>
+  <section class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow">Version {{ site.version }} · Linux</p>
+      <h1>Every format VLC plays.<br><em>A player you'll want to look at.</em></h1>
+      <p class="lede">Ferricone runs on VLC's own engine, libVLC&nbsp;4, with a new interface written in Rust and Slint:
+        a library beside the player, a subtitle timeline, and settings that remember a show.</p>
+      <div class="cta">
+        <a class="button primary" href="#download">Download for Linux</a>
+        <a class="button" href="https://github.com/{{ site.repository }}">View the source</a>
+      </div>
+    </div>
+    <img class="hero-shot" src="{{ '/assets/shots/dock.webp' | relative_url }}" alt="Ferricone playing a fractal video, with the library open beside it" width="1600" height="871">
+  </section>
+
+  <section id="features" class="features">
+    <h2>Made for watching, not configuring</h2>
+    <div class="grid">
+      <article>
+        <h3>A library beside the player</h3>
+        <p>Videos, music, network streams, playlists and recent items, in a dock or full window. Pick up where you left off from Home.</p>
+      </article>
+      <article>
+        <h3>Settings that stick to a show</h3>
+        <p>Fix a subtitle delay, a crop or an audio track once, save it to the folder, and every episode plays that way.</p>
+      </article>
+      <article>
+        <h3>Subtitles, lined up by eye</h3>
+        <p>A timeline under the seek bar shows each line. Drag to sync, match files to episodes by name, or search OpenSubtitles.</p>
+      </article>
+      <article>
+        <h3>The whole of VLC underneath</h3>
+        <p>Hardware decoding, every codec and container, network streams, chapters, tracks, filters and an equalizer, live.</p>
+      </article>
+      <article>
+        <h3>Cast and control</h3>
+        <p>Play on Chromecast and UPnP devices on your network. Media keys and MPRIS work from your desktop's controls.</p>
+      </article>
+      <article>
+        <h3>Your colors</h3>
+        <p>Light, dark or the system's choice, nine accents or any color, and your Omarchy theme's colors when you have it.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="shots">
+    <div class="tabs" role="tablist">
+      <button class="on" data-shot="player" role="tab" aria-selected="true">Player</button>
+      <button data-shot="videos" role="tab" aria-selected="false">Library</button>
+      <button data-shot="sidebar" role="tab" aria-selected="false">Sidebar</button>
+      <button data-shot="music" role="tab" aria-selected="false">Music</button>
+      <button data-shot="light" role="tab" aria-selected="false">Light</button>
+    </div>
+    <figure data-shot="player"><img loading="lazy" src="{{ '/assets/shots/player.webp' | relative_url }}" alt="The player with its title and control bars" width="1600" height="871"><figcaption>The bars step aside while you watch. Seek thumbnails, a waveform and chapters live in the seek bar.</figcaption></figure>
+    <figure data-shot="videos" hidden><img loading="lazy" src="{{ '/assets/shots/videos.webp' | relative_url }}" alt="The full library on Videos, as a grid" width="1600" height="871"><figcaption>The full library, with watched progress on every card and a miniplayer in the corner.</figcaption></figure>
+    <figure data-shot="sidebar" hidden><img loading="lazy" src="{{ '/assets/shots/sidebar.webp' | relative_url }}" alt="The settings sidebar on its Audio tab" width="1600" height="871"><figcaption>The sidebar changes playback live, and its footer saves a preset for the whole folder.</figcaption></figure>
+    <figure data-shot="music" hidden><img loading="lazy" src="{{ '/assets/shots/music.webp' | relative_url }}" alt="The music player with a blurred album cover" width="1600" height="871"><figcaption>Music gets its cover, blurred behind it, and a waveform to seek by.</figcaption></figure>
+    <figure data-shot="light" hidden><img loading="lazy" src="{{ '/assets/shots/light.webp' | relative_url }}" alt="The library in the light theme" width="1600" height="871"><figcaption>Light, dark or your system's choice, with any accent.</figcaption></figure>
+  </section>
+
+  <section id="download" class="download">
+    <h2>Download</h2>
+    <p class="note">One build for every x86-64 distribution from 2022 on (glibc 2.35 or newer), with libVLC&nbsp;4 inside.</p>
+    <div class="packages">
+      {% for p in site.data.packages %}
+      <div class="package">
+        <div class="pkg-head">
+          <div>
+            <h3>{{ p.system }}</h3>
+            <span class="kind">{{ p.kind }} · {{ p.size }}</span>
+          </div>
+          <a class="button primary small" href="{{ site.release }}/{{ p.file }}">Download</a>
+        </div>
+        <div class="cmd"><code>{{ p.install }}</code><button data-copy>Copy</button></div>
+      </div>
+      {% endfor %}
+      <div class="package chromeos">
+        <h3>ChromeOS</h3>
+        <p>Turn on the Linux development environment (Settings › About ChromeOS › Developers), then open the <code>.deb</code> from Files and choose <em>Install with Linux</em>.</p>
+      </div>
+    </div>
+    <p class="note">All files, checksums and notes are on the <a href="https://github.com/{{ site.repository }}/releases/latest">release page</a>.</p>
+  </section>
+
+  <section id="build" class="build">
+    <h2>Build it yourself</h2>
+    <p>Each package has its own script. They need only Podman or Docker; the rest happens in containers.</p>
+    <div class="cmd block"><code>git clone https://github.com/{{ site.repository }}
+cd ferricone
+packaging/build-deb.sh        # or build-rpm, build-pacman, build-appimage, build-tarball
+packaging/build.sh all        # all five, into dist/</code><button data-copy>Copy</button></div>
+    <p>For development, <code>scripts/build-libvlc.sh</code> builds the pinned libVLC&nbsp;4 with Ferricone's patches into <code>vendor/</code>, and <code>cargo run --release</code> does the rest.</p>
+  </section>
+</main>

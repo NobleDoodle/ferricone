@@ -1,0 +1,64 @@
+vout: restore the display format when filters no longer change it
+
+Adding a filter whose output chroma differs from the source (for example
+sepia on VA-API surfaces: VAOP -> I420 -> sepia) makes ChangeFilters()
+switch the display to that chroma with vout_SetDisplayFormat(). Removing
+the filter leaves the chains outputting the source format again, which
+ChangeFilters() treats as "no change", so the display keeps expecting I420
+while it receives VAOP surfaces. With libVLC's OpenGL output callbacks the
+picture freezes on the last filtered frame, although decoding and display
+counters keep running.
+
+When the chains' output matches the source but the display chroma differs,
+switch the display back (or, if it refuses, convert to what it expects).
+
+Carried by Ferricone Player on top of VLC a5538c55; written for upstream.
+
+diff --git i/src/video_output/video_output.c w/src/video_output/video_output.c
+index bde65e65ec..34c4cb70a2 100644
+--- i/src/video_output/video_output.c
++++ w/src/video_output/video_output.c
+@@ -1007,6 +1007,43 @@ static void ChangeFilters(vout_thread_sys_t *vout)
+             }
+         }
+     }
++    else if (sys->display->source->i_chroma != fmt_target.video.i_chroma)
++    {
++        /* An earlier chain switched the display to its output chroma (above).
++         * The chains now output the source format again, so switch back:
++         * otherwise the display keeps reading source pictures, such as
++         * hardware surfaces, as if they had the earlier chroma. */
++        int ret = VLC_EGENERIC;
++        picture_pool_t *new_private_pool =
++                picture_pool_NewFromFormat(&fmt_target.video, FILTER_POOL_SIZE);
++        if (new_private_pool != NULL)
++        {
++            msg_Dbg(&vout->obj, "Changing vout format back to %4.4s",
++                                (const char *) &fmt_target.video.i_chroma);
++            ret = vout_SetDisplayFormat(sys->display, &fmt_target.video,
++                                        vctx_target);
++            if (ret == VLC_SUCCESS)
++            {
++                picture_pool_Release(sys->private_pool);
++                sys->private_pool = new_private_pool;
++            }
++            else
++                picture_pool_Release(new_private_pool);
++        }
++
++        if (ret != VLC_SUCCESS)
++        {
++            /* Keep feeding the display the chroma it still expects. */
++            es_format_t fmt_display;
++            es_format_InitFromVideo(&fmt_display, sys->display->source);
++            msg_Dbg(&vout->obj, "Adding a filter to convert back to %4.4s",
++                                (const char *) &fmt_display.video.i_chroma);
++            if (filter_chain_AppendConverter(sys->filter.chain_interactive,
++                                             &fmt_display) != VLC_SUCCESS)
++                msg_Err(&vout->obj, "Failed to restore the display format");
++            es_format_Clean(&fmt_display);
++        }
++    }
+ 
+     es_format_Clean(&fmt_target);
+ 

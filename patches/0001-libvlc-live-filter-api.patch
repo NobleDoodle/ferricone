@@ -1,0 +1,284 @@
+libvlc: change filters and their options while playing
+
+libVLC 4 has no public way to enable a filter module on a running player:
+per-media options (":video-filter=…", ":audio-filter=…") never reach the
+player-owned outputs, which are reused across media. VLC's own interface
+does this through core APIs (var_SetString on the vout, aout_EnableFilter).
+
+Add two setters following libVLC's existing pattern (value on the player,
+so outputs created later inherit it, then on every running output):
+
+- libvlc_media_player_set_filter(): enable or disable a video, subpicture
+  or audio filter module by name.
+- libvlc_media_player_set_filter_option(): set a filter option, parsed by
+  its configured type.
+
+libvlc_media_player_set_equalizer() replaced the whole audio filter chain
+with "equalizer"; it now toggles only the equalizer, so other audio filters
+stay enabled.
+
+Carried by Ferricone Player on top of VLC a5538c55; written for upstream.
+
+diff --git i/include/vlc/libvlc_media_player.h w/include/vlc/libvlc_media_player.h
+index d766b2dc4f..89125bc1fa 100644
+--- i/include/vlc/libvlc_media_player.h
++++ w/include/vlc/libvlc_media_player.h
+@@ -3530,6 +3530,45 @@ LIBVLC_API float libvlc_audio_equalizer_get_amp_at_index( libvlc_equalizer_t *p_
+  */
+ LIBVLC_API int libvlc_media_player_set_equalizer( libvlc_media_player_t *p_mi, libvlc_equalizer_t *p_equalizer );
+ 
++/**
++ * Enable or disable a filter module while the player runs.
++ *
++ * Video filters, subpicture sources and filters, and audio filters are all
++ * accepted, as in the effects dialogs of VLC's own interface. Running
++ * outputs change immediately, and outputs created later start with the
++ * player's filter chain. Other enabled filters, including the equalizer,
++ * are kept.
++ *
++ * \param p_mi the media player
++ * \param psz_name the filter module, for example "sepia" or "compressor"
++ * \param b_enable true to add the filter, false to remove it
++ * \return 0 on success (also if the filter already was in that state),
++ *         -1 if no filter module has that name
++ * \version LibVLC 4.0.0 or later
++ */
++LIBVLC_API int libvlc_media_player_set_filter( libvlc_media_player_t *p_mi,
++                                               const char *psz_name,
++                                               bool b_enable );
++
++/**
++ * Set an option of a filter module, such as "sepia-intensity" or
++ * "compressor-ratio".
++ *
++ * The value is parsed according to the option's type: an integer, a float
++ * (with a '.' decimal separator), a boolean ("0", "1", "false", "true") or a
++ * string. Running filters pick the value up immediately where the module
++ * supports it, and filters enabled later start with it.
++ *
++ * \param p_mi the media player
++ * \param psz_option the option name, as in VLC's command line without "--"
++ * \param psz_value the new value
++ * \return 0 on success, -1 if the option is unknown or the value invalid
++ * \version LibVLC 4.0.0 or later
++ */
++LIBVLC_API int libvlc_media_player_set_filter_option( libvlc_media_player_t *p_mi,
++                                                      const char *psz_option,
++                                                      const char *psz_value );
++
+ /**
+  * Media player roles.
+  *
+diff --git i/lib/libvlc.sym w/lib/libvlc.sym
+index 61deecf766..c9426277f2 100644
+--- i/lib/libvlc.sym
++++ w/lib/libvlc.sym
+@@ -171,6 +171,8 @@ libvlc_media_player_signal
+ libvlc_media_player_set_android_context
+ libvlc_media_player_set_chapter
+ libvlc_media_player_set_equalizer
++libvlc_media_player_set_filter
++libvlc_media_player_set_filter_option
+ libvlc_media_player_set_hwnd
+ libvlc_media_player_set_media
+ libvlc_media_player_set_next_media
+diff --git i/lib/media_player.c w/lib/media_player.c
+index 2da32a6be8..b9d795269d 100644
+--- i/lib/media_player.c
++++ w/lib/media_player.c
+@@ -40,6 +40,9 @@
+ #include <vlc_subpicture.h>
+ #include <vlc_actions.h>
+ #include <vlc_modules.h>
++#include <vlc_charset.h>
++#include <vlc_configuration.h>
++#include <vlc_memstream.h>
+ 
+ #include "libvlc_internal.h"
+ #include "media_player_internal.h"
+@@ -2211,6 +2214,50 @@ int libvlc_media_player_add_slave( libvlc_media_player_t *p_mi,
+  */
+ #define EQZ_BAND_VALUE_SIZE 12
+ 
++/* Returns `chain` (a ':'-separated module list) with `name` added or removed,
++ * matching whole module names; NULL on allocation failure. */
++static char *filter_chain_toggle( const char *chain, const char *name, bool add )
++{
++    struct vlc_memstream ms;
++    const size_t name_len = strlen( name );
++    bool present = false;
++
++    vlc_memstream_open( &ms );
++    for( const char *p = chain ? chain : ""; *p != '\0'; )
++    {
++        size_t len = strcspn( p, ":" );
++        /* An entry may carry options: "module{key=value}" */
++        size_t module_len = strcspn( p, ":{" );
++        bool match = module_len == name_len && strncmp( p, name, name_len ) == 0;
++
++        present |= match;
++        if( len > 0 && !( match && !add ) )
++            vlc_memstream_printf( &ms, "%s%.*s", ms.length ? ":" : "",
++                                  (int)len, p );
++        p += len;
++        if( *p == ':' )
++            p++;
++    }
++    if( add && !present )
++        vlc_memstream_printf( &ms, "%s%s", ms.length ? ":" : "", name );
++    return vlc_memstream_close( &ms ) == 0 ? ms.ptr : NULL;
++}
++
++/* Adds or removes `name` in the player's `var` chain and returns the result. */
++static char *player_filter_toggle( libvlc_media_player_t *p_mi,
++                                   const char *var, const char *name, bool add )
++{
++    if( var_Type( p_mi, var ) == 0 )
++        var_Create( p_mi, var, VLC_VAR_STRING | VLC_VAR_DOINHERIT );
++
++    char *old = var_GetString( p_mi, var );
++    char *chain = filter_chain_toggle( old, name, add );
++    free( old );
++    if( chain != NULL )
++        var_SetString( p_mi, var, chain );
++    return chain;
++}
++
+ int libvlc_media_player_set_equalizer( libvlc_media_player_t *p_mi, libvlc_equalizer_t *p_equalizer )
+ {
+     char bands[EQZ_BANDS_MAX * EQZ_BAND_VALUE_SIZE + 1];
+@@ -2228,7 +2275,9 @@ int libvlc_media_player_set_equalizer( libvlc_media_player_t *p_mi, libvlc_equal
+         var_SetFloat( p_mi, "equalizer-preamp", p_equalizer->f_preamp );
+         var_SetString( p_mi, "equalizer-bands", bands );
+     }
+-    var_SetString( p_mi, "audio-filter", p_equalizer ? "equalizer" : "" );
++    /* Toggle only the equalizer: other audio filters stay enabled. */
++    free( player_filter_toggle( p_mi, "audio-filter", "equalizer",
++                                p_equalizer != NULL ) );
+ 
+     audio_output_t *p_aout = vlc_player_aout_Hold( p_mi->player );
+     if( p_aout != NULL )
+@@ -2239,13 +2288,122 @@ int libvlc_media_player_set_equalizer( libvlc_media_player_t *p_mi, libvlc_equal
+             var_SetString( p_aout, "equalizer-bands", bands );
+         }
+ 
+-        var_SetString( p_aout, "audio-filter", p_equalizer ? "equalizer" : "" );
++        aout_EnableFilter( p_aout, "equalizer", p_equalizer != NULL );
+         aout_Release(p_aout);
+     }
+ 
+     return 0;
+ }
+ 
++int libvlc_media_player_set_filter( libvlc_media_player_t *p_mi,
++                                    const char *psz_name, bool b_enable )
++{
++    module_t *module = module_find( psz_name );
++    const char *var;
++
++    if( module == NULL )
++        var = NULL;
++    else if( module_provides( module, "audio filter" ) )
++        var = "audio-filter";
++    else if( module_provides( module, "video filter" ) )
++        var = "video-filter";
++    else if( module_provides( module, "sub source" ) )
++        var = "sub-source";
++    else if( module_provides( module, "sub filter" ) )
++        var = "sub-filter";
++    else
++        var = NULL;
++    if( var == NULL )
++    {
++        libvlc_printerr( "No filter module named \"%s\"", psz_name );
++        return -1;
++    }
++
++    /* The player's chain is what outputs created later start with. */
++    char *chain = player_filter_toggle( p_mi, var, psz_name, b_enable );
++    if( chain == NULL )
++        return -1;
++
++    if( strcmp( var, "audio-filter" ) == 0 )
++        vlc_player_aout_EnableFilter( p_mi->player, psz_name, b_enable );
++    else
++    {
++        size_t count;
++        vout_thread_t **vouts = vlc_player_vout_HoldAll( p_mi->player, &count );
++        for( size_t i = 0; i < count; i++ )
++        {
++            var_SetString( vouts[i], var, chain );
++            vout_Release( vouts[i] );
++        }
++        free( vouts );
++    }
++    free( chain );
++    return 0;
++}
++
++int libvlc_media_player_set_filter_option( libvlc_media_player_t *p_mi,
++                                           const char *psz_option,
++                                           const char *psz_value )
++{
++    int type = config_GetType( psz_option );
++    vlc_value_t val;
++    char *end = NULL;
++
++    switch( type )
++    {
++        case VLC_VAR_BOOL:
++            if( !strcmp( psz_value, "1" ) || !strcasecmp( psz_value, "true" ) )
++                val.b_bool = true;
++            else if( !strcmp( psz_value, "0" ) || !strcasecmp( psz_value, "false" ) )
++                val.b_bool = false;
++            else
++                goto invalid;
++            break;
++        case VLC_VAR_INTEGER:
++            val.i_int = strtoll( psz_value, &end, 0 );
++            break;
++        case VLC_VAR_FLOAT:
++            val.f_float = vlc_strtof_c( psz_value, &end );
++            break;
++        case VLC_VAR_STRING:
++            val.psz_string = (char *)psz_value;
++            break;
++        default:
++            libvlc_printerr( "Unknown option \"%s\"", psz_option );
++            return -1;
++    }
++    if( end != NULL && ( end == psz_value || *end != '\0' ) )
++        goto invalid;
++
++    /* Filters created later inherit the value from the player. */
++    if( var_Type( p_mi, psz_option ) == 0 )
++        var_Create( p_mi, psz_option, type );
++    var_SetChecked( p_mi, psz_option, type, val );
++
++    /* Running filters listen on their output's variables. */
++    size_t count;
++    vout_thread_t **vouts = vlc_player_vout_HoldAll( p_mi->player, &count );
++    for( size_t i = 0; i < count; i++ )
++    {
++        if( var_Type( vouts[i], psz_option ) != 0 )
++            var_SetChecked( vouts[i], psz_option, type, val );
++        vout_Release( vouts[i] );
++    }
++    free( vouts );
++
++    audio_output_t *aout = vlc_player_aout_Hold( p_mi->player );
++    if( aout != NULL )
++    {
++        if( var_Type( aout, psz_option ) != 0 )
++            var_SetChecked( aout, psz_option, type, val );
++        aout_Release( aout );
++    }
++    return 0;
++
++invalid:
++    libvlc_printerr( "Invalid value \"%s\" for option \"%s\"", psz_value, psz_option );
++    return -1;
++}
+ 
+ static libvlc_player_program_t *
+ libvlc_player_program_new(const struct vlc_player_program *program)

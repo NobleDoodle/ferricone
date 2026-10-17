@@ -1,0 +1,1079 @@
+// The settings sidebar (⚙, plan §4), built to the Figma measurements of the
+// Controls variants `playback` `2238:9432`, `video settings` `498:2937`,
+// `audio settings` `536:1059` and `subtitle settings` `763:1958`: the panel
+// frame of the tracks panel with tabs Playback · Video · Audio · Subtitles,
+// a scrolling body of sections, and a pinned footer with the preset.
+import { Theme } from "theme.slint";
+import { Icon } from "icon.slint";
+import { Icons, IconLayers } from "icons.slint";
+import { Glass, VideoBox } from "glass.slint";
+import { ColorPicker, FontField, Palette, PickerDiag } from "pickers.slint";
+
+export enum SettingsTab { playback, video, audio, subtitles }
+
+// Toggle: 68 × 32, BG/B2, radius 6. Off: the FG/A4 knob left, "OFF" in a
+// BG/A4 box right. On: "ON" (Accent/Main) in a BG/Accent Bright box left,
+// the Accent/Dim knob right.
+export component Toggle inherits Rectangle {
+    in-out property <bool> on;
+    in property <bool> enabled: true;
+    callback toggled(bool);
+
+    width: 68px;
+    height: 32px;
+    border-radius: 6px;
+    background: Theme.bg-b2;
+    opacity: root.enabled ? 1 : 0.4;
+
+    Rectangle {
+        x: root.on ? 3px : 32px;
+        y: 3px;
+        width: 33px;
+        height: 26px;
+        border-radius: 3px;
+        background: root.on ? Theme.bg-accent-bright : Theme.bg-a4;
+        Text {
+            text: root.on ? "ON" : "OFF";
+            font-size: 12px;
+            color: root.on ? Theme.accent-main : Theme.fg-a3;
+        }
+    }
+    Rectangle {
+        x: root.on ? 39px : 3px;
+        y: 3px;
+        width: 26px;
+        height: 26px;
+        border-radius: 3px;
+        background: root.on ? Theme.accent-dim : Theme.fg-a4;
+        animate x { duration: 120ms; easing: ease-out; }
+    }
+    TouchArea {
+        enabled: root.enabled;
+        clicked => {
+            root.on = !root.on;
+            root.toggled(root.on);
+        }
+    }
+}
+
+// Dropdown: a BG/B2 shell (radius 6, padding 2) around a BG/A4 face
+// (radius 4, padding 2/14) with the choice in FG/A2 and a chevron. Open, the
+// options are 44 high on BG/A4, the chosen one BG/A2 with a check; `upward`
+// opens above (the footer's preset).
+export component Dropdown inherits Rectangle {
+    in property <[string]> options;
+    in property <int> selected;
+    in property <bool> upward;
+    in property <bool> enabled: true;
+    callback chosen(int);
+
+    height: 48px;
+    border-radius: 6px;
+    background: Theme.bg-b2;
+    opacity: root.enabled ? 1 : 0.4;
+
+    Rectangle {
+        x: 2px;
+        y: 2px;
+        width: parent.width - 4px;
+        height: parent.height - 4px;
+        border-radius: 4px;
+        background: face.has-hover && root.enabled ? Theme.bg-a2 : Theme.bg-a4;
+        HorizontalLayout {
+            padding-left: 14px;
+            padding-right: 10px;
+            Text {
+                text: root.options[root.selected];
+                font-size: 14px;
+                color: Theme.fg-a2;
+                vertical-alignment: center;
+                horizontal-stretch: 1;
+                overflow: elide;
+            }
+            Rectangle {
+                width: 24px;
+                Icon { icon: root.upward ? Icons.chevron-up : Icons.chevron-down; }
+            }
+        }
+        face := TouchArea {
+            enabled: root.enabled;
+            clicked => { list.show(); }
+        }
+    }
+
+    list := PopupWindow {
+        x: 0;
+        y: root.upward ? -self.height - 4px : root.height + 4px;
+        width: root.width;
+        height: root.options.length * 46px + 2px;
+
+        Rectangle {
+            border-radius: 6px;
+            background: Theme.bg-a4;
+            drop-shadow-offset-y: 8px;
+            drop-shadow-blur: 15px;
+            drop-shadow-color: Theme.shadow;
+            VerticalLayout {
+                padding: 2px;
+                spacing: 2px;
+                for option[i] in root.options: Rectangle {
+                    height: 44px;
+                    border-radius: 4px;
+                    background: i == root.selected || row.has-hover ? Theme.bg-a2 : transparent;
+                    HorizontalLayout {
+                        padding-left: 14px;
+                        padding-right: 10px;
+                        Text {
+                            text: option;
+                            font-size: 14px;
+                            color: Theme.fg-a2;
+                            vertical-alignment: center;
+                            horizontal-stretch: 1;
+                            overflow: elide;
+                        }
+                        if i == root.selected: Rectangle {
+                            width: 24px;
+                            Icon { icon: Icons.check; }
+                        }
+                    }
+                    row := TouchArea { clicked => { root.chosen(i); } }
+                }
+            }
+        }
+    }
+}
+
+// A value field: 140 × 36, BG/B2 with a 2 px BG/A4 edge, radius 6, the
+// value in FG/A2. Editable: Enter or leaving it hands the text over, and the
+// owner shows what it made of it.
+export component ValueField inherits Rectangle {
+    in property <string> text;
+    in property <bool> enabled: true;
+    // Shown as dots (keys, passwords).
+    in property <bool> secret;
+    callback edited(string);
+
+    width: 140px;
+    height: 36px;
+    border-radius: 6px;
+    border-width: 2px;
+    border-color: input.has-focus ? Theme.divider-bright : Theme.bg-a4;
+    background: Theme.bg-b2;
+    clip: true;
+    opacity: root.enabled ? 1 : 0.4;
+
+    input := TextInput {
+        x: 12px;
+        width: parent.width - 24px;
+        height: parent.height;
+        text: root.text;
+        enabled: root.enabled;
+        input-type: root.secret ? InputType.password : InputType.text;
+        vertical-alignment: center;
+        font-size: 14px;
+        color: Theme.fg-a2;
+        selection-background-color: Theme.bg-accent-bright;
+        selection-foreground-color: Theme.fg-1;
+        accepted => {
+            root.edited(self.text);
+            self.clear-focus();
+        }
+        changed has-focus => {
+            if !self.has-focus && self.text != root.text {
+                root.edited(self.text);
+            }
+        }
+    }
+
+    @children
+}
+
+// A color field: the value field with the color's 22 px swatch inside
+// (radius 2, a 1.5 px light edge), as in the Subtitles tab. Clicking the
+// swatch opens the color picker under it.
+export component ColorField inherits ValueField {
+    in property <color> swatch;
+    // Opens by itself for FERRICONE_OPEN_PANEL=color-picker.
+    in property <bool> diag-first;
+    Timer {
+        interval: 600ms;
+        running: root.diag-first && PickerDiag.open == "color-picker";
+        triggered => { self.running = false; picker.show(); }
+    }
+    Rectangle {
+        x: parent.width - 29px;
+        width: 22px;
+        height: 22px;
+        border-radius: 2px;
+        border-width: 1.5px;
+        border-color: swatch-touch.has-hover ? Theme.fg-a2 : Theme.divider-bright;
+        clip: true;
+        background: #cfcfcf;
+        Rectangle { x: 0; y: 0; width: 50%; height: 50%; background: #ffffff; }
+        Rectangle { x: parent.width / 2; y: parent.height / 2; width: 50%; height: 50%; background: #ffffff; }
+        Rectangle { background: root.swatch; }
+        swatch-touch := TouchArea {
+            mouse-cursor: pointer;
+            clicked => { picker.show(); }
+        }
+    }
+
+    picker := PopupWindow {
+        x: root.width - 300px;
+        y: root.height + 4px;
+        width: 300px;
+        height: 380px;
+        close-policy: close-on-click-outside;
+        ColorPicker {
+            initial: root.swatch;
+            chosen(c) => {
+                root.edited(Palette.hex(c));
+                picker.close();
+            }
+            cancel => { picker.close(); }
+        }
+    }
+}
+
+// A slider: a 16 high BG/B2 track (radius 6, padding 2), a BG/Accent Bright
+// fill (radius 4) and an 8 × 24 Accent/Dim thumb (radius 4); optional tick
+// marks (2 × 6, BG/Accent Dark) and labels (12, FG/A3) under it. `centered`
+// fills from the middle, for delays.
+export component RangeSlider {
+    // 0–1 along the track.
+    in property <float> value;
+    in property <bool> centered;
+    in property <int> ticks;
+    in property <[string]> labels;
+    in property <bool> enabled: true;
+    // While dragging (`done` false), and once on release (true).
+    callback moved(float, bool);
+
+    property <length> inner: self.width - 4px;
+    property <float> shown: touch.pressed ? clamp(touch.mouse-x / self.width, 0, 1) : clamp(root.value, 0, 1);
+    property <length> at: 2px + root.shown * (root.inner - 8px);
+
+    height: root.labels.length > 0 ? 45px : 24px;
+    opacity: root.enabled ? 1 : 0.4;
+
+    Rectangle {
+        y: 4px;
+        height: 16px;
+        border-radius: 6px;
+        background: Theme.bg-b2;
+
+        Rectangle {
+            property <length> middle: 2px + (root.inner - 8px) / 2;
+            x: root.centered ? min(root.at, self.middle) : 2px;
+            y: 2px;
+            width: root.centered ? abs(root.at - self.middle) + 8px : root.at + 8px - 2px;
+            height: 12px;
+            border-radius: 4px;
+            background: Theme.bg-accent-bright;
+        }
+
+        for i in root.ticks: Rectangle {
+            x: 2px + 3px + i * (root.inner - 8px) / max(1, root.ticks - 1);
+            y: 5px;
+            width: 2px;
+            height: 6px;
+            background: Theme.bg-accent-dark;
+        }
+    }
+
+    Rectangle {
+        x: root.at;
+        y: 0;
+        width: 8px;
+        height: 24px;
+        border-radius: 4px;
+        background: Theme.accent-dim;
+    }
+
+    for label[i] in root.labels: Text {
+        property <length> center: 2px + 4px + i * (root.inner - 8px) / max(1, root.labels.length - 1);
+        x: clamp(self.center - self.width / 2, 0, root.width - self.width);
+        y: 30px;
+        text: label;
+        font-size: 12px;
+        color: Theme.fg-a3;
+    }
+
+    touch := TouchArea {
+        enabled: root.enabled;
+        moved => {
+            if self.pressed {
+                root.moved(clamp(self.mouse-x / root.width, 0, 1), false);
+            }
+        }
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.up && event.button == PointerEventButton.left {
+                root.moved(clamp(self.mouse-x / root.width, 0, 1), true);
+            }
+        }
+    }
+}
+
+// What a filter card row holds.
+export enum RowKind {
+    slider,   // the value as text over a slider
+    field,    // an editable value over a slider
+    toggle,   // a switch
+    color,    // an editable #RRGGBB with a swatch
+}
+
+// One row of a filter card.
+export struct FilterRow {
+    kind: RowKind,
+    label: string,
+    value: string,     // as shown, with its unit; the color as #RRGGBB
+    position: float,   // 0–1 along the slider
+    centered: bool,    // fill from the middle (gains around 0 dB)
+    on: bool,          // a toggle's state
+    swatch: color,     // a color row's color
+}
+
+// Segmented choice (Figma `Values`): a BG/B2 shell, radius 6, padding 2, gap
+// 2; the chosen segment BG/Accent Bright with Accent/Main text, the others
+// BG/A4 with FG/A3, radius 4.
+export component Segmented inherits Rectangle {
+    in property <[string]> options;
+    in property <int> selected;
+    callback chosen(int);
+
+    height: 44px;
+    border-radius: 6px;
+    background: Theme.bg-b2;
+
+    HorizontalLayout {
+        padding: 2px;
+        spacing: 2px;
+        for option[i] in root.options: Rectangle {
+            border-radius: 4px;
+            background: i == root.selected ? Theme.bg-accent-bright : touch.has-hover ? Theme.bg-a2 : Theme.bg-a4;
+            Text {
+                text: option;
+                font-size: 14px;
+                color: i == root.selected ? Theme.accent-main : Theme.fg-a3;
+            }
+            touch := TouchArea { clicked => { root.chosen(i); } }
+        }
+    }
+}
+
+// A filter card (Figma `Audio - …` collapsed / expanded): collapsed 360 × 48,
+// BG/B2, radius 6, "Expand Settings ›" (FG/A3 14, padding 0/10/0/16);
+// expanded BG/A3 with "Collapse Settings" and the rows: the label and its
+// value (or a value field) over a 328 wide slider, padding 0/16/10/16.
+export component FilterCard inherits Rectangle {
+    in property <[FilterRow]> rows;
+    in-out property <bool> expanded;
+    callback moved(int, float, bool);
+    callback typed(int, string);
+    callback toggled(int, bool);
+
+    border-radius: 6px;
+    background: root.expanded ? Theme.bg-a3 : Theme.bg-b2;
+
+    VerticalLayout {
+        padding-bottom: root.expanded ? 10px : 0;
+        Rectangle {
+            height: 48px;
+            HorizontalLayout {
+                padding-left: 16px;
+                padding-right: 10px;
+                Text {
+                    text: root.expanded ? "Collapse Settings" : "Expand Settings";
+                    font-size: 14px;
+                    color: head.has-hover ? Theme.fg-a2 : Theme.fg-a3;
+                    vertical-alignment: center;
+                    horizontal-stretch: 1;
+                }
+                Rectangle {
+                    width: 24px;
+                    Icon { icon: root.expanded ? Icons.chevron-down : Icons.chevron-right; }
+                }
+            }
+            head := TouchArea { clicked => { root.expanded = !root.expanded; } }
+        }
+        if root.expanded: VerticalLayout {
+            for row[i] in root.rows: VerticalLayout {
+                padding-left: 16px;
+                padding-right: 16px;
+                padding-bottom: 10px;
+                spacing: 5px;
+                HorizontalLayout {
+                    padding-top: row.kind == RowKind.slider ? 10px : 0;
+                    padding-bottom: row.kind == RowKind.slider ? 10px : 0;
+                    spacing: 10px;
+                    Text {
+                        text: row.label;
+                        font-size: 14px;
+                        color: Theme.fg-a3;
+                        vertical-alignment: center;
+                        horizontal-stretch: 1;
+                    }
+                    if row.kind == RowKind.slider: Text {
+                        text: row.value;
+                        font-size: 14px;
+                        color: Theme.fg-a3;
+                        vertical-alignment: center;
+                    }
+                    if row.kind == RowKind.field || row.kind == RowKind.color: ValueField {
+                        text: row.value;
+                        edited(text) => { root.typed(i, text); }
+                        // The color's swatch inside the field: 22 px, radius 2.
+                        if row.kind == RowKind.color: Rectangle {
+                            x: parent.width - 29px;
+                            width: 22px;
+                            height: 22px;
+                            border-radius: 2px;
+                            border-width: 1.5px;
+                            border-color: Theme.divider-bright;
+                            background: row.swatch;
+                        }
+                    }
+                    if row.kind == RowKind.toggle: Toggle {
+                        on: row.on;
+                        toggled(on) => { root.toggled(i, on); }
+                    }
+                }
+                if row.kind == RowKind.slider || row.kind == RowKind.field: RangeSlider {
+                    value: row.position;
+                    centered: row.centered;
+                    moved(at, done) => { root.moved(i, at, done); }
+                }
+            }
+        }
+    }
+}
+
+// Section header: Inter Medium 16 FG/A1, padding 20/24/0/24.
+component SectionTitle {
+    in property <string> text;
+    VerticalLayout {
+        padding-top: 20px;
+        padding-left: 24px;
+        padding-right: 24px;
+        Text { text: root.text; font-size: 16px; font-weight: 500; color: Theme.fg-a1; }
+    }
+}
+
+// A row: the label (Inter 14 FG/A3) left, its control right; padding
+// 10/0/10/4 inside the section's 20 px sides.
+component SettingRow {
+    in property <string> label;
+    in property <string> note;
+    HorizontalLayout {
+        padding-top: 6px;
+        padding-bottom: 6px;
+        padding-left: 4px;
+        spacing: 10px;
+        VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 1;
+            Text { text: root.label; font-size: 14px; color: Theme.fg-a3; overflow: elide; }
+            if root.note != "": Text { text: root.note; font-size: 12px; color: Theme.fg-a4; wrap: word-wrap; }
+        }
+        @children
+    }
+}
+
+component Divider inherits Rectangle {
+    height: 1px;
+    background: Theme.divider-dim;
+}
+
+// A section's body: padding 10/20/20/20, rows 5 apart.
+component SectionBody inherits VerticalLayout {
+    padding-top: 10px;
+    padding-bottom: 20px;
+    padding-left: 20px;
+    padding-right: 20px;
+    spacing: 5px;
+}
+
+component Tab inherits TouchArea {
+    in property <IconLayers> icon;
+    in property <string> label;
+    in property <bool> active;
+
+    VerticalLayout {
+        padding-top: 14px;
+        padding-left: 8px;
+        padding-right: 8px;
+        spacing: 14px;
+        HorizontalLayout {
+            alignment: center;
+            spacing: 8px;
+            Icon { icon: root.icon; size: 20px; }
+            Text {
+                text: root.label;
+                font-size: 12px;
+                color: root.active || root.has-hover ? Theme.fg-a2 : Theme.fg-a3;
+                vertical-alignment: center;
+            }
+        }
+        Rectangle {
+            height: 2px;
+            background: root.active ? Theme.accent-main : transparent;
+        }
+    }
+}
+
+// The sidebar. Values come from the current preset (src/presets.rs); every
+// change goes back through a callback, and Rust sends the value it took.
+export component SettingsPanel inherits Rectangle {
+    in property <VideoBox> video;
+    in-out property <SettingsTab> tab;
+
+    // Playback
+    in property <float> speed: 1;
+    in property <[string]> sleep-options;
+    in property <int> sleep;
+    in property <bool> statistics;
+    in property <bool> timeline;
+    in property <bool> timeline-adjust;
+    // Audio
+    in property <[string]> stereo-options;
+    in property <int> stereo;
+    in property <float> audio-delay;      // seconds
+    in property <string> audio-delay-text;
+    in property <[string]> eq-presets;
+    in property <int> eq-preset;
+    in property <[FilterRow]> eq-rows;
+    in property <bool> two-pass;
+    in property <bool> compressor-on;
+    in property <[FilterRow]> compressor-rows;
+    in property <bool> spatializer-on;
+    in property <[FilterRow]> spatializer-rows;
+    in property <bool> widener-on;
+    in property <[FilterRow]> widener-rows;
+    in property <float> pitch;            // semitones
+    in property <string> pitch-text;
+    // Preferred tracks (as typed: "Auto", "Any" or values)
+    in property <string> audio-track-text;
+    in property <string> audio-language-text;
+    in property <string> subtitle-track-text;
+    in property <string> subtitle-language-text;
+    // Subtitle look
+    in property <string> sub-font-text;
+    in property <string> sub-color-text;
+    in property <color> sub-color;
+    in property <string> sub-outline-color-text;
+    in property <color> sub-outline-color;
+    in property <string> sub-offset-text;
+    in property <float> sub-scale;        // percent
+    in property <string> sub-scale-text;
+    in property <float> sub-outline;      // 0–3
+    in property <string> sub-outline-text;
+    in property <float> sub-background;   // 0–255
+    in property <string> sub-background-text;
+    // Subtitles
+    in property <float> subtitle-delay;   // seconds
+    in property <string> subtitle-delay-text;
+    // Video
+    in property <int> flip;
+    in property <string> rotate-text;
+    in property <[string]> zoom-options;
+    in property <int> zoom;
+    in property <[string]> ratio-options;
+    in property <int> aspect;
+    in property <int> crop;
+    in property <[FilterRow]> essential-rows;
+    in property <[FilterRow]> crop-rows;
+    in property <[FilterRow]> colors-rows;
+    // Footer
+    in property <[string]> presets;
+    in property <int> preset;
+
+    callback set-speed(float);
+    callback typed-speed(string);
+    callback set-sleep(int);
+    callback set-statistics(bool);
+    callback set-timeline(bool);
+    callback set-timeline-adjust(bool);
+    callback set-stereo(int);
+    callback set-audio-delay(float);
+    callback typed-audio-delay(string);
+    callback choose-eq(int);
+    callback eq-moved(int, float, bool);
+    callback eq-typed(int, string);
+    callback set-two-pass(bool);
+    // A filter ("compressor", "spatializer", "widener") on or off, or one of
+    // its rows moved.
+    callback set-filter(string, bool);
+    callback filter-moved(string, int, float, bool);
+    callback set-pitch(float);
+    // "audio-track", "audio-language", "subtitle-track", "subtitle-language"
+    callback typed-track(string, string);
+    // Play On (src/cast.rs): this device, then the devices found.
+    in property <[string]> render-options;
+    in property <int> render-selected;
+    in property <bool> render-searching;
+    callback render-choose(int);
+    // Add Subtitles for the item playing (a local file).
+    in property <bool> can-add-subtitles;
+    callback add-subtitles();
+    // "font", "color", "outline-color", "offset"
+    callback typed-subtitle-style(string, string);
+    // "scale" (percent), "outline" (0–3), "background" (0–255)
+    callback set-subtitle-level(string, float);
+    callback set-subtitle-delay(float);
+    callback typed-subtitle-delay(string);
+    callback choose-preset(int);
+    callback set-flip(int);
+    callback typed-rotate(string);
+    callback set-zoom(int);
+    callback set-aspect(int);
+    callback set-crop(int);
+    // A row of the Video tab's cards ("essential", "crop", "colors").
+    callback video-moved(string, int, float, bool);
+    callback video-typed(string, int, string);
+    callback video-toggled(string, int, bool);
+
+    // Speed runs 0.25–2 along the slider, with a tick at each quarter.
+    property <[string]> speed-labels: ["0.25", "0.5", "0.75", "1", "1.25", "1.5", "1.75", "2"];
+    property <[string]> delay-labels: ["-10 s", "0 s", "+10 s"];
+
+    width: 400px;
+    border-radius: 10px;
+    clip: true;
+
+    Glass {
+        video: root.video;
+        tint: Theme.bg-b1-glass;
+    }
+
+    TouchArea { }
+
+    VerticalLayout {
+        spacing: 1px;
+
+        // Tabs: Playback and Subtitles 107.5 wide, Video and Audio 85.
+        Rectangle {
+            height: 50px;
+            background: Theme.bg-b2;
+            HorizontalLayout {
+                padding-left: 6px;
+                padding-right: 6px;
+                spacing: 1px;
+                Tab { width: 107.5px; icon: Icons.playback; label: "Playback"; active: root.tab == SettingsTab.playback; clicked => { root.tab = SettingsTab.playback; } }
+                Tab { width: 85px; icon: Icons.video; label: "Video"; active: root.tab == SettingsTab.video; clicked => { root.tab = SettingsTab.video; } }
+                Tab { width: 85px; icon: Icons.audio; label: "Audio"; active: root.tab == SettingsTab.audio; clicked => { root.tab = SettingsTab.audio; } }
+                Tab { width: 107.5px; icon: Icons.subtitles; label: "Subtitles"; active: root.tab == SettingsTab.subtitles; clicked => { root.tab = SettingsTab.subtitles; } }
+            }
+        }
+
+        Flickable {
+            vertical-stretch: 1;
+            // One plain layout, so the Flickable sizes its content from it (it
+            // doesn't from the tabs' `if`s, which left nothing to scroll).
+            VerticalLayout {
+                alignment: start;
+
+                if root.tab == SettingsTab.playback: VerticalLayout {
+                    alignment: start;
+                    padding-top: 10px;
+                    SectionBody {
+                        padding-bottom: 0;
+                        SettingRow {
+                            label: "Show Subtitle Timeline on Seekbar";
+                            Toggle {
+                                on: root.timeline;
+                                toggled(on) => { root.set-timeline(on); }
+                            }
+                        }
+                        if root.timeline: SettingRow {
+                            label: "Adjust Subtitle Timing on Seekbar";
+                            note: "Zooms in; drag a line to shift the subtitles";
+                            Toggle {
+                                on: root.timeline-adjust;
+                                toggled(on) => { root.set-timeline-adjust(on); }
+                            }
+                        }
+                        SettingRow {
+                            label: "Show Statistics";
+                            Toggle {
+                                on: root.statistics;
+                                toggled(on) => { root.set-statistics(on); }
+                            }
+                        }
+                        SettingRow {
+                            label: "Sleep Timer";
+                            Dropdown {
+                                width: 220px;
+                                options: root.sleep-options;
+                                selected: root.sleep;
+                                chosen(i) => { root.set-sleep(i); }
+                            }
+                        }
+                    }
+                    SectionBody {
+                        SettingRow {
+                            label: "Speed";
+                            note: "[ and ] step it";
+                            ValueField {
+                                text: round(root.speed * 100) / 100 + "x";
+                                edited(text) => { root.typed-speed(text); }
+                            }
+                        }
+                        RangeSlider {
+                            value: (root.speed - 0.25) / 1.75;
+                            ticks: 8;
+                            labels: root.speed-labels;
+                            // Snap to quarters within 0.03, else to hundredths.
+                            moved(at, done) => {
+                                let raw = 0.25 + at * 1.75;
+                                let quarter = round(raw * 4) / 4;
+                                root.set-speed(abs(raw - quarter) < 0.03 ? quarter : round(raw * 100) / 100);
+                            }
+                        }
+                    }
+                }
+
+                if root.tab == SettingsTab.video: VerticalLayout {
+                    alignment: start;
+                    SectionTitle { text: "Play On"; }
+                    SectionBody {
+                        SettingRow {
+                            label: "Device";
+                            note: root.render-searching ? "Looking for devices on the network…" : "Chromecast and other devices found nearby";
+                            Dropdown {
+                                width: 200px;
+                                height: 36px;
+                                options: root.render-options;
+                                selected: root.render-selected;
+                                chosen(i) => { root.render-choose(i); }
+                            }
+                        }
+                    }
+                    Divider { }
+                    SectionTitle { text: "Defaults"; }
+                    SectionBody {
+                        spacing: 10px;
+                        SettingRow { label: "Flip"; }
+                        Segmented {
+                            options: ["None", "Horizontal", "Vertical"];
+                            selected: root.flip;
+                            chosen(i) => { root.set-flip(i); }
+                        }
+                        SettingRow {
+                            label: "Rotate";
+                            ValueField {
+                                text: root.rotate-text;
+                                edited(text) => { root.typed-rotate(text); }
+                            }
+                        }
+                        SettingRow {
+                            label: "Zoom";
+                            Dropdown { width: 220px; options: root.zoom-options; selected: root.zoom; chosen(i) => { root.set-zoom(i); } }
+                        }
+                        SettingRow {
+                            label: "Aspect Ratio";
+                            Dropdown { width: 220px; options: root.ratio-options; selected: root.aspect; chosen(i) => { root.set-aspect(i); } }
+                        }
+                        SettingRow {
+                            label: "Crop";
+                            Dropdown { width: 220px; options: root.ratio-options; selected: root.crop; chosen(i) => { root.set-crop(i); } }
+                        }
+                    }
+                    Divider { }
+                    SectionTitle { text: "Filters"; }
+                    SectionBody {
+                        spacing: 10px;
+                        Text {
+                            text: "Essential and Colors run on the processor, so very large video may stutter while they are on.";
+                            font-size: 12px;
+                            color: Theme.fg-a4;
+                            wrap: word-wrap;
+                        }
+                        SettingRow { label: "Essential"; }
+                        FilterCard {
+                            rows: root.essential-rows;
+                            moved(i, at, done) => { root.video-moved("essential", i, at, done); }
+                            typed(i, text) => { root.video-typed("essential", i, text); }
+                            toggled(i, on) => { root.video-toggled("essential", i, on); }
+                        }
+                    }
+                    Divider { }
+                    SectionBody {
+                        spacing: 10px;
+                        SettingRow { label: "Crop"; }
+                        FilterCard {
+                            rows: root.crop-rows;
+                            moved(i, at, done) => { root.video-moved("crop", i, at, done); }
+                            typed(i, text) => { root.video-typed("crop", i, text); }
+                        }
+                    }
+                    Divider { }
+                    SectionBody {
+                        spacing: 10px;
+                        SettingRow { label: "Colors"; }
+                        FilterCard {
+                            rows: root.colors-rows;
+                            moved(i, at, done) => { root.video-moved("colors", i, at, done); }
+                            typed(i, text) => { root.video-typed("colors", i, text); }
+                            toggled(i, on) => { root.video-toggled("colors", i, on); }
+                        }
+                    }
+                }
+
+                if root.tab == SettingsTab.audio: VerticalLayout {
+                    alignment: start;
+                    SectionTitle { text: "Defaults"; }
+                    SectionBody {
+                        SettingRow {
+                            label: "Audio Track";
+                            note: "For items opened next";
+                            ValueField { text: root.audio-track-text; edited(t) => { root.typed-track("audio-track", t); } }
+                        }
+                        SettingRow {
+                            label: "Audio Language";
+                            note: "A code or name, e.g. en, English";
+                            ValueField { text: root.audio-language-text; edited(t) => { root.typed-track("audio-language", t); } }
+                        }
+                        SettingRow {
+                            label: "Stereo Mode";
+                        }
+                        Dropdown {
+                            options: root.stereo-options;
+                            selected: root.stereo;
+                            chosen(i) => { root.set-stereo(i); }
+                        }
+                    }
+                    Divider { }
+                    SectionTitle { text: "Synchronization"; }
+                    SectionBody {
+                        SettingRow {
+                            label: "Audio Track Delay";
+                            note: "J and K step it by 50 ms";
+                            ValueField {
+                                text: root.audio-delay-text;
+                                edited(text) => { root.typed-audio-delay(text); }
+                            }
+                        }
+                        RangeSlider {
+                            value: (root.audio-delay + 10) / 20;
+                            centered: true;
+                            labels: root.delay-labels;
+                            moved(at, done) => { root.set-audio-delay(round((at * 20 - 10) * 20) / 20); }
+                        }
+                    }
+                    Divider { }
+                    SectionTitle { text: "Filters"; }
+                    SectionBody {
+                        spacing: 10px;
+                        SettingRow { label: "Equalizer"; }
+                        Dropdown {
+                            options: root.eq-presets;
+                            selected: root.eq-preset;
+                            chosen(i) => { root.choose-eq(i); }
+                        }
+                        if root.eq-preset > 0: FilterCard {
+                            rows: root.eq-rows;
+                            moved(i, at, done) => { root.eq-moved(i, at, done); }
+                            typed(i, text) => { root.eq-typed(i, text); }
+                        }
+                        SettingRow {
+                            label: "2 Pass";
+                            note: "Filters twice, for a stronger effect";
+                            Toggle {
+                                on: root.two-pass;
+                                enabled: root.eq-preset > 0;
+                                toggled(on) => { root.set-two-pass(on); }
+                            }
+                        }
+                    }
+                    Divider { }
+                    SectionBody {
+                        spacing: 10px;
+                        SettingRow {
+                            label: "Compressor";
+                            Toggle { on: root.compressor-on; toggled(on) => { root.set-filter("compressor", on); } }
+                        }
+                        FilterCard {
+                            rows: root.compressor-rows;
+                            moved(i, at, done) => { root.filter-moved("compressor", i, at, done); }
+                        }
+                    }
+                    Divider { }
+                    SectionBody {
+                        spacing: 10px;
+                        SettingRow {
+                            label: "Spatializer";
+                            Toggle { on: root.spatializer-on; toggled(on) => { root.set-filter("spatializer", on); } }
+                        }
+                        FilterCard {
+                            rows: root.spatializer-rows;
+                            moved(i, at, done) => { root.filter-moved("spatializer", i, at, done); }
+                        }
+                    }
+                    Divider { }
+                    SectionBody {
+                        spacing: 10px;
+                        SettingRow {
+                            label: "Stereo Widener";
+                            Toggle { on: root.widener-on; toggled(on) => { root.set-filter("widener", on); } }
+                        }
+                        FilterCard {
+                            rows: root.widener-rows;
+                            moved(i, at, done) => { root.filter-moved("widener", i, at, done); }
+                        }
+                    }
+                    Divider { }
+                    SectionBody {
+                        SettingRow {
+                            label: "Adjust Pitch";
+                            Text { text: root.pitch-text; font-size: 14px; color: Theme.fg-a3; vertical-alignment: center; }
+                        }
+                        RangeSlider {
+                            value: (root.pitch + 12) / 24;
+                            centered: true;
+                            moved(at, done) => { root.set-pitch(round((at * 24 - 12) * 2) / 2); }
+                        }
+                    }
+                }
+
+                if root.tab == SettingsTab.subtitles: VerticalLayout {
+                    alignment: start;
+                    SectionTitle { text: "Subtitle Files"; }
+                    SectionBody {
+                        SettingRow {
+                            label: "Add Subtitles";
+                            note: "Files for this video, or matched for its whole folder";
+                            Rectangle {
+                                width: 140px;
+                                height: 36px;
+                                border-radius: 6px;
+                                background: add-touch.has-hover && root.can-add-subtitles ? Theme.bg-a1 : Theme.bg-a3;
+                                opacity: root.can-add-subtitles ? 1 : 0.4;
+                                Text { text: "Add…"; font-size: 14px; color: Theme.fg-a2; }
+                                add-touch := TouchArea {
+                                    enabled: root.can-add-subtitles;
+                                    clicked => { root.add-subtitles(); }
+                                }
+                            }
+                        }
+                    }
+                    Divider { }
+                    SectionTitle { text: "Defaults"; }
+                    SectionBody {
+                        SettingRow {
+                            label: "Subtitle Track";
+                            note: "For items opened next";
+                            ValueField { text: root.subtitle-track-text; edited(t) => { root.typed-track("subtitle-track", t); } }
+                        }
+                        SettingRow {
+                            label: "Subtitle Language";
+                            note: "A code or name, e.g. en, English";
+                            ValueField { text: root.subtitle-language-text; edited(t) => { root.typed-track("subtitle-language", t); } }
+                        }
+                    }
+                    Divider { }
+                    SectionTitle { text: "Synchronization"; }
+                    SectionBody {
+                        SettingRow {
+                            label: "Subtitle Track Delay";
+                            note: "G and H step it by 50 ms";
+                            ValueField {
+                                text: root.subtitle-delay-text;
+                                edited(text) => { root.typed-subtitle-delay(text); }
+                            }
+                        }
+                        RangeSlider {
+                            value: (root.subtitle-delay + 10) / 20;
+                            centered: true;
+                            labels: root.delay-labels;
+                            moved(at, done) => { root.set-subtitle-delay(round((at * 20 - 10) * 20) / 20); }
+                        }
+                    }
+                    Divider { }
+                    SectionTitle { text: "Appearance"; }
+                    SectionBody {
+                        Text {
+                            text: "Changes show from the next subtitle line.";
+                            font-size: 12px;
+                            color: Theme.fg-a4;
+                            wrap: word-wrap;
+                        }
+                        SettingRow {
+                            label: "Subtitle Font";
+                            note: "Type to search the installed fonts";
+                            FontField { text: root.sub-font-text; edited(t) => { root.typed-subtitle-style("font", t); } }
+                        }
+                        SettingRow {
+                            label: "Text Color";
+                            ColorField { text: root.sub-color-text; swatch: root.sub-color; diag-first: true; edited(t) => { root.typed-subtitle-style("color", t); } }
+                        }
+                        SettingRow {
+                            label: "Outline Color";
+                            ColorField { text: root.sub-outline-color-text; swatch: root.sub-outline-color; edited(t) => { root.typed-subtitle-style("outline-color", t); } }
+                        }
+                        SettingRow {
+                            label: "Subtitle Offset";
+                            note: "Pixels up from the bottom";
+                            ValueField { text: root.sub-offset-text; edited(t) => { root.typed-subtitle-style("offset", t); } }
+                        }
+                        SettingRow {
+                            label: "Font Size";
+                            Text { text: root.sub-scale-text; font-size: 14px; color: Theme.fg-a3; vertical-alignment: center; }
+                        }
+                        // 25–300 %.
+                        RangeSlider {
+                            value: (root.sub-scale - 25) / 275;
+                            moved(at, done) => { root.set-subtitle-level("scale", 25 + at * 275); }
+                        }
+                        SettingRow {
+                            label: "Outline Thickness";
+                            Text { text: root.sub-outline-text; font-size: 14px; color: Theme.fg-a3; vertical-alignment: center; }
+                        }
+                        RangeSlider {
+                            value: root.sub-outline / 3;
+                            ticks: 4;
+                            moved(at, done) => { root.set-subtitle-level("outline", round(at * 3)); }
+                        }
+                        SettingRow {
+                            label: "Background Opacity";
+                            Text { text: root.sub-background-text; font-size: 14px; color: Theme.fg-a3; vertical-alignment: center; }
+                        }
+                        RangeSlider {
+                            value: root.sub-background / 255;
+                            moved(at, done) => { root.set-subtitle-level("background", at * 255); }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Footer: 125 high, its own glass and a Divider/Dim top edge,
+        // padding 20, gap 10: the preset (opens upward) and Open Advanced
+        // Settings (the Settings window, P5).
+        Rectangle {
+            height: 125px;
+            Rectangle { y: 0; height: 1px; background: Theme.divider-dim; }
+            VerticalLayout {
+                padding: 20px;
+                spacing: 10px;
+                Dropdown {
+                    height: 42px;
+                    upward: true;
+                    options: root.presets;
+                    selected: root.preset;
+                    chosen(i) => { root.choose-preset(i); }
+                }
+                Rectangle {
+                    height: 32px;
+                    border-radius: 4px;
+                    opacity: 0.4;
+                    HorizontalLayout {
+                        alignment: center;
+                        spacing: 6px;
+                        Rectangle { width: 20px; Icon { icon: Icons.settings; size: 20px; } }
+                        Text { text: "Open Advanced Settings"; font-size: 14px; color: Theme.fg-a3; vertical-alignment: center; }
+                    }
+                }
+            }
+        }
+    }
+}

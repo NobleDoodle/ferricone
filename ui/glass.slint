@@ -1,0 +1,32 @@
+// Frosted glass over the video, the design's "bg blur": the blurred video box
+// (src/video/backdrop.rs, letterbox included), lined up with the video under
+// this element, under the design's 95 % tint.
+
+// The blurred frame and where the video box is, in window coordinates.
+export struct VideoBox {
+    backdrop: image,
+    x: length,
+    y: length,
+    width: length,
+    height: length,
+}
+
+export component Glass inherits Rectangle {
+    in property <VideoBox> video;
+    in property <brush> tint;
+
+    clip: true;
+
+    Image {
+        x: root.video.x - root.absolute-position.x;
+        y: root.video.y - root.absolute-position.y;
+        width: root.video.width;
+        height: root.video.height;
+        source: root.video.backdrop;
+        image-fit: fill;
+    }
+
+    Rectangle {
+        background: root.tint;
+    }
+}

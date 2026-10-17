@@ -1,0 +1,66 @@
+// Design tokens: the Figma file's color styles (plan §2). The defaults are the
+// design's Dark palette; src/theme.rs writes Light, the chosen accent, or
+// Omarchy's colors over them. No other .slint file may contain a hex color.
+export global Theme {
+    // Surfaces
+    in-out property <color> bg-b2: #090909;          // seek track, tab strip, inputs
+    in-out property <color> bg-b1: #0e0e0e;          // floating panels, library panes
+    in-out property <color> bg-b1-glass: #0e0e0ef2;  // panels over video, 95 %
+    in-out property <color> bg-a5: #151515;          // library search field
+    in-out property <color> bg-a4: #191919;          // nav rail, dropdown inner, toggle track
+    in-out property <color> bg-a3: #1b1b1b;          // title bar, control bar, miniplayer
+    in-out property <color> bg-a3-glass: #191919f2;  // bars over video, 95 %
+    in-out property <color> bg-a2: #1f1f1f;
+    in-out property <color> bg-a1: #222222;
+    in-out property <color> scrim: #000000cc;
+    in-out property <color> shadow: #00000075;       // menus and dialogs, 46 %
+    in-out property <color> divider-dim: #222222;
+    in-out property <color> divider-bright: #373737;
+
+    // Text
+    in-out property <color> fg-1: #eaeaea;
+    in-out property <color> fg-2: #c6c6c6;
+    in-out property <color> fg-a1: #969696;          // list names, section headers
+    in-out property <color> fg-a2: #8f8f8f;          // labels, title, time codes
+    in-out property <color> fg-a3: #6b6b6b;          // setting labels, inactive tabs
+    in-out property <color> fg-a4: #404040;          // placeholders, crumb separators
+    in-out property <color> fg-b1: #161616;          // text on accent
+
+    // Accent
+    in-out property <color> accent-main: #d37918;
+    in-out property <color> accent-bright: #fc9729;
+    in-out property <color> accent-dim: #ab6314;
+    in-out property <color> bg-accent-bright: #371f06;
+    in-out property <color> bg-accent-dark: #1a1611;
+
+    // Volume level gradient over the 0–200 % wedge, stops 0, 0.58, 0.79 and 1
+    in-out property <color> volume-low: #95d318;
+    in-out property <color> volume-mid: #b2a918;
+    in-out property <color> volume-high: #d37918;
+    in-out property <color> volume-max: #ff3737;
+    in-out property <color> volume-shade: #00000033;  // over the gradient, 20 %
+    in-out property <color> cue: #ffffff24;            // subtitle lines in the timeline, 14 %
+    in-out property <color> thumb: #171717;            // behind thumbnails and their placeholders
+    // The introduction's theme tiles (Figma `Onboarding`).
+    out property <color> swatch-light: #d5d5d5;
+    out property <color> swatch-dark: #222222;
+
+    // Content, not interface: letterbox behind the video
+    out property <color> video-bg: #000000;
+}
+
+// The appearance choices (src/theme.rs): Light 0, Dark 1 or System 2, the
+// accent, and Omarchy's colors where it is installed.
+export global Appearance {
+    in property <int> mode: 1;
+    in property <color> accent: #d37918;
+    in property <[color]> accents;
+    // The accent is none of `accents`.
+    in property <bool> custom-accent;
+    in property <bool> omarchy-available;
+    // Omarchy's colors are in use: the mode and accent are its theme's.
+    in property <bool> omarchy;
+    callback set-mode(int);
+    callback set-accent(color);
+    callback set-omarchy(bool);
+}

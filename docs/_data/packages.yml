@@ -1,0 +1,25 @@
+- system: Debian · Ubuntu · Mint
+  kind: .deb
+  file: ferricone_1.0.0_amd64.deb
+  size: 58 MB
+  install: sudo apt install ./ferricone_1.0.0_amd64.deb
+- system: Fedora · openSUSE · RHEL 10
+  kind: .rpm
+  file: ferricone-1.0.0-1.x86_64.rpm
+  size: 63 MB
+  install: sudo dnf install ./ferricone-1.0.0-1.x86_64.rpm
+- system: Arch · Manjaro
+  kind: .pkg.tar.zst
+  file: ferricone-1.0.0-1-x86_64.pkg.tar.zst
+  size: 75 MB
+  install: sudo pacman -U ferricone-1.0.0-1-x86_64.pkg.tar.zst
+- system: Any distribution
+  kind: AppImage
+  file: Ferricone_Player-1.0.0-x86_64.AppImage
+  size: 73 MB
+  install: chmod +x Ferricone_Player-1.0.0-x86_64.AppImage && ./Ferricone_Player-1.0.0-x86_64.AppImage
+- system: Archive, no root
+  kind: .tar.gz
+  file: ferricone-1.0.0-x86_64.tar.gz
+  size: 79 MB
+  install: tar xzf ferricone-1.0.0-x86_64.tar.gz && ferricone-1.0.0-x86_64/install.sh

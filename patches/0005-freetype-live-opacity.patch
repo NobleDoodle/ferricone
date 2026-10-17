@@ -1,0 +1,23 @@
+freetype: take the text and outline opacity while text shows
+
+freetype-opacity and freetype-outline-opacity, like the colors before
+patches/0004, are read once when the text renderer is created, so a player
+that changes them while it plays never sees the change. Read them in
+UpdateDefaultLiveStyles() with the colors; lines rendered after the change
+take it.
+
+Carried by Ferricone Player on top of VLC a5538c55; written for upstream.
+
+diff --git i/modules/text_renderer/freetype/freetype.c w/modules/text_renderer/freetype/freetype.c
+--- i/modules/text_renderer/freetype/freetype.c
++++ w/modules/text_renderer/freetype/freetype.c
+@@ -716,7 +716,9 @@ static bool UpdateDefaultLiveStyles( filter_t *p_filter )
+     bool b_new_family = false;
+ 
+     p_style->i_font_color = var_InheritInteger( p_filter, "freetype-color" );
++    p_style->i_font_alpha = var_InheritInteger( p_filter, "freetype-opacity" );
+     p_style->i_outline_color = var_InheritInteger( p_filter, "freetype-outline-color" );
++    p_style->i_outline_alpha = var_InheritInteger( p_filter, "freetype-outline-opacity" );
+ 
+     p_style->i_background_alpha = var_InheritInteger( p_filter, "freetype-background-opacity" );
+     p_style->i_background_color = var_InheritInteger( p_filter, "freetype-background-color" );

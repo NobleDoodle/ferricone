@@ -1,0 +1,535 @@
+// Floating panels over the video (plan §3), built to the Figma measurements:
+// the tracks panel of the Controls variants `audio` / `subtitles` / `video`.
+import { Theme } from "theme.slint";
+import { Icon } from "icon.slint";
+import { Icons, IconLayers } from "icons.slint";
+import { TracksTab } from "controls.slint";
+import { Glass, VideoBox } from "glass.slint";
+
+export struct TrackItem {
+    id: string,  // "" for "None"
+    label: string,
+    selected: bool,
+}
+
+// One tab of a panel's tab strip: icon 20 + Inter 12, padding 14/8/0/8, gap 14
+// to a 2 px underline that is Accent/Main on the active tab.
+component Tab inherits TouchArea {
+    in property <IconLayers> icon;
+    in property <string> label;
+    in property <bool> active;
+
+    VerticalLayout {
+        padding-top: 14px;
+        padding-left: 8px;
+        padding-right: 8px;
+        spacing: 14px;
+
+        HorizontalLayout {
+            alignment: center;
+            spacing: 8px;
+            Icon { icon: root.icon; size: 20px; }
+            Text {
+                text: root.label;
+                font-size: 12px;
+                color: root.active || root.has-hover ? Theme.fg-a2 : Theme.fg-a3;
+                vertical-alignment: center;
+            }
+        }
+        Rectangle {
+            height: 2px;
+            background: root.active ? Theme.accent-main : transparent;
+        }
+    }
+}
+
+// Section header: 60 high, padding 0/28, Inter 14 FG/A3, buttons on the right.
+component SectionHeader {
+    in property <string> text;
+    in property <bool> refreshable;
+    callback refresh();
+
+    height: 60px;
+    HorizontalLayout {
+        padding-left: 28px;
+        padding-right: 28px;
+        Text {
+            text: root.text;
+            font-size: 14px;
+            color: Theme.fg-a3;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+        }
+        if root.refreshable: Rectangle {
+            width: 24px;
+            Icon { icon: Icons.refresh; color: refresh-touch.has-hover ? Theme.fg-2 : Theme.fg-a2; }
+            refresh-touch := TouchArea { clicked => { root.refresh(); } }
+        }
+    }
+}
+
+// Track rows: 32 high, gap 12, a 32 px check (check.active when selected)
+// and Inter 14 FG/A1, inside padding 0/20.
+component TrackList {
+    in property <[TrackItem]> items;
+    callback select(string);
+
+    VerticalLayout {
+        padding-left: 20px;
+        padding-right: 20px;
+        spacing: 12px;
+
+        for item in root.items: Rectangle {
+            height: 32px;
+            border-radius: 4px;
+            background: row.has-hover ? Theme.bg-a1 : transparent;
+            HorizontalLayout {
+                spacing: 10px;
+                Rectangle {
+                    width: 32px;
+                    Icon { icon: item.selected ? Icons.check-active : Icons.check; }
+                }
+                Text {
+                    text: item.label;
+                    font-size: 14px;
+                    color: Theme.fg-a1;
+                    vertical-alignment: center;
+                    overflow: elide;
+                }
+            }
+            row := TouchArea { clicked => { root.select(item.id); } }
+        }
+    }
+}
+
+// Tracks panel: 400 × 524, radius 10, BG/B1 Transparent over the blurred video.
+// Tabs Video · Audio · Subtitles; the audio and subtitle buttons open it on
+// their tab.
+export component TracksPanel inherits Rectangle {
+    in property <VideoBox> video;
+    in-out property <TracksTab> tab;
+    in property <[TrackItem]> video-tracks;
+    in property <[TrackItem]> audio-tracks;
+    in property <[TrackItem]> subtitle-tracks;
+    in property <[TrackItem]> audio-devices;
+    callback select-track(TracksTab, string);
+    callback select-device(string);
+    callback refresh-devices();
+    callback show-preferences();
+
+    // Switching to Audio lists the output devices as they are now.
+    changed tab => {
+        if self.tab == TracksTab.audio { root.refresh-devices(); }
+    }
+
+    width: 400px;
+    height: 524px;
+    border-radius: 10px;
+    clip: true;
+
+    Glass {
+        video: root.video;
+        tint: Theme.bg-b1-glass;
+    }
+
+    // Clicks on the panel stay in the panel.
+    TouchArea { }
+
+    VerticalLayout {
+        spacing: 1px;
+
+        Rectangle {
+            height: 50px;
+            background: Theme.bg-b2;
+            HorizontalLayout {
+                padding-left: 6px;
+                padding-right: 6px;
+                spacing: 1px;
+                Tab { icon: Icons.video; label: "Video"; active: root.tab == TracksTab.video; clicked => { root.tab = TracksTab.video; } }
+                Tab { icon: Icons.audio; label: "Audio"; active: root.tab == TracksTab.audio; clicked => { root.tab = TracksTab.audio; } }
+                Tab { icon: Icons.subtitles; label: "Subtitles"; active: root.tab == TracksTab.subtitles; clicked => { root.tab = TracksTab.subtitles; } }
+            }
+        }
+
+        Flickable {
+            vertical-stretch: 1;
+            VerticalLayout {
+                alignment: start;
+
+                SectionHeader { text: "Embedded Tracks"; }
+                TrackList {
+                    items: root.tab == TracksTab.video ? root.video-tracks
+                         : root.tab == TracksTab.audio ? root.audio-tracks
+                         : root.subtitle-tracks;
+                    select(id) => { root.select-track(root.tab, id); }
+                }
+
+                if root.tab == TracksTab.audio: VerticalLayout {
+                    padding-top: 20px;
+                    Rectangle { height: 1px; background: Theme.divider-dim; }
+                    SectionHeader {
+                        text: "Output Device";
+                        refreshable: true;
+                        refresh => { root.refresh-devices(); }
+                    }
+                    TrackList {
+                        items: root.audio-devices;
+                        select(id) => { root.select-device(id); }
+                    }
+                }
+            }
+        }
+
+        // Footer: padding 20, a 360 × 32 BG/B2 button, Inter 14 FG/A3.
+        VerticalLayout {
+            padding: 20px;
+            Rectangle {
+                height: 32px;
+                border-radius: 4px;
+                background: prefs.has-hover ? Theme.bg-a1 : Theme.bg-b2;
+                Text {
+                    text: "Show Preferences";
+                    font-size: 14px;
+                    color: Theme.fg-a3;
+                }
+                prefs := TouchArea { clicked => { root.show-preferences(); } }
+            }
+        }
+    }
+}
+
+// The queue panel's three tabs.
+export enum QueueTab { queue, bookmarks, chapters }
+export enum RepeatMode { off, all, one }
+
+export struct QueueRow {
+    title: string,
+    duration: string,  // "23:06", or "" until known
+    playing: bool,
+}
+
+export struct MarkRow {
+    name: string,
+    time: string,  // 00:00:42:023
+}
+
+export struct ChapterRow {
+    title: string,
+    start: string,
+    playing: bool,
+}
+
+// A header icon: 24 px, hover dims it toward FG/2, `on` tints it accent.
+component HeaderIcon inherits Rectangle {
+    in property <IconLayers> icon;
+    in property <bool> on;
+    callback clicked();
+    width: 24px;
+    height: 24px;
+    Icon {
+        icon: root.icon;
+        color: root.on ? Theme.accent-main : touch.has-hover ? Theme.fg-2 : Theme.fg-a2;
+    }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+// Header: Inter 14 FG/A3, padding 20/20/20/28, icons gap 12 on the right.
+component PanelHeader {
+    in property <string> text;
+    height: 64px;
+    HorizontalLayout {
+        padding-top: 20px;
+        padding-bottom: 20px;
+        padding-left: 28px;
+        padding-right: 20px;
+        spacing: 12px;
+        Text {
+            text: root.text;
+            font-size: 14px;
+            color: Theme.fg-a3;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+            overflow: elide;
+        }
+        @children
+    }
+}
+
+// A list row: 32 high, radius 4, BG/A1 on hover or when selected.
+component PanelRow inherits Rectangle {
+    in property <bool> selected;
+    out property <bool> hovered: touch.has-hover;
+    callback clicked();
+    callback double-clicked();
+    height: 32px;
+    border-radius: 4px;
+    background: touch.has-hover || root.selected ? Theme.bg-a1 : transparent;
+    touch := TouchArea {
+        clicked => { root.clicked(); }
+        double-clicked => { root.double-clicked(); }
+    }
+    @children
+}
+
+// Queue panel (Controls `queue` / `bookmarks` / `chapters`): the tracks
+// panel's frame with tabs Queue · Bookmarks · Chapters.
+// Queue: "4 items - 2h 3m" + sort · repeat · shuffle · remove · add; rows of
+// a drag handle (`move`, 32), the name (FG/A1) and its length (FG/A3), gap 12.
+// Bookmarks: "2 Bookmarks" + remove · add; name and time to the millisecond.
+// Chapters: an accent number (Medium, 34 wide), the title and its start.
+export component QueuePanel inherits Rectangle {
+    in property <VideoBox> video;
+    in-out property <QueueTab> tab;
+    in property <[QueueRow]> items;
+    in property <string> summary;
+    in property <RepeatMode> repeat;
+    in property <[MarkRow]> marks;
+    in property <[ChapterRow]> chapters;
+    // The selected queue row and bookmark, -1 for none.
+    in-out property <int> selected: -1;
+    in-out property <int> selected-mark: -1;
+    callback play-item(int);
+    callback move-item(int, int);
+    callback remove-item(int);
+    callback add-items();
+    callback sort-items();
+    callback cycle-repeat();
+    callback shuffle();
+    callback go-mark(int);
+    callback add-mark();
+    callback remove-mark(int);
+    callback go-chapter(int);
+
+    // Dragging a row by its handle: from, to (-1 when not dragging).
+    property <int> drag-from: -1;
+    property <int> drag-to: -1;
+    property <length> pitch: 44px;  // row 32 + gap 12
+
+    width: 400px;
+    border-radius: 10px;
+    clip: true;
+
+    Glass {
+        video: root.video;
+        tint: Theme.bg-b1-glass;
+    }
+
+    TouchArea { }
+
+    VerticalLayout {
+        spacing: 1px;
+
+        Rectangle {
+            height: 50px;
+            background: Theme.bg-b2;
+            HorizontalLayout {
+                padding-left: 6px;
+                padding-right: 6px;
+                spacing: 1px;
+                Tab { icon: Icons.queue; label: "Queue"; active: root.tab == QueueTab.queue; clicked => { root.tab = QueueTab.queue; } }
+                Tab { icon: Icons.bookmarks; label: "Bookmarks"; active: root.tab == QueueTab.bookmarks; clicked => { root.tab = QueueTab.bookmarks; } }
+                Tab { icon: Icons.chapters; label: "Chapters"; active: root.tab == QueueTab.chapters; clicked => { root.tab = QueueTab.chapters; } }
+            }
+        }
+
+        if root.tab == QueueTab.queue: VerticalLayout {
+            vertical-stretch: 1;
+            PanelHeader {
+                text: root.summary;
+                HeaderIcon { icon: Icons.sort; clicked => { root.sort-items(); } }
+                HeaderIcon {
+                    icon: root.repeat == RepeatMode.off ? Icons.repeat-right : Icons.repeat-right-two-tone;
+                    on: root.repeat != RepeatMode.off;
+                    clicked => { root.cycle-repeat(); }
+                    if root.repeat == RepeatMode.one: Text {
+                        x: parent.width - 6px;
+                        y: -4px;
+                        text: "1";
+                        font-size: 10px;
+                        font-weight: 600;
+                        color: Theme.accent-main;
+                    }
+                }
+                HeaderIcon { icon: Icons.shuffle-right; clicked => { root.shuffle(); } }
+                HeaderIcon {
+                    icon: Icons.remove;
+                    clicked => {
+                        if root.selected >= 0 {
+                            root.remove-item(root.selected);
+                            root.selected = -1;
+                        }
+                    }
+                }
+                HeaderIcon { icon: Icons.add; clicked => { root.add-items(); } }
+            }
+            Flickable {
+                vertical-stretch: 1;
+                VerticalLayout {
+                    alignment: start;
+                    padding-left: 20px;
+                    padding-right: 20px;
+                    padding-bottom: 20px;
+                    spacing: 12px;
+                    for item[i] in root.items: PanelRow {
+                        selected: root.selected == i;
+                        clicked => { root.selected = i; }
+                        double-clicked => { root.play-item(i); }
+
+                        // Where a dragged row would land.
+                        if root.drag-from >= 0 && root.drag-to == i && root.drag-to != root.drag-from: Rectangle {
+                            y: root.drag-to < root.drag-from ? -7px : parent.height + 5px;
+                            height: 2px;
+                            background: Theme.accent-main;
+                        }
+
+                        HorizontalLayout {
+                            padding-right: 4px;
+                            spacing: 10px;
+                            Rectangle {
+                                width: 32px;
+                                Icon { icon: Icons.move; size: 24px; color: Theme.fg-a3; }
+                                TouchArea {
+                                    mouse-cursor: MouseCursor.grab;
+                                    pointer-event(event) => {
+                                        if event.kind == PointerEventKind.down && event.button == PointerEventButton.left {
+                                            root.drag-from = i;
+                                            root.drag-to = i;
+                                        }
+                                        if event.kind == PointerEventKind.up && root.drag-from >= 0 {
+                                            if root.drag-to != root.drag-from {
+                                                root.move-item(root.drag-from, root.drag-to);
+                                            }
+                                            root.drag-from = -1;
+                                            root.drag-to = -1;
+                                        }
+                                    }
+                                    moved => {
+                                        if self.pressed {
+                                            root.drag-to = clamp(i + round((self.mouse-y - self.height / 2) / root.pitch), 0, root.items.length - 1);
+                                        }
+                                    }
+                                }
+                            }
+                            Text {
+                                text: item.title;
+                                font-size: 14px;
+                                color: item.playing ? Theme.accent-main : Theme.fg-a1;
+                                vertical-alignment: center;
+                                horizontal-stretch: 1;
+                                overflow: elide;
+                            }
+                            Text {
+                                text: item.duration;
+                                font-size: 14px;
+                                color: Theme.fg-a3;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if root.tab == QueueTab.bookmarks: VerticalLayout {
+            vertical-stretch: 1;
+            PanelHeader {
+                text: root.marks.length == 1 ? "1 Bookmark" : "\{root.marks.length} Bookmarks";
+                HeaderIcon {
+                    icon: Icons.remove;
+                    clicked => {
+                        if root.selected-mark >= 0 {
+                            root.remove-mark(root.selected-mark);
+                            root.selected-mark = -1;
+                        }
+                    }
+                }
+                HeaderIcon { icon: Icons.add; clicked => { root.add-mark(); } }
+            }
+            Flickable {
+                vertical-stretch: 1;
+                VerticalLayout {
+                    alignment: start;
+                    padding-left: 20px;
+                    padding-right: 20px;
+                    padding-bottom: 20px;
+                    spacing: 12px;
+                    for mark[i] in root.marks: PanelRow {
+                        selected: root.selected-mark == i;
+                        clicked => {
+                            root.selected-mark = i;
+                            root.go-mark(i);
+                        }
+                        HorizontalLayout {
+                            padding-right: 4px;
+                            spacing: 10px;
+                            Text {
+                                text: mark.name;
+                                font-size: 14px;
+                                color: Theme.fg-a1;
+                                vertical-alignment: center;
+                                horizontal-stretch: 1;
+                                overflow: elide;
+                            }
+                            Text {
+                                text: mark.time;
+                                font-size: 14px;
+                                color: Theme.fg-a3;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                    if root.marks.length == 0: Text {
+                        text: "Ctrl + B marks the moment playing.";
+                        font-size: 14px;
+                        color: Theme.fg-a3;
+                    }
+                }
+            }
+        }
+
+        if root.tab == QueueTab.chapters: Flickable {
+            vertical-stretch: 1;
+            VerticalLayout {
+                alignment: start;
+                padding: 20px;
+                spacing: 12px;
+                for chapter[i] in root.chapters: PanelRow {
+                    selected: chapter.playing;
+                    clicked => { root.go-chapter(i); }
+                    HorizontalLayout {
+                        padding-left: 4px;
+                        padding-right: 4px;
+                        spacing: 10px;
+                        Text {
+                            width: 34px;
+                            text: i + 1;
+                            font-size: 14px;
+                            font-weight: 500;
+                            color: Theme.accent-main;
+                            vertical-alignment: center;
+                        }
+                        Text {
+                            text: chapter.title;
+                            font-size: 14px;
+                            color: Theme.fg-a1;
+                            vertical-alignment: center;
+                            horizontal-stretch: 1;
+                            overflow: elide;
+                        }
+                        Text {
+                            text: chapter.start;
+                            font-size: 14px;
+                            color: Theme.fg-a3;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+                if root.chapters.length == 0: Text {
+                    text: "This item has no chapters.";
+                    font-size: 14px;
+                    color: Theme.fg-a3;
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,572 @@
+// The introduction (Figma `Onboarding`, 1090 × 759, radius 14, BG/B1), shown
+// on first run: 0 Welcome (the logo, Inter 32 Light, a media folder to start
+// with), 1 theme and color (over a small player that takes the colors as
+// they are picked: Light / Dark / System tiles, the design's nine accents
+// and any color, and Omarchy's colors where it is installed), 2 the basic
+// keyboard shortcuts. Back and Next/Finish sit bottom right, step dots at
+// the bottom. `only` shows one step alone (the ⋯ menu's Appearance and
+// Keyboard Shortcuts), with Done.
+
+import { Theme, Appearance } from "theme.slint";
+import { Toggle } from "settings.slint";
+import { ColorPicker, Palette } from "pickers.slint";
+import { Keys } from "keys.slint";
+
+component Button inherits Rectangle {
+    in property <string> text;
+    in property <bool> primary;
+    callback clicked();
+
+    width: 100px;
+    height: 32px;
+    border-radius: 6px;
+    background: root.primary
+        ? (touch.has-hover ? Theme.accent-bright : Theme.accent-main)
+        : (touch.has-hover ? Theme.bg-a1 : Theme.bg-a3);
+    Text {
+        text: root.text;
+        font-size: 16px;
+        font-weight: 600;
+        color: root.primary ? Theme.fg-b1 : Theme.fg-a2;
+    }
+    touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+// A theme tile: 116 square, radius 19, padding 8 around a 100 px swatch
+// (radius 12); the chosen one has a 4 px accent ring. The label is Inter 16
+// Light, 22 below.
+component ThemeTile inherits VerticalLayout {
+    in property <string> text;
+    in property <bool> chosen;
+    in property <bool> enabled: true;
+    // 0 light, 1 dark, 2 half and half.
+    in property <int> look;
+    callback clicked();
+
+    spacing: 22px;
+    opacity: root.enabled ? 1 : 0.4;
+    Rectangle {
+        width: 116px;
+        height: 116px;
+        border-radius: 19px;
+        border-width: 4px;
+        border-color: root.chosen ? Theme.accent-main : touch.has-hover && root.enabled ? Theme.divider-bright : transparent;
+        Rectangle {
+            width: 100px;
+            height: 100px;
+            border-radius: 12px;
+            clip: true;
+            background: root.look == 0 ? Theme.swatch-light : Theme.swatch-dark;
+            if root.look == 2: Rectangle {
+                x: parent.width / 2;
+                width: parent.width / 2;
+                background: Theme.swatch-light;
+            }
+        }
+        touch := TouchArea {
+            enabled: root.enabled;
+            mouse-cursor: pointer;
+            clicked => { root.clicked(); }
+        }
+    }
+    Text {
+        text: root.text;
+        font-size: 16px;
+        font-weight: 300;
+        color: Theme.fg-a2;
+        horizontal-alignment: center;
+    }
+}
+
+// An accent: a 40 px dot in a 64 px ring (4 px, the accent at 30 %) when
+// chosen.
+component AccentDot inherits Rectangle {
+    in property <color> swatch;
+    in property <bool> chosen;
+    in property <bool> enabled: true;
+    // The ring's side; the dot is 5/8 of it (64 and 40 in the design).
+    in property <length> size: 64px;
+    callback clicked();
+
+    width: root.size;
+    height: root.size;
+    border-radius: root.size / 2;
+    border-width: root.size / 16;
+    border-color: root.chosen ? root.swatch.with-alpha(0.3) : transparent;
+    opacity: root.enabled ? 1 : 0.4;
+    Rectangle {
+        width: root.size * (touch.has-hover && root.enabled ? 0.69 : 0.625);
+        height: self.width;
+        border-radius: self.width / 2;
+        background: root.swatch;
+        animate width { duration: 100ms; }
+    }
+    touch := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Figma key caps: 42 high, radius 12, BG/A3 with a 3 px Divider/Bright edge,
+// Inter 16 Light FG/1.
+component Key inherits Rectangle {
+    in property <string> text;
+    height: 42px;
+    width: max(42px, label.preferred-width + 24px);
+    border-radius: 12px;
+    background: Theme.bg-a3;
+    border-width: 3px;
+    border-color: Theme.divider-bright;
+    label := Text { text: root.text; font-size: 16px; font-weight: 300; color: Theme.fg-1; }
+}
+
+// A shortcut row: the label (220 wide, Inter 16 Light FG/A1) and its keys;
+// two keys read "A / B".
+component Shortcut inherits HorizontalLayout {
+    in property <string> label;
+    in property <[string]> keys;
+    in property <string> joiner: "/";
+    height: 42px;
+    spacing: 20px;
+    Text {
+        width: 220px;
+        text: root.label;
+        font-size: 16px;
+        font-weight: 300;
+        color: Theme.fg-a1;
+        vertical-alignment: center;
+    }
+    HorizontalLayout {
+        spacing: 10px;
+        alignment: start;
+        for key[i] in root.keys: HorizontalLayout {
+            spacing: 10px;
+            if i > 0: Text { text: root.joiner; font-size: 16px; font-weight: 300; color: Theme.fg-a1; vertical-alignment: center; }
+            Key { text: key; }
+        }
+    }
+}
+
+// The small player behind the theme step, drawn in the current colors.
+component MiniPlayerPreview inherits Rectangle {
+    border-radius: 10px;
+    clip: true;
+    background: Theme.bg-b1;
+    // Title bar: the glyph and the window buttons.
+    Rectangle {
+        y: 0;
+        height: 30px;
+        background: Theme.bg-a3;
+        Image {
+            x: 10px;
+            source: @image-url("ferricone-symbolic.svg");
+            colorize: Theme.accent-main;
+            width: 16px;
+            height: 16px;
+        }
+        for i in 3: Rectangle {
+            x: parent.width - 60px + i * 16px;
+            width: 9px;
+            height: 9px;
+            border-radius: 2px;
+            border-width: 1px;
+            border-color: Theme.fg-a3;
+        }
+    }
+    // Control bar: play, the seek track with its fill and thumb, volume.
+    Rectangle {
+        y: parent.height - self.height;
+        height: 34px;
+        background: Theme.bg-a3;
+        HorizontalLayout {
+            padding-left: 14px;
+            padding-right: 14px;
+            spacing: 10px;
+            alignment: stretch;
+            Rectangle {
+                y: (parent.height - self.height) / 2;
+                width: 34px;
+                height: 18px;
+                border-radius: 4px;
+                background: Theme.accent-main;
+            }
+            Text { text: "00:02:10"; font-size: 10px; color: Theme.fg-a2; vertical-alignment: center; }
+            Rectangle {
+                horizontal-stretch: 1;
+                y: (parent.height - self.height) / 2;
+                height: 12px;
+                border-radius: 4px;
+                background: Theme.bg-b2;
+                Rectangle {
+                    x: 2px;
+                    width: parent.width * 0.08;
+                    height: 8px;
+                    border-radius: 3px;
+                    background: Theme.bg-accent-bright;
+                }
+                Rectangle {
+                    x: 2px + parent.width * 0.08 - 4px;
+                    width: 4px;
+                    height: 8px;
+                    border-radius: 2px;
+                    background: Theme.accent-main;
+                }
+            }
+            Text { text: "00:25:40"; font-size: 10px; color: Theme.fg-a2; vertical-alignment: center; }
+            Rectangle {
+                y: (parent.height - self.height) / 2;
+                width: 48px;
+                height: 10px;
+                border-radius: 3px;
+                background: Theme.bg-b2;
+                Rectangle {
+                    x: 0;
+                    width: parent.width * 0.6;
+                    border-radius: 3px;
+                    background: @linear-gradient(90deg, Theme.volume-low 0%, Theme.volume-mid 100%);
+                }
+            }
+        }
+    }
+}
+
+export component Onboarding inherits Rectangle {
+    in-out property <int> step;
+    // Show `step` alone, with Done instead of Back / Next.
+    in property <bool> only;
+    // The media folder offered on the welcome step.
+    in property <string> folder;
+    callback browse();
+    // Finish (or Done): Rust saves that it was seen and adds the folder.
+    callback finish();
+
+    property <bool> omarchy: Appearance.omarchy;
+    property <bool> custom-accent: Appearance.custom-accent;
+    // Narrower than the design's 1090: the shortcuts go to one column.
+    property <bool> narrow: root.width < 900px;
+    // The accents share the footer with the buttons: 10 rings, shrinking
+    // from the design's 64 px when the card is narrow.
+    property <length> dot: clamp((root.width - 60px - 240px) / 10, 30px, 64px);
+    // A short window gets tighter spacing before the step has to scroll.
+    property <bool> short: root.height < 640px;
+
+    function next() {
+        if root.only || root.step >= 2 {
+            root.finish();
+        } else {
+            root.step += 1;
+            keys.focus();
+        }
+    }
+
+    // The design's 1090 × 759, or less in a smaller window (the owner sets
+    // the size).
+    width: 1090px;
+    height: 759px;
+    border-radius: 14px;
+    clip: true;
+    background: Theme.bg-b1;
+
+    init => { keys.focus(); }
+
+    keys := FocusScope {
+        key-pressed(event) => {
+            if event.text == Key.Return { root.next(); return accept; }
+            if event.text == Key.Escape && root.only { root.finish(); return accept; }
+            if event.text == Key.LeftArrow && !root.only && root.step > 0 { root.step -= 1; return accept; }
+            if event.text == Key.RightArrow && !root.only { root.next(); return accept; }
+            accept
+        }
+    }
+    // Swallow clicks so they don't reach the player.
+    TouchArea { }
+
+    VerticalLayout {
+        // The step, centered; it scrolls when the window is short.
+        stage := Rectangle {
+            vertical-stretch: 1;
+            // Left out when short: it would run into the step; the app behind
+            // the card shows the colors too.
+            if root.step == 1 && !root.short: MiniPlayerPreview {
+                x: 17px;
+                y: 19px;
+                width: parent.width - 34px;
+                height: parent.height - 19px;
+            }
+            body := Flickable {
+                content-height: max(self.height, content.preferred-height);
+                content := VerticalLayout {
+                    height: body.content-height;
+                    alignment: center;
+                    padding: root.short ? 20px : 40px;
+                    padding-top: root.short ? 40px : 50px;
+
+                    // 0: Welcome.
+                    if root.step == 0: VerticalLayout {
+                        spacing: 30px;
+                        alignment: center;
+                        HorizontalLayout {
+                            alignment: center;
+                            Image {
+                                width: root.height < 680px ? 96px : 141px;
+                                height: self.width;
+                                source: @image-url("ferricone-symbolic.svg");
+                                colorize: Theme.accent-main;
+                            }
+                        }
+                        Text {
+                            text: "Welcome to Ferricone!";
+                            font-size: 32px;
+                            font-weight: 300;
+                            color: Theme.fg-1;
+                            horizontal-alignment: center;
+                        }
+                        HorizontalLayout {
+                            alignment: center;
+                            Text {
+                                width: min(595px, root.width - 80px);
+                                text: "Ferricone is a free, open media player built on VLC's engine. It plays most video and audio files, network streams and subtitles, and keeps your library close at hand.";
+                                font-size: 16px;
+                                font-weight: 300;
+                                color: Theme.fg-a1;
+                                wrap: word-wrap;
+                                horizontal-alignment: center;
+                            }
+                        }
+                        HorizontalLayout {
+                            alignment: center;
+                            padding-top: 20px;
+                            VerticalLayout {
+                                width: min(595px, root.width - 80px);
+                                spacing: 16px;
+                                Text { text: "Choose a Media Folder to get started with"; font-size: 14px; color: Theme.fg-a2; }
+                                HorizontalLayout {
+                                    height: 36px;
+                                    spacing: 10px;
+                                    Rectangle {
+                                        horizontal-stretch: 1;
+                                        border-radius: 6px;
+                                        border-width: 2px;
+                                        border-color: Theme.bg-a4;
+                                        background: Theme.bg-b2;
+                                        Text {
+                                            x: 12px;
+                                            width: parent.width - 24px;
+                                            text: root.folder == "" ? "No folder: add one later from the library" : root.folder;
+                                            font-size: 16px;
+                                            color: root.folder == "" ? Theme.fg-a4 : Theme.fg-2;
+                                            vertical-alignment: center;
+                                            overflow: elide;
+                                        }
+                                    }
+                                    Rectangle {
+                                        width: 114px;
+                                        border-radius: 6px;
+                                        background: browse-touch.has-hover ? Theme.bg-a1 : Theme.bg-a3;
+                                        Text { text: "Browse"; font-size: 16px; color: Theme.fg-a2; }
+                                        browse-touch := TouchArea { mouse-cursor: pointer; clicked => { root.browse(); } }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 1: Theme and color.
+                    if root.step == 1: VerticalLayout {
+                        spacing: root.short ? 24px : 50px;
+                        alignment: center;
+                        Text {
+                            text: "Select your preferred theme and color.";
+                            font-size: 24px;
+                            font-weight: 300;
+                            color: Theme.fg-a1;
+                            horizontal-alignment: center;
+                            wrap: word-wrap;
+                        }
+                        HorizontalLayout {
+                            alignment: center;
+                            spacing: 40px;
+                            ThemeTile {
+                                text: "Light";
+                                look: 0;
+                                chosen: !root.omarchy && Appearance.mode == 0;
+                                enabled: !root.omarchy;
+                                clicked => { Appearance.set-mode(0); }
+                            }
+                            ThemeTile {
+                                text: "Dark";
+                                look: 1;
+                                chosen: !root.omarchy && Appearance.mode == 1;
+                                enabled: !root.omarchy;
+                                clicked => { Appearance.set-mode(1); }
+                            }
+                            ThemeTile {
+                                text: "System";
+                                look: 2;
+                                chosen: !root.omarchy && Appearance.mode == 2;
+                                enabled: !root.omarchy;
+                                clicked => { Appearance.set-mode(2); }
+                            }
+                        }
+                        // Omarchy's colors, where it is installed.
+                        if Appearance.omarchy-available: HorizontalLayout {
+                            alignment: center;
+                            HorizontalLayout {
+                                width: min(420px, root.width - 80px);
+                                spacing: 16px;
+                                VerticalLayout {
+                                    horizontal-stretch: 1;
+                                    alignment: center;
+                                    Text { text: "Use Omarchy theme colors"; font-size: 16px; color: Theme.fg-a1; }
+                                    Text {
+                                        text: root.omarchy ? "Colors follow your Omarchy theme" : "Pick a theme and color here instead";
+                                        font-size: 12px;
+                                        color: Theme.fg-a3;
+                                    }
+                                }
+                                VerticalLayout {
+                                    alignment: center;
+                                    Toggle {
+                                        on: root.omarchy;
+                                        toggled(on) => { Appearance.set-omarchy(on); }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 2: Keyboard shortcuts, in two columns (one when narrow).
+                    if root.step == 2: VerticalLayout {
+                        spacing: root.short ? 24px : 50px;
+                        alignment: center;
+                        Text {
+                            text: "Learn the basic keyboard shortcuts.";
+                            font-size: 24px;
+                            font-weight: 300;
+                            color: Theme.fg-a1;
+                            horizontal-alignment: center;
+                            wrap: word-wrap;
+                        }
+                        HorizontalLayout {
+                            alignment: center;
+                            spacing: 80px;
+                            VerticalLayout {
+                                spacing: root.narrow || root.short ? 16px : 34px;
+                                Shortcut { label: "Play / Pause"; keys: [Keys.play-pause.name]; }
+                                Shortcut { label: "Seek Backward / Forward"; keys: [Keys.back.name, Keys.forward.name]; }
+                                Shortcut { label: "Previous / Next Item"; keys: [Keys.previous.name, Keys.next.name]; }
+                                Shortcut { label: "Cycle Subtitle Track"; keys: [Keys.subtitle-track.name]; }
+                                Shortcut { label: "Cycle Audio Track"; keys: [Keys.audio-track.name]; }
+                                Shortcut { label: "Stop"; keys: [Keys.stop.name]; }
+                                if root.narrow: Shortcut { label: "Toggle Fullscreen"; keys: [Keys.fullscreen.name]; }
+                                if root.narrow: Shortcut { label: "Increase / Decrease Volume"; keys: [Keys.volume-up.name, Keys.volume-down.name]; }
+                                if root.narrow: Shortcut { label: "Mute"; keys: [Keys.mute.name]; }
+                                if root.narrow: Shortcut { label: "Slower / Faster"; keys: [Keys.slower.name, Keys.faster.name]; }
+                                if root.narrow: Shortcut { label: "Record"; keys: [Keys.record.name]; }
+                                if root.narrow: Shortcut { label: "Hide the Interface"; keys: ["Ctrl", "\\"]; joiner: "+"; }
+                            }
+                            if !root.narrow: VerticalLayout {
+                                spacing: root.short ? 16px : 34px;
+                                Shortcut { label: "Toggle Fullscreen"; keys: [Keys.fullscreen.name]; }
+                                Shortcut { label: "Increase / Decrease Volume"; keys: [Keys.volume-up.name, Keys.volume-down.name]; }
+                                Shortcut { label: "Mute"; keys: [Keys.mute.name]; }
+                                Shortcut { label: "Slower / Faster"; keys: [Keys.slower.name, Keys.faster.name]; }
+                                Shortcut { label: "Record"; keys: [Keys.record.name]; }
+                                Shortcut { label: "Hide the Interface"; keys: ["Ctrl", "\\"]; joiner: "+"; }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // The footer: the accents (theme step) or a note (shortcuts), then
+        // Back and Next / Finish / Done; the step dots under it.
+        HorizontalLayout {
+            padding-left: 30px;
+            padding-right: 30px;
+            padding-top: 16px;
+            spacing: 20px;
+            height: max(root.dot, 32px) + 16px;
+            if root.step == 1: HorizontalLayout {
+                spacing: 0;
+                alignment: start;
+                for swatch in Appearance.accents: AccentDot {
+                    size: root.dot;
+                    swatch: swatch;
+                    chosen: !root.omarchy && Appearance.accent == swatch;
+                    enabled: !root.omarchy;
+                    clicked => { Appearance.set-accent(swatch); }
+                }
+                Rectangle {
+                    width: root.dot;
+                    AccentDot {
+                        size: root.dot;
+                        swatch: root.custom-accent ? Appearance.accent : Theme.bg-a3;
+                        chosen: !root.omarchy && root.custom-accent;
+                        enabled: !root.omarchy;
+                        clicked => { picker.show(); }
+                    }
+                    if !root.custom-accent: Text {
+                        text: "+";
+                        font-size: root.dot * 0.34;
+                        color: Theme.fg-a2;
+                        opacity: root.omarchy ? 0.4 : 1;
+                    }
+                    picker := PopupWindow {
+                        x: 0;
+                        y: -390px;
+                        width: 300px;
+                        height: 380px;
+                        close-policy: close-on-click-outside;
+                        ColorPicker {
+                            initial: Appearance.accent;
+                            chosen(c) => {
+                                Appearance.set-accent(c.with-alpha(1));
+                                picker.close();
+                            }
+                            cancel => { picker.close(); }
+                        }
+                    }
+                }
+            }
+            if root.step == 2: Text {
+                text: "Find more in the right-click and ⋯ menus.";
+                font-size: 14px;
+                color: Theme.fg-a3;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+            Rectangle { horizontal-stretch: 1; }
+            if !root.only && root.step > 0: VerticalLayout {
+                alignment: center;
+                Button {
+                    text: "Back";
+                    clicked => { root.step -= 1; keys.focus(); }
+                }
+            }
+            VerticalLayout {
+                alignment: center;
+                Button {
+                    primary: true;
+                    text: root.only ? "Done" : root.step >= 2 ? "Finish" : "Next";
+                    clicked => { root.next(); }
+                }
+            }
+        }
+        HorizontalLayout {
+            height: 30px;
+            alignment: center;
+            spacing: 6px;
+            for i in (root.only ? 0 : 3): Rectangle {
+                y: 12px;
+                width: i == root.step ? 18px : 6px;
+                height: 6px;
+                border-radius: 3px;
+                background: i == root.step ? Theme.accent-main : Theme.fg-a4;
+                animate width { duration: 150ms; }
+            }
+        }
+    }
+}

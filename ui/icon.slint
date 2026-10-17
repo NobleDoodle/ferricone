@@ -1,0 +1,19 @@
+import { Theme } from "theme.slint";
+import { IconLayers } from "icons.slint";
+
+// One icon from the design's set (ui/icons.slint). Each design color is its
+// own layer, tinted from Theme, so icons follow the theme.
+export component Icon {
+    in property <IconLayers> icon;
+    in property <length> size: 24px;
+    // The main layer: FG/A2 normally, FG/B1 on the accent play button.
+    in property <color> color: Theme.fg-a2;
+
+    width: root.size;
+    height: root.size;
+
+    Image { source: root.icon.line; colorize: Theme.divider-bright; width: 100%; height: 100%; }
+    Image { source: root.icon.fg; colorize: root.color; width: 100%; height: 100%; }
+    Image { source: root.icon.dim; colorize: Theme.accent-dim; width: 100%; height: 100%; }
+    Image { source: root.icon.accent; colorize: Theme.accent-main; width: 100%; height: 100%; }
+}

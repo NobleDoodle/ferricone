@@ -1,0 +1,1675 @@
+// The player window (plan §3): title bar, the video, control bar, the tracks
+// panel, menus, the network dialog, resize edges and keyboard shortcuts.
+//
+// Pinned (the default in a window): opaque bars around the video, which sits
+// in a BG/A3 frame inset 10 px with rounded corners.
+// Immersive (fullscreen, or "Hide UI" Ctrl+\, Figma "Player - hide UI"): the
+// video fills the window and the bars slide in as glass when the pointer
+// nears their edge, and out as soon as it leaves. The cursor hides when idle.
+import { Theme, Appearance } from "theme.slint";
+import { TitleBar, ControlBar, TracksTab, SeekPreview, CueBlock } from "controls.slint";
+import { TracksPanel, TrackItem, QueuePanel, QueueTab, RepeatMode, QueueRow, MarkRow, ChapterRow } from "panels.slint";
+import { Menu, MenuEntry, MenuAction } from "menus.slint";
+import { NetworkDialog, NewPlaylistDialog } from "dialogs.slint";
+import { SettingsPanel, SettingsTab, FilterRow, RowKind } from "settings.slint";
+import { Osd, OsdMessage, PromptPill } from "osd.slint";
+import { Glass, VideoBox } from "glass.slint";
+import { Icons, IconLayers } from "icons.slint";
+import { Icon } from "icon.slint";
+import { Palette, FontList, PickerDiag } from "pickers.slint";
+import { LibraryDock, FullLibrary, LibRow, LibSection } from "library.slint";
+import { MiniPlayer } from "miniplayer.slint";
+import { Onboarding } from "onboarding.slint";
+import { Keys, KeyBinding } from "keys.slint";
+import { ShortcutsDialog, ShortcutRow } from "shortcuts.slint";
+import { AddSubtitlesDialog, SubFileRow, SubPairRow } from "addsubs.slint";
+import { AboutDialog } from "about.slint";
+import { PreferencesDialog, SettingItem, SettingGroup, SettingKind } from "preferences.slint";
+
+export { Theme, Appearance, Keys, KeyBinding, ShortcutRow, SubFileRow, SubPairRow, SettingItem, SettingGroup, SettingKind, Icons, Palette, FontList, PickerDiag, LibRow, LibSection, MenuEntry, MenuAction, CueBlock, SettingsTab, FilterRow, RowKind, TracksTab, TrackItem, QueueTab, RepeatMode, QueueRow, MarkRow, ChapterRow }
+
+export enum ResizeEdge { north, south, east, west, north-east, north-west, south-east, south-west }
+
+enum MenuKind { none, context, more, library }
+
+component Grip inherits TouchArea {
+    in property <ResizeEdge> edge;
+    callback start-resize(ResizeEdge);
+
+    pointer-event(event) => {
+        if event.kind == PointerEventKind.down && event.button == PointerEventButton.left {
+            root.start-resize(root.edge);
+        }
+    }
+}
+
+export component AppWindow inherits Window {
+    in property <image> video-frame;
+    // The blurred frame behind frosted overlays; Rust fills it while wanted.
+    in property <image> video-backdrop;
+    out property <float> video-aspect: video-box.width / video-box.height;
+    out property <bool> wants-backdrop: root.tracks-open || root.queue-open || root.settings-open || root.statistics || root.menu != MenuKind.none || root.network-open || root.playlist-dialog-open || root.osd-shown || root.resume-shown || root.up-next-shown || root.preview-shown
+        || (root.immersive && (root.show-top || root.show-bottom || root.dock-open));
+    // The library dock (src/library.rs).
+    in-out property <bool> dock-open;
+    in property <int> lib-page;
+    in property <bool> lib-deep;
+    in property <[string]> lib-crumbs;
+    in property <string> lib-count;
+    in property <bool> lib-can-back;
+    in property <bool> lib-can-forward;
+    in property <[LibRow]> lib-rows;
+    // The full library, in place of the player.
+    in-out property <bool> lib-full;
+    in property <[LibSection]> lib-sections;
+    in property <bool> lib-grid;
+    in property <[string]> lib-sort-labels;
+    in property <int> lib-sort;
+    in property <int> lib-action;
+    in property <string> lib-action-label;
+    callback lib-set-sort(int);
+    // The library's right-click (a row) and ⋯ (the page) menus: Rust fills
+    // the entries (false: the row has none), then they open at the pointer.
+    in property <[MenuEntry]> lib-menu-entries;
+    in property <[MenuEntry]> lib-playlist-entries;
+    callback lib-row-menu(int) -> bool;
+    callback lib-page-menu();
+    callback lib-menu-action(MenuAction, int);
+    public function open-library-row-menu(index: int, x: length, y: length) {
+        if root.lib-row-menu(index) {
+            root.open-library-menu(x, y);
+        }
+    }
+    public function open-library-page-menu(x: length, y: length) {
+        root.lib-page-menu();
+        root.open-library-menu(x, y);
+    }
+    callback lib-set-grid(bool);
+    callback lib-refresh();
+    callback lib-thumbs-arrived();
+    callback lib-remote-arrived();
+    callback lib-tags-arrived();
+    // Saves typed links as a stream list; false when there were none.
+    callback lib-save-streams(string, string) -> bool;
+    callback lib-go-page(int);
+    callback lib-crumb(int);
+    callback lib-back();
+    callback lib-forward();
+    callback lib-open(int);
+    callback lib-search(string);
+    // The title bar's folder crumb: the dock at the loaded item's folder.
+    callback lib-reveal();
+    callback lib-add-folder();
+    changed dock-open => {
+        if self.dock-open { root.lib-refresh(); }
+    }
+    // Devices are looked for from the first time the sidebar opens.
+    changed settings-open => {
+        if self.settings-open { root.render-start(); }
+    }
+    changed lib-full => {
+        if self.lib-full { root.lib-refresh(); }
+    }
+    // The introduction (ui/onboarding.slint): on first run, or one step
+    // alone from the ⋯ menu.
+    in-out property <bool> intro-open;
+    in-out property <int> intro-step;
+    in-out property <bool> intro-only;
+    in property <string> intro-folder;
+    callback intro-browse();
+    callback intro-finish();
+    public function show-intro(step: int, only: bool) {
+        root.close-menus();
+        root.intro-step = step;
+        root.intro-only = only;
+        root.intro-open = true;
+    }
+    // The Settings window (src/preferences.rs).
+    in-out property <bool> prefs-open;
+    in-out property <int> prefs-page;
+    in property <string> prefs-title;
+    in property <[SettingGroup]> prefs-groups;
+    in property <bool> prefs-searching;
+    in property <bool> prefs-has-advanced;
+    callback prefs-show-page(int);
+    callback prefs-search(string);
+    callback prefs-toggled(string, bool);
+    callback prefs-chosen(string, int);
+    callback prefs-slid(string, float, bool);
+    callback prefs-typed(string, string);
+    callback prefs-pressed(string);
+    public function open-preferences() {
+        root.close-menus();
+        root.prefs-open = true;
+        root.prefs-show-page(root.prefs-page);
+    }
+    // Play On (src/cast.rs).
+    in property <[string]> render-options;
+    in property <int> render-selected;
+    in property <bool> render-searching;
+    callback render-start();
+    callback render-choose(int);
+    // Add Subtitles (src/addsubs.rs).
+    in-out property <bool> addsubs-open;
+    in property <bool> addsubs-folder-mode;
+    in property <string> addsubs-location;
+    in property <[SubFileRow]> addsubs-files;
+    in property <[SubPairRow]> addsubs-pairs;
+    in property <string> addsubs-note;
+    in property <bool> addsubs-online;
+    in property <string> addsubs-query;
+    in property <[string]> addsubs-languages;
+    in property <int> addsubs-language;
+    in property <[SubFileRow]> addsubs-results;
+    in property <bool> addsubs-busy;
+    callback addsubs-set-online(bool);
+    callback addsubs-search(string, int);
+    callback addsubs-toggle-result(int);
+    callback addsubs-for-loaded();
+    callback addsubs-set-folder-mode(bool);
+    callback addsubs-toggle(int);
+    callback addsubs-pick(int, int);
+    callback addsubs-browse();
+    callback addsubs-save();
+    // The Keyboard Shortcuts dialog (src/shortcuts.rs).
+    in-out property <bool> shortcuts-open;
+    in property <[ShortcutRow]> shortcut-rows;
+    callback open-shortcuts();
+    callback shortcut-assign(int, string) -> bool;
+    callback shortcuts-reset();
+    callback shortcuts-save();
+    // Preferences the window follows.
+    in property <bool> pref-title-file: true;
+    in property <bool> pref-bars-always;
+    in property <int> pref-hide-after: 2000;
+    in property <bool> pref-scrub-preview: true;
+    in property <string> media-title;
+    in property <string> folder-name;
+    in property <bool> fullscreen;
+    in-out property <bool> ui-hidden;
+
+    in property <bool> has-media;
+    // False for audio: the music control bar, the waveform and the cover.
+    in property <bool> has-video: true;
+    in property <image> cover;
+    // The music player's backdrop and caption (src/art.rs).
+    in property <image> cover-blur;
+    in property <string> music-caption;
+    // The waveform in the seek bar, toggled by the elapsed-time chip (video);
+    // levels come from src/waveform.rs once `want-waveform` asked for them.
+    in-out property <bool> waveform-on;
+    in property <[int]> waveform-levels;
+    property <bool> waveform-shown: root.has-media && (root.waveform-on || !root.has-video);
+    changed waveform-shown => {
+        if self.waveform-shown {
+            root.want-waveform();
+        }
+    }
+    // The seek preview: Rust offers it for files and answers
+    // `preview(position)` with a frame and its time.
+    in property <bool> preview-available;
+    in property <image> preview-frame;
+    in property <bool> preview-ready;
+    in property <string> preview-time;
+    // Where the pointer is on the track (0–1); `preview-pinned` shows the
+    // preview without a pointer, for screenshots (src/diag.rs).
+    in-out property <float> preview-at;
+    in-out property <bool> preview-pinned;
+    // Not while adjusting subtitle timing: clicking then moves within the
+    // zoomed window, which the whole-track preview doesn't match.
+    property <bool> preview-shown: root.preview-available && root.has-video && root.seekable
+        && !(root.timeline && root.timeline-adjust && root.has-media)
+        && root.pref-scrub-preview
+        && (controls.seek-hovered || root.preview-pinned);
+    // The item was left part way: the resume pill offers to continue at
+    // `resume-time`; playback meanwhile starts from the top.
+    in-out property <bool> resume-shown;
+    in property <string> resume-time;
+    // The item ended with nothing queued after it: the next file in its
+    // folder plays after a countdown, unless dismissed.
+    in-out property <bool> up-next-shown;
+    in property <string> up-next-title;
+    in-out property <int> up-next-left: 5;
+    in property <bool> has-previous;
+    in property <bool> has-next;
+    in property <bool> recording;
+    in property <bool> playing;
+    in property <bool> seekable;
+    in property <float> position;
+    in property <string> time-text: "00:00:00";
+    in property <string> length-text: "00:00:00";
+    in property <float> volume: 1;
+    in property <bool> muted;
+
+    in-out property <bool> tracks-open;
+    // The settings sidebar (the control bar's ⚙, src/settings.rs).
+    in-out property <bool> settings-open;
+    in-out property <SettingsTab> settings-tab;
+    in property <float> speed: 1;
+    in property <[string]> sleep-options;
+    in-out property <int> sleep;
+    in-out property <bool> statistics;
+    // The subtitle timeline on the seek bar (src/subtimeline.rs).
+    in property <bool> timeline;
+    // Adjusting the subtitle timing on it: the zoomed window and dragging
+    // lines. For this run only, off at start.
+    in-out property <bool> timeline-adjust;
+    in property <[CueBlock]> cues;
+    callback set-timeline(bool);
+    callback set-timeline-adjust(bool);
+    callback seek-window(float);
+    callback cue-dragged(float, bool);
+    callback timeline-zoom(int);
+    // Subtitle times read off the UI thread are in.
+    callback cues-arrived();
+    in property <string> stats-text;
+    in property <[string]> stereo-options;
+    in property <int> stereo;
+    in property <float> audio-delay;
+    in property <string> audio-delay-text;
+    in property <float> subtitle-delay;
+    in property <string> subtitle-delay-text;
+    in property <[string]> eq-presets;
+    in property <int> eq-preset;
+    in property <[FilterRow]> eq-rows;
+    in property <bool> two-pass;
+    in property <bool> compressor-on;
+    in property <[FilterRow]> compressor-rows;
+    in property <bool> spatializer-on;
+    in property <[FilterRow]> spatializer-rows;
+    in property <bool> widener-on;
+    in property <[FilterRow]> widener-rows;
+    in property <float> pitch;
+    in property <string> pitch-text;
+    callback choose-eq(int);
+    callback eq-moved(int, float, bool);
+    callback eq-typed(int, string);
+    callback set-two-pass(bool);
+    callback set-filter(string, bool);
+    callback filter-moved(string, int, float, bool);
+    callback set-pitch(float);
+    in property <[string]> presets;
+    in property <int> preset;
+    callback set-speed(float);
+    callback typed-speed(string);
+    callback nudge-speed(float);
+    callback set-sleep(int);
+    callback set-statistics(bool);
+    callback set-stereo(int);
+    callback set-audio-delay(float);
+    callback typed-audio-delay(string);
+    callback nudge-audio-delay(float);
+    callback set-subtitle-delay(float);
+    callback typed-subtitle-delay(string);
+    callback nudge-subtitle-delay(float);
+    callback choose-preset(int);
+    // The item started playing (VLC reported it): its preset applies.
+    callback media-started();
+
+    // How the frame is drawn (the Video tab, src/video_fx.rs): flip 0 none,
+    // 1 horizontal, 2 vertical; degrees; zoom 0 fits, else video pixels per
+    // screen pixel; aspect and crop shape as width / height, 0 for none; the
+    // edges cropped off, in video pixels.
+    in property <int> view-flip;
+    in property <float> view-rotate;
+    in property <string> audio-track-text;
+    in property <string> audio-language-text;
+    in property <string> subtitle-track-text;
+    in property <string> subtitle-language-text;
+    in property <string> sub-font-text;
+    in property <string> sub-color-text;
+    in property <color> sub-color;
+    in property <string> sub-outline-color-text;
+    in property <color> sub-outline-color;
+    in property <string> sub-offset-text;
+    in property <float> sub-scale;
+    in property <string> sub-scale-text;
+    in property <float> sub-outline;
+    in property <string> sub-outline-text;
+    in property <float> sub-background;
+    in property <string> sub-background-text;
+    callback typed-track(string, string);
+    callback typed-subtitle-style(string, string);
+    callback set-subtitle-level(string, float);
+    in property <float> view-zoom;
+    in property <float> view-aspect;
+    in property <float> view-crop;
+    in property <int> view-top;
+    in property <int> view-bottom;
+    in property <int> view-left;
+    in property <int> view-right;
+    in property <string> rotate-text;
+    in property <[string]> zoom-options;
+    in property <int> zoom;
+    in property <[string]> ratio-options;
+    in property <int> aspect;
+    in property <int> crop;
+    in property <[FilterRow]> essential-rows;
+    in property <[FilterRow]> crop-rows;
+    in property <[FilterRow]> colors-rows;
+    callback set-flip(int);
+    callback typed-rotate(string);
+    callback set-zoom(int);
+    callback set-aspect(int);
+    callback set-crop(int);
+    callback video-moved(string, int, float, bool);
+    callback video-typed(string, int, string);
+    callback video-toggled(string, int, bool);
+
+    // The queue panel (the control bar's ≡): the play order, the item's
+    // bookmarks and its chapters.
+    in-out property <bool> queue-open;
+    in-out property <QueueTab> queue-tab;
+    in property <[QueueRow]> queue-items;
+    in property <string> queue-summary;
+    in property <RepeatMode> repeat;
+    in property <[MarkRow]> marks;
+    in property <[ChapterRow]> chapters;
+    in-out property <TracksTab> tracks-tab: TracksTab.audio;
+    in property <[TrackItem]> video-tracks;
+    in property <[TrackItem]> audio-tracks;
+    in property <[TrackItem]> subtitle-tracks;
+    in property <[TrackItem]> audio-devices;
+
+    callback start-move();
+    callback start-resize(ResizeEdge);
+    callback toggle-fullscreen();
+    callback toggle-play();
+    callback seek(float, bool);
+    callback jump(float);
+    callback set-volume(float);
+    callback toggle-mute();
+    callback toggle-remaining();
+    callback previous();
+    callback next();
+    callback stop();
+    callback toggle-record();
+    callback want-waveform();
+    callback play-item(int);
+    callback move-item(int, int);
+    callback remove-item(int);
+    callback add-items();
+    callback sort-items();
+    callback cycle-repeat();
+    callback shuffle-queue();
+    callback go-mark(int);
+    // Returns the new bookmark's name, or "" when nothing plays.
+    callback add-mark() -> string;
+    callback remove-mark(int);
+    callback go-chapter(int);
+    // VLC reported the item ended: the next one, as repeat says.
+    callback media-ended();
+    // Rebuild a list from the player (VLC reported a change).
+    callback refresh-chapters();
+    // Off-thread durations for the queue are in.
+    callback durations-arrived();
+    callback preview(float);
+    // Off-thread results are in (src/seekbar.rs).
+    callback preview-arrived();
+    callback waveform-arrived();
+    callback resume();
+    callback play-up-next();
+    // Playlists (src/playlists.rs): the menu's list, opening one, and the
+    // New Playlist dialog, empty or holding the queue.
+    callback refresh-playlists();
+    callback open-playlist(int);
+    callback new-playlist(bool);
+    callback playlist-add-files();
+    callback playlist-pick-cover();
+    // Returns whether it was saved.
+    callback save-playlist(string) -> bool;
+    in-out property <bool> playlist-dialog-open;
+    in property <[string]> playlist-files;
+    in property <image> playlist-cover;
+    callback quit();
+    // Ask for files or a folder through the system dialog.
+    callback open-files();
+    callback open-folder();
+    // Typed or pasted locations, one per line.
+    callback open-locations(string);
+    // Refreshes time and position from VLC's clock.
+    callback tick();
+    // Rebuilds the track lists from the player (VLC reported a track change).
+    callback refresh-tracks();
+    // Passes the item's tags to the desktop's media controls (VLC read them).
+    callback refresh-meta();
+    callback select-track(TracksTab, string);
+    // VLC's B / V: the next audio or subtitle track, "None" included; returns
+    // its name, or "" when nothing is open.
+    callback cycle-track(TracksTab) -> string;
+    callback select-device(string);
+    callback refresh-devices();
+
+    property <string> display-title: root.media-title == "" ? "Ferricone Player" : root.media-title;
+    property <length> grip: 6px;
+    property <length> top-h: 40px;
+    property <length> bottom-h: 54px;
+    property <bool> immersive: root.fullscreen || root.ui-hidden;
+    // The pointer within 8 px of where a hidden bar would be.
+    property <bool> near-top: video-touch.has-hover && video-touch.mouse-y < root.top-h + 8px;
+    property <bool> near-bottom: video-touch.has-hover && video-touch.mouse-y > video-touch.height - root.bottom-h - 8px;
+    // Over the video, the bars show near the edges, while the pointer moves,
+    // or always (Settings › Interface).
+    property <bool> show-top: !root.immersive || root.pref-bars-always || !root.cursor-idle || root.near-top || title.hovered || root.menu == MenuKind.more;
+    // The full library has the miniplayer instead.
+    property <bool> show-bottom: !root.lib-full && (!root.immersive || root.pref-bars-always || !root.cursor-idle || root.tracks-open || root.queue-open || root.settings-open || root.near-bottom || controls.hovered);
+    property <bool> mini-left;
+    property <bool> cursor-idle;
+    property <VideoBox> video: {
+        backdrop: root.video-backdrop,
+        x: video-box.absolute-position.x,
+        y: video-box.absolute-position.y,
+        width: video-box.width,
+        height: video-box.height,
+    };
+
+    property <MenuKind> menu;
+    property <length> menu-x;
+    property <length> menu-y;
+    // The right-click menu's open submenu (Open Media or Playlist), beside
+    // the row at `submenu-y`.
+    in-out property <MenuAction> submenu;
+    in-out property <length> submenu-y;
+    // The Playlist submenu: queue actions and the saved playlists (Rust).
+    in property <[MenuEntry]> playlist-entries;
+    property <bool> network-open;
+    property <bool> network-save;
+
+    property <[MenuEntry]> context-entries: [
+        { action: MenuAction.play, icon: root.playing ? Icons.pause : Icons.playback-two-tone, label: root.playing ? "Pause" : "Play", hint: "Space" },
+        { action: MenuAction.stop, icon: Icons.stop-two-tone, label: "Stop", hint: "S", disabled: !root.has-media },
+        { action: MenuAction.previous, icon: Icons.previous-two-tone, label: "Previous Item", hint: "P", disabled: !root.has-media },
+        { action: MenuAction.next, icon: Icons.next-two-tone, label: "Next Item", hint: "N", disabled: !root.has-next },
+        { action: MenuAction.record, icon: root.recording ? Icons.record-active : Icons.record-two-tone, label: root.recording ? "Stop Recording" : "Record", hint: "R", disabled: !root.has-media },
+        { action: MenuAction.hide-ui, icon: Icons.ui, label: root.ui-hidden ? "Show UI" : "Hide UI", hint: "Ctrl + \\", divider-before: true },
+        { action: MenuAction.playback, icon: Icons.playback-selected-two-tone, label: "Playback", submenu: true, divider-before: true },
+        { action: MenuAction.video, icon: Icons.video-two-tone, label: "Video", submenu: true, disabled: !root.has-media },
+        { action: MenuAction.audio, icon: Icons.audio-two-tone, label: "Audio", submenu: true, disabled: !root.has-media },
+        { action: MenuAction.subtitle, icon: Icons.subtitles-two-tone, label: "Subtitle", submenu: true, disabled: !root.has-media },
+        { action: MenuAction.more-settings, icon: Icons.settings-two-tone, label: "More Settings", submenu: true, disabled: true, divider-before: true },
+        { action: MenuAction.playlist, icon: Icons.playlist-two-tone, label: "Playlist", submenu: true },
+        { action: MenuAction.open-media, icon: Icons.file-two-tone, label: "Open Media", submenu: true },
+        { action: MenuAction.quit, icon: Icons.quit-two-tone, label: "Quit", hint: "Ctrl + Q" },
+    ];
+    // The ⋯ menu's open section, which is also the Open Media submenu.
+    property <[MenuEntry]> open-entries: [
+        { action: MenuAction.open-file, icon: Icons.file-two-tone, label: "Open File(s)", hint: "Ctrl + O" },
+        { action: MenuAction.open-folder, icon: Icons.folder-two-tone, label: "Open Folder", hint: "Ctrl + F" },
+        { action: MenuAction.open-network, icon: Icons.streaming-two-tone, label: "Open Network Stream", hint: "Ctrl + N" },
+        { action: MenuAction.open-disc, icon: Icons.disc-two-tone, label: "Open Disc", hint: "Ctrl + D", disabled: true },
+        { action: MenuAction.open-capture, icon: Icons.capture-device-two-tone, label: "Open Capture Device", hint: "Ctrl + C", disabled: true },
+        { action: MenuAction.convert, icon: Icons.swap-two-tone, label: "Convert", hint: "Ctrl + R", disabled: true },
+        { action: MenuAction.open-recent, icon: Icons.recent-two-tone, label: "Open Recent", submenu: true },
+    ];
+    property <[MenuEntry]> more-entries: [
+        { action: MenuAction.open-file, icon: Icons.file-two-tone, label: "Open File(s)", hint: "Ctrl + O" },
+        { action: MenuAction.open-folder, icon: Icons.folder-two-tone, label: "Open Folder", hint: "Ctrl + F" },
+        { action: MenuAction.open-network, icon: Icons.streaming-two-tone, label: "Open Network Stream", hint: "Ctrl + N" },
+        { action: MenuAction.open-disc, icon: Icons.disc-two-tone, label: "Open Disc", hint: "Ctrl + D", disabled: true },
+        { action: MenuAction.open-capture, icon: Icons.capture-device-two-tone, label: "Open Capture Device", hint: "Ctrl + C", disabled: true },
+        { action: MenuAction.convert, icon: Icons.swap-two-tone, label: "Convert", hint: "Ctrl + R", disabled: true },
+        { action: MenuAction.open-recent, icon: Icons.recent-two-tone, label: "Open Recent", submenu: true },
+        { action: MenuAction.profile, icon: Icons.profile-two-tone, label: "Profile (Movies)", submenu: true, disabled: true, divider-before: true },
+        { action: MenuAction.shortcuts, icon: Icons.hotkeys-two-tone, label: "Keyboard Shortcuts" },
+        { action: MenuAction.appearance, icon: Icons.paint-two-tone, label: "Appearance" },
+        { action: MenuAction.customize, icon: Icons.paint-two-tone, label: "Customize Player", check: true, disabled: true },
+        { action: MenuAction.settings, icon: Icons.settings-two-tone, label: "Settings", hint: "Ctrl + P" },
+        { action: MenuAction.about, icon: Icons.info-two-tone, label: "About Ferricone", hint: "Shift + F1" },
+        { action: MenuAction.introduction, icon: Icons.info-two-tone, label: "Show Introduction" },
+    ];
+
+    // The on-screen message for the last key, shown for 1.5 s.
+    in-out property <OsdMessage> osd;
+    in-out property <bool> osd-shown;
+
+    osd-timer := Timer {
+        interval: 1500ms;
+        running: root.osd-shown;
+        triggered => { root.osd-shown = false; }
+    }
+
+    Timer {
+        interval: 1s;
+        running: root.up-next-shown;
+        triggered => {
+            root.up-next-left -= 1;
+            if root.up-next-left <= 0 {
+                root.up-next-shown = false;
+                root.play-up-next();
+            }
+        }
+    }
+
+    // The pill leaves on its own after 15 s.
+    Timer {
+        interval: 15s;
+        running: root.resume-shown;
+        triggered => { root.resume-shown = false; }
+    }
+
+    public function show-osd(icon: IconLayers, text: string, key: string) {
+        root.osd = { icon: icon, text: text, key: key };
+        root.osd-shown = true;
+        osd-timer.restart();
+    }
+
+    function show-volume(key: string) {
+        if root.muted {
+            root.show-osd(Icons.volume-high, "Muted", key);
+        } else {
+            root.show-osd(Icons.volume-high, "Volume \{round(root.volume * 100)} %", key);
+        }
+    }
+
+    function show-track(tab: TracksTab, key: string) {
+        let name = root.cycle-track(tab);
+        if name == "" { return; }
+        if tab == TracksTab.audio {
+            root.show-osd(Icons.audio, "Audio track: \{name}", key);
+        } else {
+            root.show-osd(Icons.subtitles, "Subtitles: \{name}", key);
+        }
+    }
+
+    function close-menus() {
+        root.menu = MenuKind.none;
+        root.submenu = MenuAction.none;
+    }
+
+    public function open-context-menu(x: length, y: length) {
+        root.close-menus();
+        root.refresh-playlists();
+        root.menu-x = x;
+        root.menu-y = y;
+        root.menu = MenuKind.context;
+    }
+
+    function open-library-menu(x: length, y: length) {
+        root.close-menus();
+        root.menu-x = x;
+        root.menu-y = y;
+        root.menu = MenuKind.library;
+    }
+
+    public function show-more-menu() {
+        root.close-menus();
+        root.refresh-recent();
+        root.menu = MenuKind.more;
+    }
+    // ⋯ › Open Recent: the last items played (src/recent.rs).
+    in property <[MenuEntry]> recent-entries;
+    callback refresh-recent();
+    callback open-recent-item(int);
+    // About Ferricone (src/about.rs).
+    in-out property <bool> about-open;
+    in property <string> about-version;
+    in property <string> about-engine;
+    callback show-about();
+    // A web page, in the browser (About's links).
+    callback open-link(string);
+
+    public function show-network-dialog() {
+        root.close-menus();
+        root.network-save = false;
+        root.network-open = true;
+    }
+
+    // The library's Add Network Stream: the same dialog, saving.
+    public function show-save-streams-dialog() {
+        root.close-menus();
+        root.network-save = true;
+        root.network-open = true;
+    }
+
+    function close-network-dialog() {
+        root.network-open = false;
+        keys.focus();
+    }
+
+    function show-tracks(tab: TracksTab) {
+        root.queue-open = false;
+        root.settings-open = false;
+        root.tracks-tab = tab;
+        root.tracks-open = true;
+        if tab == TracksTab.audio {
+            root.refresh-devices();
+        }
+    }
+
+    function activate(action: MenuAction, index: int) {
+        if action == MenuAction.open-media || action == MenuAction.playlist {
+            root.submenu = action;
+            return;
+        }
+        // In the ⋯ menu it opens beside; elsewhere, the library's Recent.
+        if action == MenuAction.open-recent && root.menu == MenuKind.more {
+            root.submenu = action;
+            return;
+        }
+        root.close-menus();
+        if action == MenuAction.open-recent || action == MenuAction.show-recent {
+            root.dock-open = true;
+            root.lib-go-page(5);
+        }
+        if action == MenuAction.open-recent-item { root.open-recent-item(index); }
+        if action == MenuAction.about { root.show-about(); }
+        if action == MenuAction.play { root.toggle-play(); }
+        if action == MenuAction.stop { root.stop(); }
+        if action == MenuAction.previous { root.previous(); }
+        if action == MenuAction.next { root.next(); }
+        if action == MenuAction.record { root.toggle-record(); }
+        if action == MenuAction.hide-ui { root.ui-hidden = !root.ui-hidden; }
+        if action == MenuAction.video { root.show-tracks(TracksTab.video); }
+        if action == MenuAction.audio { root.show-tracks(TracksTab.audio); }
+        if action == MenuAction.subtitle { root.show-tracks(TracksTab.subtitles); }
+        if action == MenuAction.playback { root.show-settings(SettingsTab.playback); }
+        if action == MenuAction.show-queue {
+            root.tracks-open = false;
+            root.settings-open = false;
+            root.queue-tab = QueueTab.queue;
+            root.queue-open = true;
+        }
+        if action == MenuAction.new-playlist { root.new-playlist(false); }
+        if action == MenuAction.shortcuts { root.close-menus(); root.open-shortcuts(); }
+        if action == MenuAction.settings { root.open-preferences(); }
+        if action == MenuAction.appearance { root.show-intro(1, true); }
+        if action == MenuAction.introduction { root.show-intro(0, false); }
+        if action == MenuAction.save-queue { root.new-playlist(true); }
+        if action == MenuAction.open-playlist { root.open-playlist(index); }
+        if action == MenuAction.quit { root.quit(); }
+        if action == MenuAction.open-file { root.open-files(); }
+        if action == MenuAction.open-folder { root.open-folder(); }
+        if action == MenuAction.open-network { root.show-network-dialog(); }
+    }
+
+    function toggle-queue() {
+        root.tracks-open = false;
+        root.settings-open = false;
+        root.queue-open = !root.queue-open;
+    }
+
+    public function show-settings(tab: SettingsTab) {
+        root.tracks-open = false;
+        root.queue-open = false;
+        root.settings-tab = tab;
+        root.settings-open = true;
+    }
+
+    function add-bookmark() {
+        let name = root.add-mark();
+        if name != "" {
+            root.show-osd(Icons.bookmark, "\{name} at \{root.time-text}", "Ctrl + B");
+        }
+    }
+
+    function open-tracks(tab: TracksTab) {
+        if root.tracks-open && root.tracks-tab == tab {
+            root.tracks-open = false;
+            return;
+        }
+        root.show-tracks(tab);
+    }
+
+    title: root.display-title;
+    no-frame: true;
+    // Shortcuts work from the start, without clicking into the window first.
+    forward-focus: keys;
+    preferred-width: 1280px;
+    preferred-height: 760px;
+    background: Theme.bg-a3;
+
+    // Only while playing: a paused player wakes nothing.
+    Timer {
+        interval: 200ms;
+        running: root.playing;
+        triggered => { root.tick(); }
+    }
+
+    // Hides the cursor after 2 s without movement while immersive.
+    idle := Timer {
+        interval: max(200ms, root.pref-hide-after * 1ms);
+        running: root.immersive && !root.cursor-idle;
+        triggered => { root.cursor-idle = true; }
+    }
+
+    keys := FocusScope {
+        // Keys act once per press, like clicking their buttons; the arrows
+        // repeat while held. Ctrl shortcuts are the menus' hints.
+        key-pressed(event) => {
+            if event.modifiers.control {
+                if event.text == "\\" {
+                    if !event.repeat {
+                        root.ui-hidden = !root.ui-hidden;
+                        root.show-osd(Icons.ui, root.ui-hidden ? "Interface hidden" : "Interface shown", "Ctrl + \\");
+                    }
+                    return accept;
+                }
+                if event.text == "q" { root.quit(); return accept; }
+                if event.text == "p" { if !event.repeat { root.open-preferences(); } return accept; }
+                if event.text == "b" { if !event.repeat { root.add-bookmark(); } return accept; }
+                if event.text == "o" { if !event.repeat { root.close-menus(); root.open-files(); } return accept; }
+                if event.text == "f" { if !event.repeat { root.close-menus(); root.open-folder(); } return accept; }
+                if event.text == "n" { if !event.repeat { root.show-network-dialog(); } return accept; }
+                return reject;
+            }
+            if event.text == Key.F1 && event.modifiers.shift { if !event.repeat { root.show-about(); } return accept; }
+            if event.modifiers.alt || event.modifiers.meta { return reject; }
+            // Each message is read after the action, from the state it left.
+            // The keys are the Keyboard Shortcuts dialog's (ui/keys.slint).
+            if event.text == Keys.play-pause.key {
+                if !event.repeat {
+                    let was-playing = root.playing;
+                    root.toggle-play();
+                    if root.has-media {
+                        root.show-osd(was-playing ? Icons.pause : Icons.play, was-playing ? "Paused" : "Playing", Keys.play-pause.name);
+                    }
+                }
+                return accept;
+            }
+            if event.text == Keys.back.key { root.jump(-10); root.show-osd(Icons.backward-10-sec, "Back 10 s", Keys.back.name); return accept; }
+            if event.text == Keys.forward.key { root.jump(10); root.show-osd(Icons.forward-10-sec, "Forward 10 s", Keys.forward.name); return accept; }
+            if event.text == Keys.volume-up.key { root.set-volume(min(2, root.volume + 0.05)); root.show-volume(Keys.volume-up.name); return accept; }
+            if event.text == Keys.volume-down.key { root.set-volume(max(0, root.volume - 0.05)); root.show-volume(Keys.volume-down.name); return accept; }
+            if event.text == Keys.fullscreen.key {
+                if !event.repeat {
+                    root.toggle-fullscreen();
+                    root.show-osd(Icons.fullscreen, root.fullscreen ? "Fullscreen" : "Windowed", Keys.fullscreen.name);
+                }
+                return accept;
+            }
+            if event.text == Keys.mute.key { if !event.repeat { root.toggle-mute(); root.show-volume(Keys.mute.name); } return accept; }
+            if event.text == Keys.audio-track.key { if !event.repeat { root.show-track(TracksTab.audio, Keys.audio-track.name); } return accept; }
+            if event.text == Keys.subtitle-track.key { if !event.repeat { root.show-track(TracksTab.subtitles, Keys.subtitle-track.name); } return accept; }
+            if event.text == Keys.slower.key { root.nudge-speed(-0.25); return accept; }
+            if event.text == Keys.faster.key { root.nudge-speed(0.25); return accept; }
+            if event.text == Keys.audio-earlier.key { root.nudge-audio-delay(-0.05); return accept; }
+            if event.text == Keys.audio-later.key { root.nudge-audio-delay(0.05); return accept; }
+            if event.text == Keys.subtitles-earlier.key { root.nudge-subtitle-delay(-0.05); return accept; }
+            if event.text == Keys.subtitles-later.key { root.nudge-subtitle-delay(0.05); return accept; }
+            if event.text == Keys.stop.key {
+                if !event.repeat && root.has-media {
+                    root.stop();
+                    root.show-osd(Icons.stop, "Stopped", Keys.stop.name);
+                }
+                return accept;
+            }
+            if event.text == Keys.previous.key {
+                if !event.repeat && root.has-media {
+                    let moves = root.has-previous;
+                    root.previous();
+                    root.show-osd(Icons.previous, moves ? "Previous: \{root.display-title}" : "From the start", Keys.previous.name);
+                }
+                return accept;
+            }
+            if event.text == Keys.next.key {
+                if !event.repeat && root.has-media {
+                    let moves = root.has-next;
+                    root.next();
+                    root.show-osd(Icons.next, moves ? "Next: \{root.display-title}" : "Last item in the queue", Keys.next.name);
+                }
+                return accept;
+            }
+            if event.text == Keys.record.key {
+                if !event.repeat && root.has-media {
+                    root.show-osd(Icons.record, root.recording ? "Recording stopped" : "Recording", Keys.record.name);
+                    root.toggle-record();
+                }
+                return accept;
+            }
+            if event.text == Key.Return && root.up-next-shown {
+                if !event.repeat {
+                    root.up-next-shown = false;
+                    root.play-up-next();
+                }
+                return accept;
+            }
+            if event.text == Key.Return && root.resume-shown {
+                if !event.repeat {
+                    root.show-osd(Icons.play, "Continuing from \{root.resume-time}", "Enter");
+                    root.resume();
+                }
+                return accept;
+            }
+            if event.text == Key.Escape {
+                if root.menu != MenuKind.none { root.close-menus(); return accept; }
+                if root.tracks-open { root.tracks-open = false; return accept; }
+                if root.queue-open { root.queue-open = false; return accept; }
+                if root.settings-open { root.settings-open = false; return accept; }
+                if root.lib-full { root.lib-full = false; root.dock-open = true; return accept; }
+                if root.dock-open && !root.fullscreen { root.dock-open = false; return accept; }
+                if root.resume-shown { root.resume-shown = false; return accept; }
+                if root.up-next-shown { root.up-next-shown = false; return accept; }
+                if root.fullscreen {
+                    root.toggle-fullscreen();
+                    root.show-osd(Icons.fullscreen, "Windowed", "Esc");
+                    return accept;
+                }
+            }
+            reject
+        }
+
+        video-box := Rectangle {
+            property <length> left: root.dock-open && !root.immersive ? dock.width + 10px : 10px;
+            x: root.immersive ? 0 : self.left;
+            y: root.immersive ? 0 : root.top-h;
+            width: root.immersive ? root.width : root.width - self.left - 10px;
+            height: root.immersive ? root.height : root.height - root.top-h - root.bottom-h;
+            border-radius: root.immersive ? 0 : 10px;
+            clip: true;
+            background: Theme.video-bg;
+
+            // The frame as the Video tab sets it up: the edges and the crop
+            // shape cut from the source, the aspect ratio stretching it, then
+            // rotated, zoomed and mirrored, all drawn on the GPU.
+            Image {
+                property <int> fw: max(1, root.video-frame.width);
+                property <int> fh: max(1, root.video-frame.height);
+                // After the edges.
+                property <int> ew: max(1, self.fw - root.view-left - root.view-right);
+                property <int> eh: max(1, self.fh - root.view-top - root.view-bottom);
+                // After the crop shape, centered.
+                property <int> cw: root.view-crop > 0 && self.ew / self.eh > root.view-crop ? round(self.eh * root.view-crop) : self.ew;
+                property <int> ch: root.view-crop > 0 && self.ew / self.eh < root.view-crop ? round(self.ew / root.view-crop) : self.eh;
+                // The aspect ratio stretches the width.
+                property <float> stretch: root.view-aspect > 0 ? root.view-aspect / (self.fw / self.fh) : 1;
+                property <float> dw: self.cw * self.stretch;
+                property <float> dh: self.ch;
+                property <angle> turn: root.view-rotate * 1deg;
+                property <float> bw: self.dw * abs(cos(self.turn)) + self.dh * abs(sin(self.turn));
+                property <float> bh: self.dw * abs(sin(self.turn)) + self.dh * abs(cos(self.turn));
+                property <float> scale: root.view-zoom > 0 ? root.view-zoom : min(parent.width / (self.bw * 1phx), parent.height / (self.bh * 1phx));
+
+                source: root.video-frame;
+                source-clip-x: root.view-left + (self.ew - self.cw) / 2;
+                source-clip-y: root.view-top + (self.eh - self.ch) / 2;
+                source-clip-width: self.cw;
+                source-clip-height: self.ch;
+                width: self.dw * 1phx * self.scale;
+                height: self.dh * 1phx * self.scale;
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                image-fit: fill;
+                transform-origin: { x: self.width / 2, y: self.height / 2 };
+                transform-rotation: self.turn;
+                transform-scale-x: root.view-flip == 1 ? -100% : 100%;
+                transform-scale-y: root.view-flip == 2 ? -100% : 100%;
+            }
+
+            // The music player (Figma `Player - Music`): the cover blurred
+            // across the frame, the cover itself centered (68 % of the
+            // height; radius 11, Aaron's call over the frame's 20) with a
+            // faint glow, and "title - artist" in Inter 24 Medium below.
+            if root.has-media && !root.has-video: Rectangle {
+                if root.cover-blur.width > 0: Image {
+                    source: root.cover-blur;
+                    width: parent.width;
+                    height: parent.height;
+                    image-fit: ImageFit.cover;
+                }
+                Rectangle { background: root.cover-blur.width > 0 ? #00000040 : transparent; }
+                property <length> side: min(parent.height * 0.68, parent.width * 0.6);
+                property <length> top: max(10px, (parent.height - self.side - 70px) / 2);
+                Rectangle {
+                    x: (parent.width - parent.side) / 2;
+                    y: parent.top;
+                    width: parent.side;
+                    height: parent.side;
+                    border-radius: 11px;
+                    drop-shadow-blur: 90px;
+                    drop-shadow-color: #ffffff08;
+                    Rectangle {
+                        border-radius: 11px;
+                        clip: true;
+                        background: Theme.bg-a2;
+                        if root.cover.width > 0: Image {
+                            source: root.cover;
+                            width: parent.width;
+                            height: parent.height;
+                            image-fit: ImageFit.cover;
+                        }
+                        if root.cover.width == 0: Icon {
+                            icon: Icons.music;
+                            size: 96px;
+                            color: Theme.fg-a4;
+                        }
+                    }
+                }
+                Text {
+                    x: 20px;
+                    width: parent.width - 40px;
+                    y: parent.top + parent.side + 40px;
+                    text: root.music-caption;
+                    font-size: 24px;
+                    font-weight: 500;
+                    color: Theme.fg-a1;
+                    horizontal-alignment: center;
+                    overflow: elide;
+                }
+            }
+
+            if !root.has-media: Text {
+                text: "Drop media here, or press Ctrl + O to open a file";
+                font-size: 14px;
+                color: Theme.fg-a3;
+            }
+
+            video-touch := TouchArea {
+                mouse-cursor: root.immersive && root.cursor-idle ? MouseCursor.none : MouseCursor.default;
+                pointer-event(event) => {
+                    if event.kind == PointerEventKind.move {
+                        root.cursor-idle = false;
+                        idle.restart();
+                    }
+                    if event.kind == PointerEventKind.down && event.button == PointerEventButton.right {
+                        root.open-context-menu(video-box.x + self.mouse-x, video-box.y + self.mouse-y);
+                    }
+                }
+                // With a panel open, a click on the video only closes it.
+                clicked => {
+                    if root.tracks-open || root.queue-open || root.settings-open {
+                        root.tracks-open = false;
+                        root.queue-open = false;
+                        root.settings-open = false;
+                    } else {
+                        root.toggle-play();
+                    }
+                }
+                double-clicked => { root.toggle-fullscreen(); }
+            }
+        }
+
+        dock := LibraryDock {
+            x: root.dock-open ? 0 : -self.width;
+            y: root.immersive ? 0 : root.top-h;
+            height: root.immersive ? root.height : root.height - root.top-h - root.bottom-h;
+            visible: root.dock-open && !root.lib-full;
+            glass: root.immersive;
+            video: root.video;
+            page: root.lib-page;
+            deep: root.lib-deep;
+            crumbs: root.lib-crumbs;
+            count: root.lib-count;
+            can-back: root.lib-can-back;
+            can-forward: root.lib-can-forward;
+            rows: root.lib-rows;
+            sort-labels: root.lib-sort-labels;
+            sort: root.lib-sort;
+            set-sort(i) => { root.lib-set-sort(i); }
+            pop-out => {
+                root.dock-open = false;
+                root.lib-full = true;
+            }
+            go-page(p) => { root.lib-go-page(p); }
+            go-crumb(i) => { root.lib-crumb(i); }
+            back => { root.lib-back(); }
+            forward => { root.lib-forward(); }
+            open-row(i) => { root.lib-open(i); }
+            row-menu(i, x, y) => { root.open-library-row-menu(i, x, y); }
+            page-menu(x, y) => { root.open-library-page-menu(x, y); }
+            search(t) => { root.lib-search(t); }
+            add-folder => { root.lib-add-folder(); }
+            close => { root.dock-open = false; }
+        }
+
+        if root.lib-full: FullLibrary {
+            y: root.top-h;
+            height: root.height - root.top-h;
+            page: root.lib-page;
+            deep: root.lib-deep;
+            crumbs: root.lib-crumbs;
+            count: root.lib-count;
+            can-back: root.lib-can-back;
+            can-forward: root.lib-can-forward;
+            sections: root.lib-sections;
+            grid: root.lib-grid;
+            sort-labels: root.lib-sort-labels;
+            sort: root.lib-sort;
+            action: root.lib-action;
+            action-label: root.lib-action-label;
+            go-page(p) => { root.lib-go-page(p); }
+            go-crumb(i) => { root.lib-crumb(i); }
+            back => { root.lib-back(); }
+            forward => { root.lib-forward(); }
+            open-row(i) => { root.lib-open(i); }
+            row-menu(i, x, y) => { root.open-library-row-menu(i, x, y); }
+            page-menu(x, y) => { root.open-library-page-menu(x, y); }
+            search(t) => { root.lib-search(t); }
+            add-folder => { root.lib-add-folder(); }
+            set-sort(i) => { root.lib-set-sort(i); }
+            set-grid(g) => { root.lib-set-grid(g); }
+            close => {
+                root.lib-full = false;
+                root.dock-open = true;
+            }
+        }
+
+        if root.lib-full && root.has-media: MiniPlayer {
+            property <length> home-x: root.mini-left ? 20px : root.width - self.width - 20px;
+            x: self.home-x + self.drag-x;
+            y: root.height - self.height - 20px + self.drag-y;
+            animate x, y { duration: self.dragging ? 0 : 200ms; easing: ease-out; }
+            area-width: root.width;
+            frame: root.video-frame;
+            has-video: root.has-video;
+            cover: root.cover;
+            title: root.display-title;
+            folder: root.folder-name;
+            playing: root.playing;
+            seekable: root.seekable;
+            position: root.position;
+            toggle-play => { root.toggle-play(); }
+            jump(s) => { root.jump(s); }
+            seek(p, fast) => { root.seek(p, fast); }
+            expand => { root.lib-full = false; }
+            stop => { root.stop(); }
+            reveal-folder => { root.lib-reveal(); }
+            dropped(left) => { root.mini-left = left; }
+        }
+
+        title := TitleBar {
+            width: root.width;
+            dock-open: root.dock-open || root.lib-full;
+            toggle-dock => {
+                if root.lib-full {
+                    root.lib-full = false;
+                } else {
+                    root.dock-open = !root.dock-open;
+                }
+            }
+            reveal-folder => { root.lib-reveal(); }
+            y: root.show-top ? 0 : -root.top-h;
+            animate y { duration: 150ms; easing: ease-out; }
+            glass: root.immersive;
+            video: root.video;
+            title: root.pref-title-file ? root.display-title : "Ferricone Player";
+            folder: root.folder-name;
+            start-move => { root.start-move(); }
+            toggle-fullscreen => { root.toggle-fullscreen(); }
+            more => {
+                if root.menu == MenuKind.more {
+                    root.close-menus();
+                } else {
+                    root.show-more-menu();
+                }
+            }
+        }
+
+        controls := ControlBar {
+            width: root.width;
+            y: root.show-bottom ? root.height - root.bottom-h : root.height;
+            animate y { duration: 150ms; easing: ease-out; }
+            glass: root.immersive;
+            video: root.video;
+            playing: root.playing;
+            has-next: root.has-next;
+            music: root.has-media && !root.has-video;
+            waveform: root.waveform-on;
+            levels: root.waveform-levels;
+            timeline: root.timeline && root.has-media;
+            timeline-adjust: root.timeline-adjust;
+            cues: root.cues;
+            seek-window(at) => { root.seek-window(at); }
+            cue-dragged(by, done) => { root.cue-dragged(by, done); }
+            timeline-zoom(step) => { root.timeline-zoom(step); }
+            seekable: root.seekable;
+            position: root.position;
+            time-text: root.time-text;
+            length-text: root.length-text;
+            volume: root.volume;
+            muted: root.muted;
+            tracks-open: root.tracks-open;
+            queue-open: root.queue-open;
+            tracks-tab: root.tracks-tab;
+            toggle-play => { root.toggle-play(); }
+            previous => { root.previous(); }
+            next => { root.next(); }
+            seek(position, fast) => { root.seek(position, fast); }
+            set-volume(v) => { root.set-volume(v); }
+            toggle-mute => { root.toggle-mute(); }
+            toggle-remaining => { root.toggle-remaining(); }
+            toggle-waveform => { root.waveform-on = !root.waveform-on; }
+            jump(seconds) => { root.jump(seconds); }
+            seek-hover(position) => {
+                root.preview-at = position;
+                root.preview(position);
+            }
+            open-tracks(tab) => { root.open-tracks(tab); }
+            toggle-queue => { root.toggle-queue(); }
+            fullscreen: root.fullscreen;
+            settings-open: root.settings-open;
+            toggle-settings => {
+                if root.settings-open {
+                    root.settings-open = false;
+                } else {
+                    root.show-settings(root.settings-tab);
+                }
+            }
+            toggle-fullscreen => { root.toggle-fullscreen(); }
+        }
+
+        // 20 px above the control bar, right-aligned with a 20 px margin.
+        if root.tracks-open: TracksPanel {
+            x: root.width - self.width - 20px;
+            height: min(524px, controls.y - 20px - (root.immersive ? 20px : root.top-h + 10px));
+            y: controls.y - 20px - self.height;
+            tab <=> root.tracks-tab;
+            video: root.video;
+            video-tracks: root.video-tracks;
+            audio-tracks: root.audio-tracks;
+            subtitle-tracks: root.subtitle-tracks;
+            audio-devices: root.audio-devices;
+            select-track(tab, id) => { root.select-track(tab, id); }
+            select-device(id) => { root.select-device(id); }
+            refresh-devices => { root.refresh-devices(); }
+            // The settings sidebar on the same tab.
+            show-preferences => {
+                root.show-settings(root.tracks-tab == TracksTab.video ? SettingsTab.video
+                    : root.tracks-tab == TracksTab.audio ? SettingsTab.audio : SettingsTab.subtitles);
+            }
+        }
+
+        if root.settings-open: SettingsPanel {
+            x: root.width - self.width - 20px;
+            height: controls.y - 20px - (root.immersive ? 20px : root.top-h + 10px);
+            y: controls.y - 20px - self.height;
+            tab <=> root.settings-tab;
+            video: root.video;
+            speed: root.speed;
+            sleep-options: root.sleep-options;
+            sleep: root.sleep;
+            statistics: root.statistics;
+            timeline: root.timeline;
+            timeline-adjust: root.timeline-adjust;
+            set-timeline(on) => { root.set-timeline(on); }
+            set-timeline-adjust(on) => { root.set-timeline-adjust(on); }
+            stereo-options: root.stereo-options;
+            stereo: root.stereo;
+            audio-delay: root.audio-delay;
+            audio-delay-text: root.audio-delay-text;
+            subtitle-delay: root.subtitle-delay;
+            subtitle-delay-text: root.subtitle-delay-text;
+            presets: root.presets;
+            preset: root.preset;
+            set-speed(v) => { root.set-speed(v); }
+            typed-speed(t) => { root.typed-speed(t); }
+            set-sleep(i) => { root.set-sleep(i); }
+            set-statistics(on) => { root.set-statistics(on); }
+            set-stereo(i) => { root.set-stereo(i); }
+            set-audio-delay(v) => { root.set-audio-delay(v); }
+            typed-audio-delay(t) => { root.typed-audio-delay(t); }
+            set-subtitle-delay(v) => { root.set-subtitle-delay(v); }
+            typed-subtitle-delay(t) => { root.typed-subtitle-delay(t); }
+            choose-preset(i) => { root.choose-preset(i); }
+            eq-presets: root.eq-presets;
+            eq-preset: root.eq-preset;
+            eq-rows: root.eq-rows;
+            two-pass: root.two-pass;
+            compressor-on: root.compressor-on;
+            compressor-rows: root.compressor-rows;
+            spatializer-on: root.spatializer-on;
+            spatializer-rows: root.spatializer-rows;
+            widener-on: root.widener-on;
+            widener-rows: root.widener-rows;
+            pitch: root.pitch;
+            pitch-text: root.pitch-text;
+            choose-eq(i) => { root.choose-eq(i); }
+            eq-moved(i, at, done) => { root.eq-moved(i, at, done); }
+            eq-typed(i, text) => { root.eq-typed(i, text); }
+            set-two-pass(on) => { root.set-two-pass(on); }
+            set-filter(id, on) => { root.set-filter(id, on); }
+            filter-moved(id, i, at, done) => { root.filter-moved(id, i, at, done); }
+            set-pitch(v) => { root.set-pitch(v); }
+            flip: root.view-flip;
+            rotate-text: root.rotate-text;
+            zoom-options: root.zoom-options;
+            zoom: root.zoom;
+            ratio-options: root.ratio-options;
+            aspect: root.aspect;
+            crop: root.crop;
+            essential-rows: root.essential-rows;
+            crop-rows: root.crop-rows;
+            colors-rows: root.colors-rows;
+            set-flip(i) => { root.set-flip(i); }
+            typed-rotate(t) => { root.typed-rotate(t); }
+            set-zoom(i) => { root.set-zoom(i); }
+            set-aspect(i) => { root.set-aspect(i); }
+            set-crop(i) => { root.set-crop(i); }
+            video-moved(id, i, at, done) => { root.video-moved(id, i, at, done); }
+            video-typed(id, i, t) => { root.video-typed(id, i, t); }
+            video-toggled(id, i, on) => { root.video-toggled(id, i, on); }
+            audio-track-text: root.audio-track-text;
+            audio-language-text: root.audio-language-text;
+            subtitle-track-text: root.subtitle-track-text;
+            subtitle-language-text: root.subtitle-language-text;
+            sub-font-text: root.sub-font-text;
+            sub-color-text: root.sub-color-text;
+            sub-color: root.sub-color;
+            sub-outline-color-text: root.sub-outline-color-text;
+            sub-outline-color: root.sub-outline-color;
+            sub-offset-text: root.sub-offset-text;
+            sub-scale: root.sub-scale;
+            sub-scale-text: root.sub-scale-text;
+            sub-outline: root.sub-outline;
+            sub-outline-text: root.sub-outline-text;
+            sub-background: root.sub-background;
+            sub-background-text: root.sub-background-text;
+            typed-track(w, t) => { root.typed-track(w, t); }
+            can-add-subtitles: root.has-media && root.has-video;
+            render-options: root.render-options;
+            render-selected: root.render-selected;
+            render-searching: root.render-searching;
+            render-choose(i) => { root.render-choose(i); }
+            add-subtitles => { root.addsubs-for-loaded(); }
+            typed-subtitle-style(w, t) => { root.typed-subtitle-style(w, t); }
+            set-subtitle-level(w, v) => { root.set-subtitle-level(w, v); }
+        }
+
+        // Statistics: top left of the video, monospace on glass.
+        if root.statistics && root.has-media: Rectangle {
+            x: video-box.x + 20px;
+            y: video-box.y + 20px;
+            width: stats-body.preferred-width;
+            height: stats-body.preferred-height;
+            border-radius: 10px;
+            clip: true;
+            Glass { video: root.video; tint: Theme.bg-a3-glass; }
+            stats-body := VerticalLayout {
+                padding: 12px;
+                Text {
+                    text: root.stats-text;
+                    font-family: "monospace";
+                    font-size: 12px;
+                    color: Theme.fg-2;
+                }
+            }
+        }
+
+        if root.queue-open: QueuePanel {
+            x: root.width - self.width - 20px;
+            height: controls.y - 20px - (root.immersive ? 20px : root.top-h + 10px);
+            y: controls.y - 20px - self.height;
+            tab <=> root.queue-tab;
+            video: root.video;
+            items: root.queue-items;
+            summary: root.queue-summary;
+            repeat: root.repeat;
+            marks: root.marks;
+            chapters: root.chapters;
+            play-item(i) => { root.play-item(i); }
+            move-item(from, to) => { root.move-item(from, to); }
+            remove-item(i) => { root.remove-item(i); }
+            add-items => { root.add-items(); }
+            sort-items => { root.sort-items(); }
+            cycle-repeat => {
+                root.cycle-repeat();
+                root.show-osd(Icons.repeat-right-two-tone,
+                    root.repeat == RepeatMode.off ? "Repeat off" : root.repeat == RepeatMode.all ? "Repeat all" : "Repeat this item", "");
+            }
+            shuffle => { root.shuffle-queue(); }
+            go-mark(i) => { root.go-mark(i); }
+            add-mark => { root.add-bookmark(); }
+            remove-mark(i) => { root.remove-mark(i); }
+            go-chapter(i) => { root.go-chapter(i); }
+        }
+
+        // Top center of the video, under the title bar when it shows.
+        Osd {
+            x: (root.width - self.width) / 2;
+            y: (root.show-top ? root.top-h : 0) + 20px;
+            message: root.osd;
+            video: root.video;
+            opacity: root.osd-shown ? 1 : 0;
+            visible: self.opacity > 0;
+            animate opacity { duration: 200ms; }
+        }
+
+        // Above the track at the pointer, inside the window.
+        if root.preview-shown: SeekPreview {
+            x: clamp(controls.seek-x + root.preview-at * controls.seek-width - self.width / 2, 10px, root.width - self.width - 10px);
+            y: controls.y - self.height - 10px;
+            frame: root.preview-frame;
+            ready: root.preview-ready;
+            time: root.preview-time;
+            video: root.video;
+        }
+
+        // 24 px above the control bar, centered.
+        PromptPill {
+            x: (root.width - self.width) / 2;
+            y: controls.y - 24px - self.height;
+            text: "You already watched till \{root.resume-time}.";
+            action: "Continue Watching";
+            video: root.video;
+            opacity: root.resume-shown ? 1 : 0;
+            visible: self.opacity > 0;
+            animate opacity { duration: 200ms; }
+            act => { root.resume(); }
+            dismiss => { root.resume-shown = false; }
+        }
+        PromptPill {
+            x: (root.width - self.width) / 2;
+            y: controls.y - 24px - self.height;
+            text: "Up next: \{root.up-next-title} · in \{root.up-next-left} s";
+            action: "Play Now";
+            video: root.video;
+            opacity: root.up-next-shown ? 1 : 0;
+            visible: self.opacity > 0;
+            animate opacity { duration: 200ms; }
+            act => {
+                root.up-next-shown = false;
+                root.play-up-next();
+            }
+            dismiss => { root.up-next-shown = false; }
+        }
+
+        // Clicking outside an open menu closes it; a right-click reopens the
+        // right-click menu where it was.
+        if root.menu != MenuKind.none: TouchArea {
+            pointer-event(event) => {
+                if event.kind == PointerEventKind.down {
+                    if event.button == PointerEventButton.right {
+                        root.open-context-menu(self.mouse-x, self.mouse-y);
+                    } else {
+                        root.close-menus();
+                    }
+                }
+            }
+        }
+
+        if root.menu == MenuKind.context: context-menu := Menu {
+            width: 292px;
+            x: max(4px, min(root.menu-x, root.width - self.width - 4px));
+            y: max(4px, min(root.menu-y, root.height - self.height - 4px));
+            entries: root.context-entries;
+            video: root.video;
+            activated(action, index) => { root.activate(action, index); }
+            hovered(action, y) => {
+                if action == MenuAction.open-media || action == MenuAction.playlist {
+                    root.submenu = action;
+                    root.submenu-y = y;
+                } else {
+                    root.submenu = MenuAction.none;
+                }
+            }
+
+            // Beside the menu where it fits, else on its other side.
+            if root.submenu != MenuAction.none: Menu {
+                width: 375px;
+                x: context-menu.x + context-menu.width + self.width + 4px <= root.width
+                    ? context-menu.width + 4px
+                    : -self.width - 4px;
+                y: max(4px, min(root.submenu-y - 4px, root.height - self.height - 4px)) - context-menu.y;
+                entries: root.submenu == MenuAction.open-media ? root.open-entries : root.playlist-entries;
+                video: root.video;
+                activated(action, index) => { root.activate(action, index); }
+            }
+        }
+
+        // The library's menus, with Add to Playlist beside them.
+        if root.menu == MenuKind.library: library-menu := Menu {
+            width: 292px;
+            x: max(4px, min(root.menu-x, root.width - self.width - 4px));
+            y: max(4px, min(root.menu-y, root.height - self.height - 4px));
+            entries: root.lib-menu-entries;
+            video: root.video;
+            activated(action, index) => {
+                if action == MenuAction.add-to-playlist {
+                    root.submenu = action;
+                    return;
+                }
+                root.close-menus();
+                root.lib-menu-action(action, index);
+            }
+            hovered(action, y) => {
+                if action == MenuAction.add-to-playlist {
+                    root.submenu = action;
+                    root.submenu-y = y;
+                } else {
+                    root.submenu = MenuAction.none;
+                }
+            }
+
+            if root.submenu == MenuAction.add-to-playlist: Menu {
+                width: 292px;
+                x: library-menu.x + library-menu.width + self.width + 4px <= root.width
+                    ? library-menu.width + 4px
+                    : -self.width - 4px;
+                y: max(4px, min(root.submenu-y - 4px, root.height - self.height - 4px)) - library-menu.y;
+                entries: root.lib-playlist-entries;
+                video: root.video;
+                activated(action, index) => {
+                    root.close-menus();
+                    root.lib-menu-action(action, index);
+                }
+            }
+        }
+
+        // Under the ⋯ button.
+        if root.menu == MenuKind.more: more-menu := Menu {
+            x: 47px;
+            y: root.top-h;
+            width: 375px;
+            entries: root.more-entries;
+            video: root.video;
+            activated(action, index) => { root.activate(action, index); }
+            hovered(action, y) => {
+                if action == MenuAction.open-recent {
+                    root.submenu = action;
+                    root.submenu-y = y;
+                } else {
+                    root.submenu = MenuAction.none;
+                }
+            }
+
+            if root.submenu == MenuAction.open-recent: Menu {
+                width: 375px;
+                x: more-menu.width + 4px;
+                y: max(4px, min(root.submenu-y - 4px, root.height - self.height - 4px)) - more-menu.y;
+                entries: root.recent-entries;
+                video: root.video;
+                activated(action, index) => { root.activate(action, index); }
+            }
+        }
+    }
+
+    if root.playlist-dialog-open: Rectangle {
+        // Modal: the player underneath takes no clicks.
+        TouchArea { }
+
+        NewPlaylistDialog {
+            width: min(713px, root.width - 40px);
+            x: (root.width - self.width) / 2;
+            y: max(20px, (root.height - self.height) / 2);
+            video: root.video;
+            files: root.playlist-files;
+            cover: root.playlist-cover;
+            add-files => { root.playlist-add-files(); }
+            pick-cover => { root.playlist-pick-cover(); }
+            cancel => {
+                root.playlist-dialog-open = false;
+                keys.focus();
+            }
+            save(name) => {
+                if root.save-playlist(name) {
+                    root.playlist-dialog-open = false;
+                    keys.focus();
+                    root.show-osd(Icons.playlist-two-tone, "Saved playlist “\{name}”", "");
+                } else {
+                    root.show-osd(Icons.playlist-two-tone, "Couldn't save the playlist", "");
+                }
+            }
+        }
+    }
+
+    if root.network-open: Rectangle {
+        // Modal: the player underneath takes no clicks.
+        TouchArea { }
+
+        NetworkDialog {
+            width: min(1048px, root.width - 40px);
+            x: (root.width - self.width) / 2;
+            y: max(20px, (root.height - self.height) / 2);
+            video: root.video;
+            save-mode: root.network-save;
+            open(text) => {
+                root.close-network-dialog();
+                root.open-locations(text);
+            }
+            save(links, name) => {
+                if root.lib-save-streams(links, name) {
+                    root.close-network-dialog();
+                }
+            }
+            cancel => { root.close-network-dialog(); }
+        }
+    }
+
+    // The Settings window, under the title bar.
+    if root.prefs-open: Rectangle {
+        y: root.top-h;
+        height: root.height - root.top-h;
+        background: Theme.scrim;
+        TouchArea { clicked => { root.prefs-open = false; keys.focus(); } }
+        PreferencesDialog {
+            width: min(1048px, parent.width - 40px);
+            height: min(865px, parent.height - 40px);
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            drop-shadow-offset-y: 8px;
+            drop-shadow-blur: 15px;
+            drop-shadow-color: Theme.shadow;
+            page: root.prefs-page;
+            title: root.prefs-title;
+            groups: root.prefs-groups;
+            searching: root.prefs-searching;
+            has-advanced: root.prefs-has-advanced;
+            show-page(p) => { root.prefs-show-page(p); }
+            search(t) => { root.prefs-search(t); }
+            close => { root.prefs-open = false; keys.focus(); }
+            toggled(id, on) => { root.prefs-toggled(id, on); }
+            chosen(id, i) => { root.prefs-chosen(id, i); }
+            slid(id, at, done) => { root.prefs-slid(id, at, done); }
+            typed(id, t) => { root.prefs-typed(id, t); }
+            pressed(id) => { root.prefs-pressed(id); }
+        }
+    }
+
+    // About Ferricone, under the title bar.
+    if root.about-open: Rectangle {
+        y: root.top-h;
+        height: root.height - root.top-h;
+        background: Theme.scrim;
+        TouchArea { clicked => { root.about-open = false; keys.focus(); } }
+        AboutDialog {
+            width: min(560px, parent.width - 40px);
+            x: (parent.width - self.width) / 2;
+            y: max(20px, (parent.height - self.height) / 2);
+            drop-shadow-offset-y: 8px;
+            drop-shadow-blur: 15px;
+            drop-shadow-color: Theme.shadow;
+            version: root.about-version;
+            engine: root.about-engine;
+            close => { root.about-open = false; keys.focus(); }
+            open-link(url) => { root.open-link(url); }
+        }
+    }
+
+    // Add Subtitles, under the title bar.
+    if root.addsubs-open: Rectangle {
+        y: root.top-h;
+        height: root.height - root.top-h;
+        background: Theme.scrim;
+        TouchArea { }
+        AddSubtitlesDialog {
+            width: min(1048px, parent.width - 40px);
+            height: min(800px, parent.height - 40px);
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            drop-shadow-offset-y: 8px;
+            drop-shadow-blur: 15px;
+            drop-shadow-color: Theme.shadow;
+            folder-mode: root.addsubs-folder-mode;
+            location: root.addsubs-location;
+            files: root.addsubs-files;
+            pairs: root.addsubs-pairs;
+            note: root.addsubs-note;
+            online: root.addsubs-online;
+            query: root.addsubs-query;
+            languages: root.addsubs-languages;
+            language: root.addsubs-language;
+            results: root.addsubs-results;
+            busy: root.addsubs-busy;
+            set-online(o) => { root.addsubs-set-online(o); }
+            search(q, l) => { root.addsubs-search(q, l); }
+            toggle-result(i) => { root.addsubs-toggle-result(i); }
+            set-folder-mode(f) => { root.addsubs-set-folder-mode(f); }
+            toggle(i) => { root.addsubs-toggle(i); }
+            pick(r, o) => { root.addsubs-pick(r, o); }
+            browse => { root.addsubs-browse(); }
+            save => { root.addsubs-save(); keys.focus(); }
+            cancel => { root.addsubs-open = false; keys.focus(); }
+        }
+    }
+
+    // Keyboard Shortcuts, under the title bar (over Settings when opened
+    // from there).
+    if root.shortcuts-open: Rectangle {
+        y: root.top-h;
+        height: root.height - root.top-h;
+        background: Theme.scrim;
+        TouchArea { }
+        ShortcutsDialog {
+            width: min(1048px, parent.width - 40px);
+            height: min(800px, parent.height - 40px);
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            drop-shadow-offset-y: 8px;
+            drop-shadow-blur: 15px;
+            drop-shadow-color: Theme.shadow;
+            rows: root.shortcut-rows;
+            assign(i, key) => { root.shortcut-assign(i, key) }
+            reset => { root.shortcuts-reset(); }
+            save => { root.shortcuts-save(); keys.focus(); }
+            cancel => { root.shortcuts-open = false; keys.focus(); }
+        }
+    }
+
+    // The introduction, under the title bar so the window still moves.
+    if root.intro-open: Rectangle {
+        y: root.top-h;
+        height: root.height - root.top-h;
+        background: Theme.scrim;
+        TouchArea { }
+        Onboarding {
+            // The design's size, or the room there is.
+            width: min(1090px, parent.width - 40px);
+            height: min(759px, parent.height - 40px);
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            drop-shadow-offset-y: 8px;
+            drop-shadow-blur: 15px;
+            drop-shadow-color: Theme.shadow;
+            step <=> root.intro-step;
+            only: root.intro-only;
+            folder: root.intro-folder;
+            browse => { root.intro-browse(); }
+            finish => {
+                root.intro-open = false;
+                root.intro-finish();
+                keys.focus();
+            }
+        }
+    }
+
+    // On top of everything so the edges stay grabbable; none in fullscreen.
+    if !root.fullscreen: Rectangle {
+        Grip { edge: ResizeEdge.north; mouse-cursor: n-resize; x: root.grip; y: 0; width: root.width - 2 * root.grip; height: root.grip; start-resize(e) => { root.start-resize(e); } }
+        Grip { edge: ResizeEdge.south; mouse-cursor: s-resize; x: root.grip; y: root.height - root.grip; width: root.width - 2 * root.grip; height: root.grip; start-resize(e) => { root.start-resize(e); } }
+        Grip { edge: ResizeEdge.west; mouse-cursor: w-resize; x: 0; y: root.grip; width: root.grip; height: root.height - 2 * root.grip; start-resize(e) => { root.start-resize(e); } }
+        Grip { edge: ResizeEdge.east; mouse-cursor: e-resize; x: root.width - root.grip; y: root.grip; width: root.grip; height: root.height - 2 * root.grip; start-resize(e) => { root.start-resize(e); } }
+        Grip { edge: ResizeEdge.north-west; mouse-cursor: nw-resize; x: 0; y: 0; width: root.grip; height: root.grip; start-resize(e) => { root.start-resize(e); } }
+        Grip { edge: ResizeEdge.north-east; mouse-cursor: ne-resize; x: root.width - root.grip; y: 0; width: root.grip; height: root.grip; start-resize(e) => { root.start-resize(e); } }
+        Grip { edge: ResizeEdge.south-west; mouse-cursor: sw-resize; x: 0; y: root.height - root.grip; width: root.grip; height: root.grip; start-resize(e) => { root.start-resize(e); } }
+        Grip { edge: ResizeEdge.south-east; mouse-cursor: se-resize; x: root.width - root.grip; y: root.height - root.grip; width: root.grip; height: root.grip; start-resize(e) => { root.start-resize(e); } }
+    }
+}

@@ -1,0 +1,788 @@
+// The library dock (Figma `sidebar`, 427 × 986): a 50 px rail (BG/A4,
+// padding 8, gap 14) of pages, and a 377 px pane (BG/B1 Transparent,
+// padding 20, gap 17) with back/forward and the breadcrumb, the item count
+// with search, a divider, and 32 px rows (a thumbnail or icon, then Inter 14;
+// unwatched FG/A1, watched FG/A3 with its progress). Home's sections get an
+// Inter 16 FG/A1 header with a chevron, 30 apart. Rust fills it
+// (src/library.rs).
+
+import { Theme } from "theme.slint";
+import { Icon } from "icon.slint";
+import { Icons, IconLayers } from "icons.slint";
+import { Glass, VideoBox } from "glass.slint";
+
+export struct LibRow {
+    title: string,
+    icon: IconLayers,
+    thumb: image,
+    has-thumb: bool,
+    // 0–1 of the length; watched items show a full bar.
+    progress: float,
+    watched: bool,
+    playing: bool,
+    // A Home section's header.
+    header: bool,
+    // Add, Create playlist and the like.
+    action: bool,
+    // Its place in the page's rows, for open-row.
+    index: int,
+}
+
+// The full library's page in parts: Home's sections, or one untitled one.
+export struct LibSection {
+    title: string,
+    // The header's row index, -1 for none.
+    header: int,
+    items: [LibRow],
+}
+
+// Figma `Sorting Options` / `View Options`: 265 wide, BG/A4 at 95 %,
+// radius 10, padding 4; 48 px options (padding 2/14, radius 6, Inter 14
+// FG/A2), the chosen one on BG/A2 with an accent check.
+component OptionsPopup {
+    in property <[string]> options;
+    in property <[IconLayers]> icons;
+    in property <int> selected;
+    callback chosen(int);
+
+    public function open() { popup.show(); }
+
+    width: 0;
+    height: 0;
+    popup := PopupWindow {
+        x: -265px;
+        y: 4px;
+        width: 265px;
+        height: root.options.length * 48px + 8px;
+        Rectangle {
+            border-radius: 10px;
+            background: Theme.bg-a4.with-alpha(0.95);
+            drop-shadow-offset-y: 8px;
+            drop-shadow-blur: 15px;
+            drop-shadow-color: Theme.shadow;
+            VerticalLayout {
+                padding: 4px;
+                for option[i] in root.options: Rectangle {
+                    height: 48px;
+                    border-radius: 6px;
+                    background: i == root.selected || touch.has-hover ? Theme.bg-a2 : transparent;
+                    HorizontalLayout {
+                        padding-left: 14px;
+                        padding-right: 14px;
+                        spacing: 10px;
+                        if root.icons.length > i: Icon { icon: root.icons[i]; y: (parent.height - self.height) / 2; }
+                        Text {
+                            horizontal-stretch: 1;
+                            text: option;
+                            font-size: 14px;
+                            color: Theme.fg-a2;
+                            vertical-alignment: center;
+                        }
+                        Rectangle {
+                            width: 24px;
+                            if i == root.selected: Icon { icon: Icons.check-active; }
+                        }
+                    }
+                    touch := TouchArea { clicked => { root.chosen(i); } }
+                }
+            }
+        }
+    }
+}
+
+// The sort button and its popover; `.active` when not the default order.
+export component SortButton inherits Rectangle {
+    in property <[string]> options;
+    in property <int> selected;
+    in property <color> tint: Theme.fg-a3;
+    callback chosen(int);
+
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    background: touch.has-hover ? Theme.bg-a1 : transparent;
+    Icon { icon: root.selected > 0 ? Icons.sort-active : Icons.sort; color: root.tint; }
+    touch := TouchArea { clicked => { menu.open(); } }
+    menu := OptionsPopup {
+        x: parent.width;
+        y: parent.height;
+        options: root.options;
+        selected: root.selected;
+        chosen(i) => { root.chosen(i); }
+    }
+}
+
+component RailButton inherits Rectangle {
+    in property <IconLayers> icon;
+    callback clicked();
+
+    width: 34px;
+    height: 32px;
+    border-radius: 4px;
+    background: touch.has-hover ? Theme.bg-a1 : transparent;
+    Icon { icon: root.icon; }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+component SmallButton inherits Rectangle {
+    in property <IconLayers> icon;
+    in property <bool> enabled: true;
+    in property <color> tint: Theme.fg-a2;
+    callback clicked();
+
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    background: touch.has-hover && root.enabled ? Theme.bg-a1 : transparent;
+    Icon { icon: root.icon; color: root.tint; opacity: root.enabled ? 1 : 0.3; }
+    touch := TouchArea { enabled: root.enabled; clicked => { root.clicked(); } }
+}
+
+export component LibraryDock inherits Rectangle {
+    in property <VideoBox> video;
+    // Over the video (immersive) rather than beside it.
+    in property <bool> glass;
+    // 0 Home, 1 Videos, 2 Music, 3 Network, 4 Playlists, 5 Recent.
+    in property <int> page;
+    // Inside a folder or playlist rather than at the page's top.
+    in property <bool> deep;
+    in property <[string]> crumbs;
+    in property <string> count;
+    in property <bool> can-back;
+    in property <bool> can-forward;
+    in property <[LibRow]> rows;
+    in property <[string]> sort-labels;
+    in property <int> sort;
+    callback set-sort(int);
+    // ↗: the full library.
+    callback pop-out();
+    callback go-page(int);
+    callback go-crumb(int);
+    callback back();
+    callback forward();
+    callback open-row(int);
+    // Right-click on a row, and the ⋯ of the page, at a window position.
+    callback row-menu(int, length, length);
+    callback page-menu(length, length);
+    callback search(string);
+    callback add-folder();
+    callback close();
+
+    property <bool> searching;
+
+    width: 427px;
+    background: transparent;
+    clip: true;
+
+    HorizontalLayout {
+        // The rail.
+        Rectangle {
+            width: 50px;
+            background: Theme.bg-a4;
+            VerticalLayout {
+                padding: 8px;
+                spacing: 14px;
+                alignment: start;
+                RailButton { icon: Icons.sidebar-active; clicked => { root.close(); } }
+                RailButton {
+                    icon: root.page == 0 ? Icons.home-active : Icons.home;
+                    clicked => { root.go-page(0); }
+                }
+                RailButton {
+                    icon: root.page == 1 ? (root.deep ? Icons.videos-selected : Icons.videos-active) : Icons.videos;
+                    clicked => { root.go-page(1); }
+                }
+                RailButton {
+                    icon: root.page == 2 ? (root.deep ? Icons.songs-selected : Icons.songs-active) : Icons.songs;
+                    clicked => { root.go-page(2); }
+                }
+                RailButton {
+                    icon: root.page == 3 ? Icons.streaming-active : Icons.streaming;
+                    clicked => { root.go-page(3); }
+                }
+                RailButton {
+                    icon: root.page == 4 ? Icons.playlist-active : Icons.playlist;
+                    clicked => { root.go-page(4); }
+                }
+                RailButton {
+                    icon: root.page == 5 ? Icons.recent-two-tone : Icons.recent;
+                    clicked => { root.go-page(5); }
+                }
+                RailButton { icon: Icons.add; clicked => { root.add-folder(); } }
+            }
+        }
+
+        // The pane.
+        Rectangle {
+            background: root.glass ? transparent : Theme.bg-b1-glass;
+            if root.glass: Glass { video: root.video; tint: Theme.bg-b1-glass; }
+
+            VerticalLayout {
+                padding: 20px;
+                spacing: 17px;
+
+                VerticalLayout {
+                    spacing: 20px;
+                    HorizontalLayout {
+                        height: 24px;
+                        spacing: 10px;
+                        HorizontalLayout {
+                            spacing: 12px;
+                            SmallButton { icon: Icons.arrow-left; enabled: root.can-back; clicked => { root.back(); } }
+                            SmallButton { icon: Icons.arrow-right; enabled: root.can-forward; clicked => { root.forward(); } }
+                        }
+                        // The breadcrumb: the last crumb is where we are.
+                        HorizontalLayout {
+                            horizontal-stretch: 1;
+                            spacing: 6px;
+                            alignment: start;
+                            for crumb[i] in root.crumbs: HorizontalLayout {
+                                spacing: 6px;
+                                if i > 0: Text {
+                                    text: "▶";
+                                    font-size: 8px;
+                                    color: Theme.fg-a4;
+                                    vertical-alignment: center;
+                                }
+                                Text {
+                                    text: crumb;
+                                    font-size: 16px;
+                                    color: i == root.crumbs.length - 1 ? Theme.fg-a1 : crumb-touch.has-hover ? Theme.fg-1 : Theme.fg-a2;
+                                    vertical-alignment: center;
+                                    overflow: elide;
+                                    crumb-touch := TouchArea {
+                                        enabled: i < root.crumbs.length - 1;
+                                        mouse-cursor: self.enabled ? MouseCursor.pointer : MouseCursor.default;
+                                        clicked => { root.go-crumb(i); }
+                                    }
+                                }
+                            }
+                        }
+                        dock-more := SmallButton {
+                            icon: Icons.more;
+                            tint: Theme.fg-a3;
+                            clicked => { root.page-menu(self.absolute-position.x, self.absolute-position.y + self.height + 4px); }
+                        }
+                        SmallButton { icon: Icons.open; tint: Theme.fg-a3; clicked => { root.pop-out(); } }
+                    }
+                    HorizontalLayout {
+                        height: 24px;
+                        spacing: 12px;
+                        if !root.searching: Text {
+                            horizontal-stretch: 1;
+                            text: root.count;
+                            font-size: 14px;
+                            color: Theme.fg-a3;
+                            vertical-alignment: center;
+                        }
+                        if root.searching: Rectangle {
+                            horizontal-stretch: 1;
+                            border-radius: 4px;
+                            background: Theme.bg-a5;
+                            query := TextInput {
+                                x: 8px;
+                                width: parent.width - 16px;
+                                font-size: 14px;
+                                color: Theme.fg-1;
+                                vertical-alignment: center;
+                                selection-background-color: Theme.bg-accent-bright;
+                                selection-foreground-color: Theme.fg-1;
+                                init => { self.focus(); }
+                                edited => { root.search(self.text); }
+                                key-pressed(event) => {
+                                    if event.text == Key.Escape {
+                                        root.searching = false;
+                                        root.search("");
+                                        return accept;
+                                    }
+                                    reject
+                                }
+                            }
+                            if query.text == "": Text {
+                                x: 8px;
+                                text: "Search";
+                                font-size: 14px;
+                                color: Theme.fg-a4;
+                                vertical-alignment: center;
+                            }
+                        }
+                        SortButton {
+                            options: root.sort-labels;
+                            selected: root.sort;
+                            chosen(i) => { root.set-sort(i); }
+                        }
+                        SmallButton {
+                            icon: root.searching ? Icons.close : Icons.search;
+                            tint: Theme.fg-a3;
+                            clicked => {
+                                if root.searching { root.search(""); }
+                                root.searching = !root.searching;
+                            }
+                        }
+                    }
+                }
+
+                VerticalLayout {
+                    Rectangle { height: 1px; background: Theme.divider-dim; }
+                    Flickable {
+                        vertical-stretch: 1;
+                        content-height: list.preferred-height;
+                        list := VerticalLayout {
+                            padding-top: 20px;
+                            padding-bottom: 20px;
+                            spacing: 10px;
+                            alignment: start;
+                            for row[i] in root.rows: Rectangle {
+                                height: row.header ? (i > 0 ? 49px : 29px) : 32px;
+                                // Sections: 30 apart, 15 from header to rows.
+                                property <bool> spaced: row.header && i > 0;
+                                VerticalLayout {
+                                    padding-top: parent.spaced ? 20px : 0;
+                                    padding-bottom: row.header ? 5px : 0;
+                                    HorizontalLayout {
+                                        spacing: 10px;
+                                        if row.header: Text {
+                                            text: row.title;
+                                            font-size: 16px;
+                                            color: touch.has-hover ? Theme.fg-1 : Theme.fg-a1;
+                                            vertical-alignment: center;
+                                        }
+                                        if row.header: Icon {
+                                            icon: Icons.chevron-right;
+                                            size: 20px;
+                                            y: 2px;
+                                        }
+                                        if !row.header: Rectangle {
+                                            width: 32px;
+                                            height: 32px;
+                                            border-radius: 2px;
+                                            clip: true;
+                                            background: row.has-thumb ? Theme.thumb : transparent;
+                                            if row.has-thumb: Image {
+                                                source: row.thumb;
+                                                width: parent.width;
+                                                height: parent.height;
+                                                image-fit: ImageFit.cover;
+                                            }
+                                            if !row.has-thumb: Icon {
+                                                icon: row.icon;
+                                                color: row.playing ? Theme.accent-main : Theme.fg-a2;
+                                            }
+                                            if row.has-thumb && row.progress > 0: Rectangle {
+                                                x: 0;
+                                                y: parent.height - 3px;
+                                                width: parent.width * row.progress;
+                                                height: 3px;
+                                                background: Theme.accent-main;
+                                            }
+                                        }
+                                        if !row.header: Text {
+                                            horizontal-stretch: 1;
+                                            text: row.title;
+                                            font-size: 14px;
+                                            color: row.playing ? Theme.accent-main
+                                                : touch.has-hover ? Theme.fg-1
+                                                : row.watched || row.action ? Theme.fg-a3 : Theme.fg-a1;
+                                            vertical-alignment: center;
+                                            overflow: elide;
+                                        }
+                                    }
+                                }
+                                touch := TouchArea {
+                                    mouse-cursor: MouseCursor.pointer;
+                                    clicked => { root.open-row(i); }
+                                    pointer-event(event) => {
+                                        if event.kind == PointerEventKind.down && event.button == PointerEventButton.right {
+                                            root.row-menu(i, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// The full library's navigation: an icon button (30 × 32) and its Inter 14
+// FG/A2 label, 8 apart.
+component NavEntry inherits Rectangle {
+    in property <IconLayers> icon;
+    in property <string> text;
+    callback clicked();
+
+    height: 32px;
+    border-radius: 4px;
+    background: touch.has-hover ? Theme.bg-a2 : transparent;
+    HorizontalLayout {
+        spacing: 8px;
+        alignment: start;
+        Rectangle { width: 30px; Icon { icon: root.icon; } }
+        Text {
+            text: root.text;
+            font-size: 14px;
+            color: touch.has-hover ? Theme.fg-1 : Theme.fg-a2;
+            vertical-alignment: center;
+        }
+    }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+// A grid card (Figma, 316 wide): a 16:9 thumbnail (radius 12, Theme.thumb, the
+// frame under 20 % black) with the progress along its bottom, then the
+// title in Inter 16, 20 below.
+component Card inherits Rectangle {
+    in property <LibRow> item;
+    callback clicked();
+    // Right-clicked, at this window position.
+    callback menu(length, length);
+
+    property <length> thumb-h: self.width * 9 / 16;
+    height: self.thumb-h + 20px + 19px;
+
+    Rectangle {
+        y: 0;
+        height: root.thumb-h;
+        border-radius: 12px;
+        clip: true;
+        background: Theme.thumb;
+        if root.item.has-thumb: Image {
+            source: root.item.thumb;
+            width: parent.width;
+            height: parent.height;
+            image-fit: ImageFit.cover;
+        }
+        Rectangle { background: touch.has-hover ? #00000010 : #00000033; }
+        if !root.item.has-thumb: Icon {
+            icon: root.item.icon;
+            size: 48px;
+            color: root.item.playing ? Theme.accent-main : Theme.fg-a3;
+        }
+        if root.item.has-thumb && root.item.progress > 0: Rectangle {
+            x: 0;
+            y: parent.height - 4px;
+            width: parent.width * root.item.progress;
+            height: 4px;
+            background: Theme.accent-main;
+        }
+    }
+    Text {
+        y: root.thumb-h + 20px;
+        width: parent.width;
+        text: root.item.title;
+        font-size: 16px;
+        color: root.item.playing ? Theme.accent-main
+            : touch.has-hover ? Theme.fg-1
+            : root.item.watched ? Theme.fg-a3 : Theme.fg-a1;
+        overflow: elide;
+    }
+    touch := TouchArea {
+        mouse-cursor: MouseCursor.pointer;
+        clicked => { root.clicked(); }
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.down && event.button == PointerEventButton.right {
+                root.menu(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+            }
+        }
+    }
+}
+
+// A list row (Figma `media`, 406 × 32): a thumbnail or icon, the title, and
+// the now-playing marker; the playing row is accent-colored.
+component ListRow inherits Rectangle {
+    in property <LibRow> item;
+    callback clicked();
+    callback menu(length, length);
+
+    height: 32px;
+    HorizontalLayout {
+        spacing: 10px;
+        Rectangle {
+            width: 32px;
+            border-radius: 2px;
+            clip: true;
+            background: root.item.has-thumb ? Theme.thumb : transparent;
+            if root.item.has-thumb: Image {
+                source: root.item.thumb;
+                width: parent.width;
+                height: parent.height;
+                image-fit: ImageFit.cover;
+            }
+            if !root.item.has-thumb: Icon { icon: root.item.icon; color: root.item.playing ? Theme.accent-main : Theme.fg-a2; }
+            if root.item.has-thumb && root.item.progress > 0: Rectangle {
+                y: parent.height - 3px;
+                width: parent.width * root.item.progress;
+                height: 3px;
+                x: 0;
+                background: Theme.accent-main;
+            }
+        }
+        Text {
+            horizontal-stretch: 1;
+            text: root.item.title;
+            font-size: 14px;
+            color: root.item.playing ? Theme.accent-main
+                : touch.has-hover ? Theme.fg-1
+                : root.item.watched ? Theme.fg-a3 : Theme.fg-a1;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+        if root.item.playing: Icon { icon: Icons.playback; color: Theme.accent-main; y: (parent.height - self.height) / 2; }
+    }
+    touch := TouchArea {
+        mouse-cursor: MouseCursor.pointer;
+        clicked => { root.clicked(); }
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.down && event.button == PointerEventButton.right {
+                root.menu(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+            }
+        }
+    }
+}
+
+// The full library (Figma `Player` 970:2703 / 970:3308): a 217 px
+// navigation column (BG/B1, padding 8) with a 201 px card of labeled pages
+// (BG/A4, radius 6, padding 12/16, gap 14), and the content (BG/B1,
+// padding 20, gap 17): back/forward and the breadcrumb (the last crumb
+// Semi Bold FG/A1), the count, sort, view, a 325 × 34 search field, add and
+// back-to-player; then a divider and the cards (316 wide, 20 apart) or rows
+// (406 wide, 10 apart).
+export component FullLibrary inherits Rectangle {
+    in property <int> page;
+    in property <bool> deep;
+    in property <[string]> crumbs;
+    in property <string> count;
+    in property <bool> can-back;
+    in property <bool> can-forward;
+    in property <[LibSection]> sections;
+    in property <bool> grid;
+    in property <[string]> sort-labels;
+    in property <int> sort;
+    // The page's add (Add, Create playlist, …), -1 for none.
+    in property <int> action;
+    in property <string> action-label;
+    callback go-page(int);
+    callback go-crumb(int);
+    callback back();
+    callback forward();
+    callback open-row(int);
+    // Right-click on a row, and the ⋯ of the page, at a window position.
+    callback row-menu(int, length, length);
+    callback page-menu(length, length);
+    callback search(string);
+    callback add-folder();
+    callback set-sort(int);
+    callback set-grid(bool);
+    callback close();
+
+    background: Theme.bg-b1;
+
+    HorizontalLayout {
+        Rectangle {
+            width: 217px;
+            VerticalLayout {
+                padding: 8px;
+                Rectangle {
+                    border-radius: 6px;
+                    background: Theme.bg-a4;
+                    VerticalLayout {
+                        padding-top: 12px;
+                        padding-bottom: 12px;
+                        padding-left: 16px;
+                        padding-right: 16px;
+                        spacing: 14px;
+                        alignment: start;
+                        NavEntry { icon: root.page == 0 ? Icons.home-active : Icons.home; text: "Home"; clicked => { root.go-page(0); } }
+                        NavEntry {
+                            icon: root.page == 1 ? (root.deep ? Icons.videos-selected : Icons.videos-active) : Icons.videos;
+                            text: "Videos";
+                            clicked => { root.go-page(1); }
+                        }
+                        NavEntry {
+                            icon: root.page == 2 ? (root.deep ? Icons.songs-selected : Icons.songs-active) : Icons.songs;
+                            text: "Music";
+                            clicked => { root.go-page(2); }
+                        }
+                        NavEntry { icon: root.page == 3 ? Icons.streaming-active : Icons.streaming; text: "Network"; clicked => { root.go-page(3); } }
+                        NavEntry { icon: root.page == 4 ? Icons.playlist-active : Icons.playlist; text: "Playlists"; clicked => { root.go-page(4); } }
+                        NavEntry { icon: root.page == 5 ? Icons.recent-two-tone : Icons.recent; text: "Recent"; clicked => { root.go-page(5); } }
+                        NavEntry { icon: Icons.add; text: "Add item"; clicked => { root.add-folder(); } }
+                    }
+                }
+            }
+        }
+
+        VerticalLayout {
+            padding: 20px;
+            spacing: 17px;
+
+            HorizontalLayout {
+                height: 34px;
+                spacing: 20px;
+                HorizontalLayout {
+                    horizontal-stretch: 1;
+                    spacing: 10px;
+                    HorizontalLayout {
+                        spacing: 12px;
+                        SmallButton { y: 5px; icon: Icons.arrow-left; enabled: root.can-back; clicked => { root.back(); } }
+                        SmallButton { y: 5px; icon: Icons.arrow-right; enabled: root.can-forward; clicked => { root.forward(); } }
+                    }
+                    HorizontalLayout {
+                        horizontal-stretch: 1;
+                        spacing: 6px;
+                        alignment: start;
+                        for crumb[i] in root.crumbs: HorizontalLayout {
+                            spacing: 6px;
+                            if i > 0: Text { text: "▶"; font-size: 8px; color: Theme.fg-a4; vertical-alignment: center; }
+                            Text {
+                                text: crumb;
+                                font-size: 16px;
+                                font-weight: i == root.crumbs.length - 1 ? 600 : 400;
+                                color: i == root.crumbs.length - 1 ? Theme.fg-a1 : crumb-touch.has-hover ? Theme.fg-1 : Theme.fg-a2;
+                                vertical-alignment: center;
+                                overflow: elide;
+                                crumb-touch := TouchArea {
+                                    enabled: i < root.crumbs.length - 1;
+                                    mouse-cursor: self.enabled ? MouseCursor.pointer : MouseCursor.default;
+                                    clicked => { root.go-crumb(i); }
+                                }
+                            }
+                        }
+                    }
+                }
+                Text { text: root.count; font-size: 14px; color: Theme.fg-a3; vertical-alignment: center; }
+                Rectangle {
+                    width: 24px;
+                    SortButton {
+                        y: 5px;
+                        options: root.sort-labels;
+                        selected: root.sort;
+                        tint: Theme.fg-a2;
+                        chosen(i) => { root.set-sort(i); }
+                    }
+                }
+                Rectangle {
+                    width: 24px;
+                    view-button := SmallButton {
+                        y: 5px;
+                        icon: root.grid ? Icons.grid : Icons.list;
+                        clicked => { views.open(); }
+                    }
+                    views := OptionsPopup {
+                        x: parent.width;
+                        y: 29px;
+                        options: ["Grid View", "List View"];
+                        icons: [Icons.grid, Icons.list];
+                        selected: root.grid ? 0 : 1;
+                        chosen(i) => { root.set-grid(i == 0); }
+                    }
+                }
+                Rectangle {
+                    width: 325px;
+                    border-radius: 6px;
+                    background: Theme.bg-a5;
+                    HorizontalLayout {
+                        padding-left: 10px;
+                        padding-right: 10px;
+                        spacing: 8px;
+                        Icon { icon: Icons.search; color: Theme.fg-a3; y: (parent.height - self.height) / 2; }
+                        Rectangle {
+                            horizontal-stretch: 1;
+                            query := TextInput {
+                                font-size: 14px;
+                                color: Theme.fg-1;
+                                vertical-alignment: center;
+                                selection-background-color: Theme.bg-accent-bright;
+                                selection-foreground-color: Theme.fg-1;
+                                edited => { root.search(self.text); }
+                                key-pressed(event) => {
+                                    if event.text == Key.Escape {
+                                        self.text = "";
+                                        root.search("");
+                                        return accept;
+                                    }
+                                    reject
+                                }
+                            }
+                            if query.text == "": Text {
+                                x: 0;
+                                text: "Search";
+                                font-size: 14px;
+                                color: Theme.fg-a4;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                }
+                HorizontalLayout {
+                    spacing: 12px;
+                    if root.action >= 0: SmallButton { y: 5px; icon: Icons.add; clicked => { root.open-row(root.action); } }
+                    SmallButton {
+                        y: 5px;
+                        icon: Icons.more;
+                        clicked => { root.page-menu(self.absolute-position.x - 260px, self.absolute-position.y + self.height + 4px); }
+                    }
+                    SmallButton { y: 5px; icon: Icons.pip; clicked => { root.close(); } }
+                }
+            }
+
+            VerticalLayout {
+                Rectangle { height: 1px; background: Theme.divider-dim; }
+                content := Flickable {
+                    vertical-stretch: 1;
+                    content-height: body.preferred-height;
+                    body := VerticalLayout {
+                        padding-top: 20px;
+                        padding-bottom: 20px;
+                        spacing: 30px;
+                        alignment: start;
+                        for section in root.sections: VerticalLayout {
+                            spacing: 15px;
+                            if section.header >= 0: Rectangle {
+                                height: 24px;
+                                HorizontalLayout {
+                                    spacing: 10px;
+                                    alignment: start;
+                                    Text { text: section.title; font-size: 16px; color: head.has-hover ? Theme.fg-1 : Theme.fg-a1; vertical-alignment: center; }
+                                    Icon { icon: Icons.chevron-right; size: 20px; y: 2px; }
+                                }
+                                head := TouchArea { clicked => { root.open-row(section.header); } }
+                            }
+                            // Cards or rows, wrapped to the width.
+                            Rectangle {
+                                property <length> gap-x: root.grid ? 20px : 10px;
+                                property <length> gap-y: root.grid ? 20px : 10px;
+                                property <length> want: root.grid ? 316px : 406px;
+                                property <int> columns: max(1, round((self.width + self.gap-x) / (self.want + self.gap-x)));
+                                property <length> item-w: (self.width - (self.columns - 1) * self.gap-x) / self.columns;
+                                property <length> item-h: root.grid ? self.item-w * 9 / 16 + 39px : 32px;
+                                property <int> lines: ceil(section.items.length / self.columns);
+                                height: max(0px, self.lines * (self.item-h + self.gap-y) - self.gap-y);
+                                for item[i] in section.items: Rectangle {
+                                    x: mod(i, parent.columns) * (parent.item-w + parent.gap-x);
+                                    y: floor(i / parent.columns) * (parent.item-h + parent.gap-y);
+                                    width: parent.item-w;
+                                    height: parent.item-h;
+                                    if root.grid: Card {
+                                        width: parent.width;
+                                        item: item;
+                                        clicked => { root.open-row(item.index); }
+                                        menu(x, y) => { root.row-menu(item.index, x, y); }
+                                    }
+                                    if !root.grid: ListRow {
+                                        width: parent.width;
+                                        item: item;
+                                        clicked => { root.open-row(item.index); }
+                                        menu(x, y) => { root.row-menu(item.index, x, y); }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

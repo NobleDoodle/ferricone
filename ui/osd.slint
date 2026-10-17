@@ -1,0 +1,152 @@
+// Feedback over the video (plan §3): on-screen messages that say what a key
+// just did, with the key next to it, and the resume pill. The messages have
+// no frame in the design, so they borrow its parts: the resume pill's glass
+// (BG/A3 Transparent over the blurred video, radius 16) and the key caps of
+// the Keyboard Shortcuts dialog `2437:14832` (BG/B2, radius 6, a monospace
+// face at 14 in FG/2).
+import { Theme } from "theme.slint";
+import { Icon } from "icon.slint";
+import { Icons, IconLayers } from "icons.slint";
+import { Glass, VideoBox } from "glass.slint";
+
+export struct OsdMessage {
+    icon: IconLayers,
+    text: string,
+    // The key as its cap reads, e.g. "Space" or "Ctrl + \".
+    key: string,
+}
+
+component KeyCap inherits Rectangle {
+    in property <string> text;
+
+    height: 28px;
+    border-radius: 6px;
+    background: Theme.bg-b2;
+
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        Text {
+            text: root.text;
+            font-family: "monospace";
+            font-size: 14px;
+            color: Theme.fg-2;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+}
+
+// Icon 24 · message · key cap; padding 10/10/10/16, gap 12.
+export component Osd {
+    in property <OsdMessage> message;
+    in property <VideoBox> video;
+
+    height: body.preferred-height;
+    width: body.preferred-width;
+
+    Rectangle {
+        border-radius: 16px;
+        clip: true;
+        drop-shadow-offset-y: 8px;
+        drop-shadow-blur: 15px;
+        drop-shadow-color: Theme.shadow;
+
+        Glass {
+            video: root.video;
+            tint: Theme.bg-a3-glass;
+        }
+
+        body := HorizontalLayout {
+            padding: 10px;
+            padding-left: 16px;
+            spacing: 12px;
+
+            Rectangle {
+                width: 24px;
+                Icon { icon: root.message.icon; }
+            }
+            Text {
+                text: root.message.text;
+                font-size: 14px;
+                color: Theme.fg-2;
+                vertical-alignment: center;
+                overflow: elide;
+                max-width: 480px;
+            }
+            if root.message.key != "": KeyCap { text: root.message.key; }
+        }
+    }
+}
+
+// A prompt over the video, the resume pill of Figma `continue` (hidden in
+// Player `247:445`): radius 16, BG/A3 Transparent over the blurred video,
+// padding 10/10/10/20, gap 60. The text in FG/2 16, then the action
+// (Accent/Main, FG/B1 600 14, radius 6) and a 44 × 32 BG/A1 close button.
+// Also "Up next" for the next episode.
+export component PromptPill {
+    in property <string> text;
+    in property <string> action;
+    in property <VideoBox> video;
+    callback act();
+    callback dismiss();
+
+    width: body.preferred-width;
+    height: body.preferred-height;
+
+    Rectangle {
+        border-radius: 16px;
+        clip: true;
+
+        Glass {
+            video: root.video;
+            tint: Theme.bg-a3-glass;
+        }
+
+        TouchArea { }
+
+        body := HorizontalLayout {
+            padding: 10px;
+            padding-left: 20px;
+            spacing: 60px;
+
+            Text {
+                text: root.text;
+                font-size: 16px;
+                color: Theme.fg-2;
+                vertical-alignment: center;
+            }
+
+            HorizontalLayout {
+                spacing: 10px;
+
+                Rectangle {
+                    height: 32px;
+                    border-radius: 6px;
+                    background: go.has-hover ? Theme.accent-bright : Theme.accent-main;
+                    HorizontalLayout {
+                        padding-left: 8px;
+                        padding-right: 8px;
+                        Text {
+                            text: root.action;
+                            font-size: 14px;
+                            font-weight: 600;
+                            color: Theme.fg-b1;
+                            vertical-alignment: center;
+                        }
+                    }
+                    go := TouchArea { clicked => { root.act(); } }
+                }
+
+                Rectangle {
+                    width: 44px;
+                    height: 32px;
+                    border-radius: 6px;
+                    background: close.has-hover ? Theme.bg-a2 : Theme.bg-a1;
+                    Icon { icon: Icons.close; }
+                    close := TouchArea { clicked => { root.dismiss(); } }
+                }
+            }
+        }
+    }
+}

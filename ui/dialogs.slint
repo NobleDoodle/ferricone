@@ -1,0 +1,429 @@
+// Dialogs over the player (plan §3), built to the Figma measurements:
+// "Open network stream" `6216:13614` and "new playlist" `6259:14954`. The
+// network dialog opens links from the ⋯ menu; from the library's Add
+// Network Stream it is the Figma frame itself, saving them under a name.
+import { Theme } from "theme.slint";
+import { Icon } from "icon.slint";
+import { Icons } from "icons.slint";
+import { IconButton } from "controls.slint";
+import { Glass, VideoBox } from "glass.slint";
+
+// Footer button: 100 × 32, radius 6, Inter 600 14.
+component DialogButton inherits Rectangle {
+    in property <string> text;
+    in property <brush> text-color: Theme.fg-a2;
+    callback clicked();
+
+    width: 100px;
+    height: 32px;
+    border-radius: 6px;
+
+    Text {
+        text: root.text;
+        font-size: 14px;
+        font-weight: 600;
+        color: root.text-color;
+    }
+    TouchArea { clicked => { root.clicked(); } }
+}
+
+// 1048 wide, radius 14, BG/A3 Transparent over the blurred video: a 50 px
+// BG/B2 header, the URL box (194 high, BG/B2, 2 px BG/A4 edge, radius 6),
+// then Cancel and the accent action. Enter opens; Shift+Enter starts a line.
+export component NetworkDialog {
+    in property <VideoBox> video;
+    // Saving to the library (the name field and Save) rather than opening.
+    in property <bool> save-mode;
+    callback open(string);
+    callback save(string, string);
+    callback cancel();
+
+    height: body.preferred-height;
+    init => { input.focus(); }
+
+    // Rounded clip and shadow on one inner element, as in menus.slint.
+    Rectangle {
+        border-radius: 14px;
+        clip: true;
+        drop-shadow-offset-y: 8px;
+        drop-shadow-blur: 15px;
+        drop-shadow-color: Theme.shadow;
+
+        Glass {
+            video: root.video;
+            tint: Theme.bg-a3-glass;
+        }
+
+        TouchArea { }
+
+        body := VerticalLayout {
+            Rectangle {
+                height: 50px;
+                background: Theme.bg-b2;
+                HorizontalLayout {
+                    padding: 9px;
+                    padding-left: 19px;
+                    Text {
+                        text: "Open Network Stream";
+                        font-size: 14px;
+                        color: Theme.fg-a2;
+                        vertical-alignment: center;
+                        horizontal-stretch: 1;
+                    }
+                    IconButton {
+                        icon: Icons.close;
+                        width: 32px;
+                        clicked => { root.cancel(); }
+                    }
+                }
+            }
+
+            VerticalLayout {
+                padding-top: 22px;
+                padding-bottom: 22px;
+                padding-left: 20px;
+                padding-right: 20px;
+                spacing: 20px;
+
+                VerticalLayout {
+                    spacing: 5px;
+                    Text { text: "Network URL"; font-size: 16px; color: Theme.fg-2; }
+                    Text { text: "You can enter multiple links to load, one per line."; font-size: 14px; color: Theme.fg-a3; }
+                }
+
+                // The name part only adds its spacing when saving.
+                VerticalLayout {
+                    spacing: root.save-mode ? 20px : 0;
+                    Rectangle {
+                        height: 194px;
+                        border-radius: 6px;
+                        border-width: 2px;
+                        border-color: input.has-focus ? Theme.divider-bright : Theme.bg-a4;
+                        background: Theme.bg-b2;
+                        clip: true;
+
+                        input := TextInput {
+                            x: 12px;
+                            y: 8px;
+                            width: parent.width - 30px;
+                            height: parent.height - 16px;
+                            single-line: false;
+                            wrap: word-wrap;
+                            font-size: 14px;
+                            color: Theme.fg-1;
+                            selection-background-color: Theme.bg-accent-bright;
+                            selection-foreground-color: Theme.fg-1;
+                            key-pressed(event) => {
+                                if event.text == Key.Return && !event.modifiers.shift {
+                                    if root.save-mode {
+                                        name.focus();
+                                    } else {
+                                        root.open(self.text);
+                                    }
+                                    return accept;
+                                }
+                                if event.text == Key.Escape {
+                                    root.cancel();
+                                    return accept;
+                                }
+                                reject
+                            }
+                        }
+                        if input.text == "": Text {
+                            x: input.x;
+                            y: input.y;
+                            text: "e.g., https://www.example.com/stream.avi";
+                            font-size: 14px;
+                            color: Theme.fg-a4;
+                        }
+                    }
+
+                    if root.save-mode: Rectangle { height: 1px; background: Theme.divider-dim; }
+                    if root.save-mode: VerticalLayout {
+                        spacing: 5px;
+                        Text { text: "Playlist Name (optional)"; font-size: 16px; color: Theme.fg-2; }
+                        Text { text: "The playlist will be saved and displayed with this title."; font-size: 14px; color: Theme.fg-a3; }
+                    }
+                    // Always made (hidden when opening) so Enter can move to it.
+                    Rectangle {
+                        visible: root.save-mode;
+                        height: root.save-mode ? 37px : 0;
+                        border-radius: 6px;
+                        border-width: 2px;
+                        border-color: name.has-focus ? Theme.divider-bright : Theme.bg-a4;
+                        background: Theme.bg-b2;
+                        clip: true;
+                        name := TextInput {
+                            x: 12px;
+                            width: parent.width - 30px;
+                            vertical-alignment: center;
+                            font-size: 14px;
+                            color: Theme.fg-1;
+                            selection-background-color: Theme.bg-accent-bright;
+                            selection-foreground-color: Theme.fg-1;
+                            accepted => { root.save(input.text, self.text); }
+                            key-pressed(event) => {
+                                if event.text == Key.Escape {
+                                    root.cancel();
+                                    return accept;
+                                }
+                                reject
+                            }
+                        }
+                        if name.text == "": Text {
+                            x: 12px;
+                            text: "e.g., Favorite TV Channels";
+                            font-size: 14px;
+                            color: Theme.fg-a4;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+            }
+
+            HorizontalLayout {
+                padding: 20px;
+                alignment: space-between;
+                DialogButton {
+                    text: "Cancel";
+                    background: Theme.bg-a3;
+                    clicked => { root.cancel(); }
+                }
+                DialogButton {
+                    text: root.save-mode ? "Save" : "Open";
+                    text-color: Theme.accent-main;
+                    background: Theme.bg-accent-bright;
+                    // Half strength until there is a link, as in the frame.
+                    opacity: input.text == "" ? 0.5 : 1;
+                    clicked => {
+                        if root.save-mode {
+                            root.save(input.text, name.text);
+                        } else {
+                            root.open(input.text);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// The design's small add button: FG/B1, radius 5, the add icon.
+component AddButton inherits Rectangle {
+    callback clicked();
+    height: 30px;
+    border-radius: 5px;
+    background: touch.has-hover ? Theme.bg-b2 : Theme.fg-b1;
+    Icon { icon: Icons.add; }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+// New Playlist, 713 wide, radius 14, BG/A3 Transparent over the blurred
+// video: "Playlist Details" with the name field and a 112 px cover box, a
+// divider, then "Select Files" over a 186 high box that takes dropped files
+// or opens the file picker, and Cancel / Save. Save needs a name.
+export component NewPlaylistDialog {
+    in property <VideoBox> video;
+    in property <[string]> files;
+    in property <image> cover;
+    callback save(string);
+    callback cancel();
+    callback add-files();
+    callback pick-cover();
+
+    property <bool> named: name.text != "";
+
+    height: body.preferred-height;
+    init => { name.focus(); }
+
+    Rectangle {
+        border-radius: 14px;
+        clip: true;
+        drop-shadow-offset-y: 8px;
+        drop-shadow-blur: 15px;
+        drop-shadow-color: Theme.shadow;
+
+        Glass {
+            video: root.video;
+            tint: Theme.bg-a3-glass;
+        }
+
+        TouchArea { }
+
+        body := VerticalLayout {
+            Rectangle {
+                height: 50px;
+                background: Theme.bg-b2;
+                HorizontalLayout {
+                    padding: 9px;
+                    padding-left: 19px;
+                    Text {
+                        text: "New Playlist";
+                        font-size: 14px;
+                        color: Theme.fg-a2;
+                        vertical-alignment: center;
+                        horizontal-stretch: 1;
+                    }
+                    IconButton {
+                        icon: Icons.close;
+                        width: 32px;
+                        clicked => { root.cancel(); }
+                    }
+                }
+            }
+
+            VerticalLayout {
+                padding-top: 22px;
+                padding-bottom: 22px;
+                padding-left: 20px;
+                padding-right: 20px;
+                spacing: 20px;
+
+                HorizontalLayout {
+                    spacing: 20px;
+                    VerticalLayout {
+                        spacing: 20px;
+                        VerticalLayout {
+                            spacing: 5px;
+                            Text { text: "Playlist Details"; font-size: 16px; color: Theme.fg-2; }
+                            Text { text: "The playlist will be saved and shown in the right-click menu."; font-size: 14px; color: Theme.fg-a3; wrap: word-wrap; }
+                        }
+                        Rectangle {
+                            height: 37px;
+                            border-radius: 6px;
+                            border-width: 2px;
+                            border-color: name.has-focus ? Theme.divider-bright : Theme.bg-a4;
+                            background: Theme.bg-b2;
+                            clip: true;
+                            name := TextInput {
+                                x: 12px;
+                                width: parent.width - 30px;
+                                height: parent.height;
+                                vertical-alignment: center;
+                                font-size: 14px;
+                                color: Theme.fg-1;
+                                selection-background-color: Theme.bg-accent-bright;
+                                selection-foreground-color: Theme.fg-1;
+                                key-pressed(event) => {
+                                    if event.text == Key.Return {
+                                        if root.named { root.save(self.text); }
+                                        return accept;
+                                    }
+                                    if event.text == Key.Escape {
+                                        root.cancel();
+                                        return accept;
+                                    }
+                                    reject
+                                }
+                            }
+                            if name.text == "": Text {
+                                x: name.x;
+                                text: "e.g., Favorite Videos";
+                                font-size: 14px;
+                                color: Theme.fg-a4;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                    // The cover: click to choose an image.
+                    Rectangle {
+                        width: 112px;
+                        height: 112px;
+                        y: 7px;
+                        border-radius: 6px;
+                        border-width: 2px;
+                        border-color: Theme.bg-a4;
+                        background: Theme.bg-b2;
+                        clip: true;
+                        if root.cover.width > 0: Image {
+                            source: root.cover;
+                            width: parent.width;
+                            height: parent.height;
+                            image-fit: ImageFit.cover;
+                        }
+                        if root.cover.width == 0: AddButton {
+                            width: 30px;
+                            clicked => { root.pick-cover(); }
+                        }
+                        TouchArea {
+                            enabled: root.cover.width > 0;
+                            clicked => { root.pick-cover(); }
+                        }
+                    }
+                }
+
+                Rectangle { height: 1px; background: Theme.divider-dim; }
+
+                VerticalLayout {
+                    spacing: 5px;
+                    Text { text: "Select Files"; font-size: 16px; color: Theme.fg-2; }
+                    Text { text: "These files will be added to the playlist."; font-size: 14px; color: Theme.fg-a3; }
+                }
+
+                Rectangle {
+                    height: 186px;
+                    border-radius: 6px;
+                    border-width: 2px;
+                    border-color: Theme.divider-bright;
+                    background: Theme.bg-b2;
+                    clip: true;
+
+                    if root.files.length == 0: VerticalLayout {
+                        alignment: center;
+                        spacing: 20px;
+                        Text {
+                            text: "Drag files into the box or click here to add them.";
+                            font-size: 14px;
+                            color: Theme.fg-a4;
+                            horizontal-alignment: center;
+                        }
+                        HorizontalLayout {
+                            alignment: center;
+                            AddButton { width: 84px; clicked => { root.add-files(); } }
+                        }
+                    }
+                    if root.files.length == 0: TouchArea { clicked => { root.add-files(); } }
+
+                    if root.files.length > 0: Flickable {
+                        VerticalLayout {
+                            padding: 12px;
+                            spacing: 6px;
+                            alignment: start;
+                            for file in root.files: Text {
+                                text: file;
+                                font-size: 14px;
+                                color: Theme.fg-a1;
+                                overflow: elide;
+                            }
+                            HorizontalLayout {
+                                alignment: start;
+                                AddButton { width: 84px; clicked => { root.add-files(); } }
+                            }
+                        }
+                    }
+                }
+            }
+
+            HorizontalLayout {
+                padding: 20px;
+                alignment: space-between;
+                DialogButton {
+                    text: "Cancel";
+                    background: Theme.bg-a3;
+                    clicked => { root.cancel(); }
+                }
+                DialogButton {
+                    text: "Save";
+                    text-color: Theme.accent-main;
+                    background: Theme.bg-accent-bright;
+                    opacity: root.named ? 1 : 0.4;
+                    clicked => {
+                        if root.named {
+                            root.save(name.text);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

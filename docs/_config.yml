@@ -1,0 +1,8 @@
+title: Ferricone Player
+description: A media player for Linux on VLC's own engine, libVLC 4, with a new interface in Rust and Slint.
+url: https://nobledoodle.github.io
+baseurl: /ferricone
+repository: NobleDoodle/ferricone
+version: 1.0.0
+release: https://github.com/NobleDoodle/ferricone/releases/download/v1.0.0
+exclude: [README.md]
