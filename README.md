@@ -50,7 +50,7 @@ desktop doesn't already have. It runs on any x86-64 distribution from 2022 on
 |---|---|---|
 | Debian, Ubuntu, Mint, Pop!_OS | `ferricone_1.0.0_amd64.deb` | 58 MB |
 | Fedora, openSUSE, RHEL 10 and its rebuilds | `ferricone-1.0.0-1.x86_64.rpm` | 63 MB |
-| Arch, Manjaro, EndeavourOS | `ferricone-1.0.0-1-x86_64.pkg.tar.zst` | 75 MB |
+| Arch, Omarchy, EndeavourOS, Manjaro | `ferricone-1.0.0-1-x86_64.pkg.tar.zst` | 75 MB |
 | Any distribution | `Ferricone_Player-1.0.0-x86_64.AppImage` | 73 MB |
 | Any distribution, no root | `ferricone-1.0.0-x86_64.tar.gz` | 79 MB |
 
@@ -66,7 +66,7 @@ sudo apt install ./ferricone_1.0.0_amd64.deb
 sudo dnf install ./ferricone-1.0.0-1.x86_64.rpm
 ```
 
-**Arch, Manjaro**
+**Arch, Omarchy, EndeavourOS, Manjaro**
 
 ```sh
 sudo pacman -U ferricone-1.0.0-1-x86_64.pkg.tar.zst
@@ -88,6 +88,16 @@ tar xzf ferricone-1.0.0-x86_64.tar.gz
 ferricone-1.0.0-x86_64/install.sh      # uninstall.sh removes it again
 ```
 
+**Development builds** of the `dev` branch, for x86-64 and for 64-bit ARM
+(aarch64: Omarchy's ARM build and other Arch Linux ARM systems, Asahi on Apple
+Silicon, Raspberry Pi 4 and 5 on a 64-bit system, ARM laptops and boards), are on the
+[releases page](https://github.com/NobleDoodle/ferricone/releases) as
+prereleases, in the same five formats with `amd64`/`arm64` or
+`x86_64`/`aarch64` in their names. The ARM build uses desktop OpenGL, as on
+x86-64 (Mesa provides it on those GPUs); it is tested by installing it on each
+distribution's ARM image and running it under emulation, not yet on ARM
+hardware, so reports are welcome.
+
 **ChromeOS:** turn on the Linux development environment (Settings › About
 ChromeOS › Developers), then open the `.deb` from Files and choose Install with
 Linux.
@@ -104,7 +114,7 @@ them.
 
 Each package has its own script, run from a clean checkout. They need only
 Podman or Docker: everything else is built in containers (Ubuntu 22.04, and Arch
-for the Arch package).
+or Arch Linux ARM for the Arch package).
 
 ```sh
 packaging/build-deb.sh         # dist/ferricone_1.0.0_amd64.deb
@@ -113,7 +123,13 @@ packaging/build-pacman.sh      # dist/ferricone-1.0.0-1-x86_64.pkg.tar.zst
 packaging/build-appimage.sh    # dist/Ferricone_Player-1.0.0-x86_64.AppImage
 packaging/build-tarball.sh     # dist/ferricone-1.0.0-x86_64.tar.gz
 packaging/build.sh all         # all five
+packaging/build.sh --arch aarch64 all     # all five for 64-bit ARM
+packaging/build.sh --arch all all         # both architectures
 ```
+
+`--arch` defaults to the machine's own. Building for the other architecture
+runs its containers under QEMU (on Arch: `qemu-user-static` and
+`qemu-user-static-binfmt`), the same build as native, several times slower.
 
 The first build makes the container image (`packaging/Dockerfile`) and the
 bundle every package wraps (`packaging/bundle.sh`: libVLC 4 with `patches/`,
@@ -121,9 +137,10 @@ Ferricone, and their libraries in `lib/deps`), which takes a while; later
 builds reuse both. Pass `--rebuild` to start over. Downloads and build files
 stay in `.package-cache/`.
 
-`packaging/test.sh` then installs each package in fresh containers (Debian 12,
-Ubuntu 22.04 and 24.04, Fedora, AlmaLinux 10, openSUSE Tumbleweed, Arch) and
-checks that it starts, that no library is missing, and that no bundled
+`packaging/test.sh` (with the same `--arch`) then installs each package in
+fresh containers (Debian 12, Ubuntu 22.04 and 24.04, Fedora, AlmaLinux 10,
+openSUSE Tumbleweed, and Arch, or on aarch64 Arch Linux ARM and Manjaro ARM)
+and checks that it starts, that no library is missing, and that no bundled
 library breaks a system one loaded beside it.
 
 ### For development

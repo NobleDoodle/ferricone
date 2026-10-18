@@ -60,8 +60,11 @@ def elf_files():
                     yield path
 
 
+# /usr/local/lib first: the libraries the Dockerfile builds from source
+# (Nettle 3.10.2, libupnp, libmicrodns) must win over Ubuntu's, whatever
+# order ld.so.cache ended up in (ldconfig crashes under QEMU's arm64).
 env = dict(os.environ, LD_LIBRARY_PATH=":".join(
-    os.path.join(bundle, d) for d in ("lib", "lib/vlc", "lib/deps")))
+    [os.path.join(bundle, d) for d in ("lib", "lib/vlc", "lib/deps")] + ["/usr/local/lib"]))
 line = re.compile(r"^\s*(\S+) => (\S+) \(0x")
 
 copied = set()
@@ -101,7 +104,7 @@ for soname in ["libEGL.so.1", "libGL.so.1", "libwayland-client.so.0", "libwaylan
                "libXrender.so.1", "libxkbcommon.so.0", "libxkbcommon-x11.so.0",
                "libfontconfig.so.1", "libdbus-1.so.3"]:
     needed[soname] = False
-with open(os.path.join(os.path.dirname(bundle), "system-libs.txt"), "w") as f:
+with open(bundle.rstrip("/") + ".system-libs.txt", "w") as f:
     for soname in sorted(needed):
         f.write(f"{'optional' if needed[soname] else 'required'} {soname}\n")
 

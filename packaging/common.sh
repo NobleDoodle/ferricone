@@ -1,7 +1,18 @@
-# Sourced by the package-*.sh scripts: the version, the bundle and the app id.
+# Sourced by the package-*.sh scripts: the version, the architecture, the
+# bundle and the app id.
 set -euo pipefail
 bundle=/src/${1:?usage: package-<format>.sh <bundle>}
 version=$(sed -n 's/^version = "\(.*\)"/\1/p' /src/Cargo.toml | head -1)
+# x86_64 or aarch64, from the bundle's name (dist/ferricone-<version>-<arch>).
+arch=${bundle##*-}
+# A prerelease ("1.1.0-dev.1") must sort before its release in every package
+# manager: dpkg and rpm read "~" so ("1.1.0~dev.1"), pacman a letter right
+# after the number ("1.1.0dev1"). File names keep the plain version.
+case $version in
+  *-*) tilde_version=${version/-/\~}
+       pacman_version=${version%%-*}$(echo "${version#*-}" | tr -d .) ;;
+  *) tilde_version=$version pacman_version=$version ;;
+esac
 app=io.github.nobledoodle.ferricone
 summary="Media player on libVLC 4 with a redesigned interface and a library"
 maintainer="NobleDoodle <nobledoodle@users.noreply.github.com>"
@@ -9,7 +20,7 @@ homepage=https://nobledoodle.github.io/ferricone/
 out=/src/dist
 # System libraries the bundle needs (collect-deps.py): `required` and
 # `optional` (only plugins need them) sonames.
-syslibs() { awk -v k="$1" '$1 == k { print $2 }' "$out/system-libs.txt"; }
+syslibs() { awk -v k="$1" '$1 == k { print $2 }' "$bundle.system-libs.txt"; }
 finish() { # finish <file>: hands the package to the host user
   [ -n "${HOST_UID:-}" ] && chown "$HOST_UID:${HOST_GID:-$HOST_UID}" "$1"
   echo "built $1 ($(du -h "$1" | cut -f1))"

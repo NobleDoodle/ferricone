@@ -4,7 +4,7 @@
 # Ferricone, laid out as they install under /opt/ferricone, with the
 # libraries a desktop doesn't already have in lib/deps.
 #
-#   dist/ferricone-<version>-x86_64/
+#   dist/ferricone-<version>-<arch>/
 #     bin/ferricone        rpath $ORIGIN/../lib:…/lib/vlc:…/lib/deps
 #     lib/                 libvlc, libvlccore, vlc/plugins, deps/
 #     libexec/vlc/         vlc-preparser (thumbnails, durations)
@@ -12,27 +12,28 @@
 set -euo pipefail
 
 src=/src
+arch=$(uname -m)
 cache=$src/.package-cache
 version=$(sed -n 's/^version = "\(.*\)"/\1/p' "$src/Cargo.toml" | head -1)
-bundle=$src/dist/ferricone-$version-x86_64
+bundle=$src/dist/ferricone-$version-$arch
 prefix=/opt/ferricone
 
 git config --global --add safe.directory '*'
 
 # libVLC, installed where the packages put it (VLC finds lib/vlc, libexec
 # and share relative to libvlccore).
-VLC_SRC_DIR=$cache/vlc-src VLC_BUILD_DIR=$cache/vlc-build VLC_PREFIX=$prefix \
+VLC_SRC_DIR=$cache/vlc-src VLC_BUILD_DIR=$cache/$arch/vlc-build VLC_PREFIX=$prefix \
   "$src/scripts/build-libvlc.sh"
 
 # Ferricone, linked against it, finding its libraries next to itself.
 export FERRICONE_LIBVLC_DIR=$prefix
 export FERRICONE_RPATH='$ORIGIN/../lib:$ORIGIN/../lib/vlc:$ORIGIN/../lib/deps'
 export CARGO_HOME=$cache/cargo
-cargo build --release --locked --manifest-path "$src/Cargo.toml" --target-dir "$cache/target"
+cargo build --release --locked --manifest-path "$src/Cargo.toml" --target-dir "$cache/$arch/target"
 
 rm -rf "$bundle"
 mkdir -p "$bundle"/{bin,lib,libexec,share}
-install -m755 "$cache/target/release/ferricone" "$bundle/bin/ferricone"
+install -m755 "$cache/$arch/target/release/ferricone" "$bundle/bin/ferricone"
 cp -a "$prefix"/lib/libvlc.so* "$prefix"/lib/libvlccore.so* "$prefix"/lib/libvlc_*.so* "$prefix/lib/vlc" "$bundle/lib/"
 cp -a "$prefix/libexec/vlc" "$bundle/libexec/"
 mkdir -p "$bundle/share/vlc" && cp -a "$prefix/share/vlc/lua" "$bundle/share/vlc/"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# package-tarball.sh <bundle>: dist/ferricone-<version>-x86_64.tar.gz, the
+# package-tarball.sh <bundle>: dist/ferricone-<version>-<arch>.tar.gz, the
 # bundle as it is, with install.sh / uninstall.sh for ~/.local.
 source /src/packaging/common.sh "$@"
 
