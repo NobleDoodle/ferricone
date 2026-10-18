@@ -1,0 +1,45 @@
+name: Feature request
+description: Something Ferricone could do, or do better.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like?
+      placeholder: A sleep timer that pauses playback after a set time.
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: What would it help with?
+      description: The problem it solves or how you'd use it.
+      placeholder: I fall asleep to long playlists, and "stop after each item" stops too early.
+    validations:
+      required: true
+
+  - type: input
+    id: vlc
+    attributes:
+      label: Does VLC do it?
+      description: If VLC has it, where (menu, setting or extension) helps it fit in.
+      placeholder: VLC needs an extension for it
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Anything you've tried instead?
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: searched
+    attributes:
+      label: Before you submit
+      options:
+        - label: I searched the existing issues and didn't find this one.
+          required: true

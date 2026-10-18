@@ -1,0 +1,29 @@
+name: Question or help
+description: Ask how something works, or get help setting it up.
+title: "[Question]: "
+labels: ["question"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      placeholder: How do I make Ferricone remember a different subtitle language for one folder?
+    validations:
+      required: true
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: What you've tried
+      description: Anything you've already checked, and what happened.
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Ferricone version
+      description: Open ⋯ › About Ferricone (Shift + F1), or run `ferricone --version`.
+      placeholder: Ferricone Player 1.0.0 (libVLC 4.0.0-dev Otto Chriek)
+    validations:
+      required: false

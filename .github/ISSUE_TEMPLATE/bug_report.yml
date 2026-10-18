@@ -1,0 +1,128 @@
+name: Bug report
+description: Something doesn't play, looks wrong, or doesn't work as described.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. The more of the fields below you can fill in, the faster it can be fixed.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What went wrong, and with which file or stream if it's about one.
+      placeholder: Subtitles stay 2 seconds late in every episode of a show, even after I set a delay and saved it for the folder.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      placeholder: The delay saved for the folder should apply to the other episodes too.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open an episode from a show's folder
+        2. Set Subtitles › Synchronization to 2 s and save it for This Folder
+        3. Play the next episode
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of Ferricone?
+      multiple: true
+      options:
+        - Playback or seeking
+        - Video or hardware decoding
+        - Audio
+        - Subtitles or OpenSubtitles
+        - Library
+        - Queue or playlists
+        - Network streams
+        - Casting
+        - Settings or keyboard shortcuts
+        - Themes and colors
+        - Installing or starting it
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Ferricone version
+      description: Open ⋯ › About Ferricone (Shift + F1), or run `ferricone --version`.
+      placeholder: Ferricone Player 1.0.0 (libVLC 4.0.0-dev Otto Chriek)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: How did you install it?
+      options:
+        - .deb (Debian, Ubuntu, Mint)
+        - .rpm (Fedora, openSUSE, RHEL)
+        - Arch package (Arch, Omarchy, Arch Linux ARM, Manjaro)
+        - AppImage
+        - Archive (tar.gz)
+        - Built from source
+    validations:
+      required: true
+
+  - type: input
+    id: system
+    attributes:
+      label: System
+      description: Your distribution, desktop or compositor, graphics card, and x86-64 or ARM.
+      placeholder: Omarchy (Hyprland), AMD Radeon 780M, x86-64
+    validations:
+      required: false
+
+  - type: textarea
+    id: media
+    attributes:
+      label: What were you playing?
+      description: |
+        If it's about one file or stream, its format helps, for example the output of
+        `ffprobe -hide_banner "the file"`. Leave out anything you'd rather not share.
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log
+      description: |
+        Turn on Settings (Ctrl + P) › General › Diagnostics › Save a log, set Log details to Everything, restart Ferricone and reproduce the problem. Then paste the end of `~/.local/state/ferricone/ferricone.log`, or run `ferricone` in a terminal and paste what it prints.
+        Check it for file names or addresses you'd rather not share before posting.
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Drag images here if they help show the problem.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: searched
+    attributes:
+      label: Before you submit
+      options:
+        - label: I searched the existing issues and didn't find this one.
+          required: true
