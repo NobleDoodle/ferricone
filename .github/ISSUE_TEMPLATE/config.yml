@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: README
+    url: https://github.com/NobleDoodle/ferricone#readme
+    about: Install steps for each distribution, building from source, and known limits.
+  - name: Website
+    url: https://nobledoodle.github.io/ferricone/
+    about: Features, screenshots and downloads.
