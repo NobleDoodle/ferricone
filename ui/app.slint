@@ -186,6 +186,15 @@ export component AppWindow inherits Window {
     in property <string> media-title;
     in property <string> folder-name;
     in property <bool> fullscreen;
+    // Minimize, maximize and close in the title bar: everywhere but Omarchy.
+    in property <bool> window-buttons;
+    in property <bool> window-maximized;
+    callback minimize-window();
+    callback toggle-maximized();
+    // The compositor can maximize the window too, and that resizes it.
+    callback window-resized();
+    changed width => { root.window-resized(); }
+    changed height => { root.window-resized(); }
     in-out property <bool> ui-hidden;
 
     in property <bool> has-media;
@@ -1085,6 +1094,11 @@ export component AppWindow inherits Window {
             folder: root.folder-name;
             start-move => { root.start-move(); }
             toggle-fullscreen => { root.toggle-fullscreen(); }
+            window-buttons: root.window-buttons && !root.fullscreen;
+            maximized: root.window-maximized;
+            minimize-window => { root.minimize-window(); }
+            toggle-maximized => { root.toggle-maximized(); }
+            close-window => { root.quit(); }
             more => {
                 if root.menu == MenuKind.more {
                     root.close-menus();
@@ -1661,8 +1675,9 @@ export component AppWindow inherits Window {
         }
     }
 
-    // On top of everything so the edges stay grabbable; none in fullscreen.
-    if !root.fullscreen: Rectangle {
+    // On top of everything so the edges stay grabbable; none in fullscreen
+    // or maximized.
+    if !root.fullscreen && !root.window-maximized: Rectangle {
         Grip { edge: ResizeEdge.north; mouse-cursor: n-resize; x: root.grip; y: 0; width: root.width - 2 * root.grip; height: root.grip; start-resize(e) => { root.start-resize(e); } }
         Grip { edge: ResizeEdge.south; mouse-cursor: s-resize; x: root.grip; y: root.height - root.grip; width: root.width - 2 * root.grip; height: root.grip; start-resize(e) => { root.start-resize(e); } }
         Grip { edge: ResizeEdge.west; mouse-cursor: w-resize; x: 0; y: root.grip; width: root.grip; height: root.height - 2 * root.grip; start-resize(e) => { root.start-resize(e); } }

@@ -14,7 +14,9 @@ fn main() {
         .expect("libVLC not found: run scripts/build-libvlc.sh or set FERRICONE_LIBVLC_DIR");
 
     println!("cargo:rustc-link-search=native={}", lib.display());
-    println!("cargo:rustc-link-lib=dylib=vlc");
+    // By file name, the pinned ABI: newer rustc searches its sysroot (/usr/lib
+    // on Arch) first, where plain `-lvlc` would find a system libVLC 3.
+    println!("cargo:rustc-link-lib=dylib:+verbatim=libvlc.so.12");
     // Reaches the app's build script as DEP_VLC_LIB.
     println!("cargo:lib={}", lib.display());
 }

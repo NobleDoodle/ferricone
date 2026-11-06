@@ -37,7 +37,9 @@ player, settings that remember a show, and a subtitle timeline.
 - **Settings** with search and a Keyboard Shortcuts editor.
 - **Looks.** Light, dark or system themes, nine accents or any color, and the
   Omarchy theme's colors when Omarchy is installed.
-- **Desktop.** Media keys and MPRIS, portal file dialogs, and Wayland or X11.
+- **Desktop.** Media keys and MPRIS, portal file dialogs, Wayland or X11, and
+  minimize, maximize and close buttons (left out on Omarchy, whose desktop
+  manages windows by keyboard).
 
 ## Install
 
