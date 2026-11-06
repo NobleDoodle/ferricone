@@ -30,7 +30,7 @@ pass=() fail=()
 log=$(mktemp)
 try() { # try <label> <image> <setup and install commands> [strict]
   echo "== $1 ($2, $arch)"
-  if "$engine" run --rm --platform "$platform" --ulimit core=0 -v "$root/dist:/dist:ro,z" -v "$root/packaging:/pkg:ro,z" -e STRICT="${4:-}" "$2" \
+  if "$engine" run --rm --platform "$platform" --memory=3g --memory-swap=6g --cpus=4 --ulimit core=0 -v "$root/dist:/dist:ro,z" -v "$root/packaging:/pkg:ro,z" -e STRICT="${4:-}" "$2" \
       sh -c "$3 && sh /pkg/check-install.sh" > "$log" 2>&1; then
     pass+=("$1/$arch")
   else

@@ -50,10 +50,15 @@ done
 owner=()
 case $(basename "$engine") in docker) owner=(-e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)") ;; esac
 
+# Limits, so a build can only fail, never take the machine down with it.
+# Raise them on a larger machine.
+limits=(--memory="${FERRICONE_BUILD_MEMORY:-4g}" --memory-swap="${FERRICONE_BUILD_MEMORY_SWAP:-10g}"
+        --cpus="${FERRICONE_BUILD_CPUS:-4}" --pids-limit=4096)
+
 run() { # run <image> <script> [args]: a script from packaging/, in a container
   local img=$1; shift
   # No core files: QEMU writes them into the working directory, /src.
-  "$engine" run --rm --platform "$platform" --ulimit core=0 -v "$root:/src:z" -w /src "${owner[@]}" "$img" bash "/src/packaging/$@"
+  "$engine" run --rm --platform "$platform" "${limits[@]}" --ulimit core=0 -v "$root:/src:z" -w /src "${owner[@]}" "$img" bash "/src/packaging/$@"
 }
 
 for arch in "${arches[@]}"; do
