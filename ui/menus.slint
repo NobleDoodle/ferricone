@@ -43,12 +43,14 @@ export struct MenuEntry {
 // One `option`: icon 24 · label · hint or chevron; padding 2/14, gap 10.
 component MenuRow inherits Rectangle {
     in property <MenuEntry> entry;
+    // Chosen with the keyboard.
+    in property <bool> selected;
     callback activated();
     callback hovered();
 
     height: 48px;
     border-radius: 6px;
-    background: touch.has-hover && !root.entry.disabled ? Theme.bg-a2 : transparent;
+    background: (touch.has-hover || root.selected) && !root.entry.disabled ? Theme.bg-a2 : transparent;
 
     HorizontalLayout {
         padding-left: 14px;
@@ -107,6 +109,9 @@ component MenuRow inherits Rectangle {
 export component Menu {
     in property <[MenuEntry]> entries;
     in property <VideoBox> video;
+    in property <brush> tint: Theme.bg-a3-glass;
+    // The row chosen with the keyboard, -1 for none.
+    in property <int> selected: -1;
     callback activated(MenuAction, int);
     // The pointer moved onto a row; `y` is the row's top in the window.
     callback hovered(MenuAction, length);
@@ -124,7 +129,7 @@ export component Menu {
 
         Glass {
             video: root.video;
-            tint: Theme.bg-a3-glass;
+            tint: root.tint;
         }
 
         // Clicks between rows stay in the menu.
@@ -133,13 +138,14 @@ export component Menu {
         body := VerticalLayout {
             padding: 4px;
 
-            for entry in root.entries: VerticalLayout {
+            for entry[row] in root.entries: VerticalLayout {
                 if entry.divider-before: Rectangle {
                     height: 1px;
                     background: Theme.divider-dim;
                 }
                 MenuRow {
                     entry: entry;
+                    selected: root.selected == row;
                     activated => { root.activated(entry.action, entry.index); }
                     hovered => { root.hovered(entry.action, self.absolute-position.y); }
                 }

@@ -30,7 +30,7 @@ export { Theme, Appearance, Keys, KeyBinding, ShortcutRow, SubFileRow, SubPairRo
 
 export enum ResizeEdge { north, south, east, west, north-east, north-west, south-east, south-west }
 
-enum MenuKind { none, context, more, library }
+export enum MenuKind { none, context, more, library }
 
 component Grip inherits TouchArea {
     in property <ResizeEdge> edge;
@@ -40,6 +40,33 @@ component Grip inherits TouchArea {
         if event.kind == PointerEventKind.down && event.button == PointerEventButton.left {
             root.start-resize(root.edge);
         }
+    }
+}
+
+// A menu in a window of its own: an xdg_popup, drawn by src/popup.rs. The clear
+// margin holds the shadow; the popup's geometry leaves it out.
+export component MenuWindow inherits Window {
+    in property <[MenuEntry]> entries;
+    in property <length> margin: 24px;
+    in property <length> menu-width: 292px;
+    in property <int> selected: -1;
+    out property <length> menu-height: menu.height;
+    callback activated(MenuAction, int);
+    callback hovered(MenuAction, length);
+
+    no-frame: true;
+    background: transparent;
+
+    menu := Menu {
+        x: root.margin;
+        y: root.margin;
+        width: root.menu-width;
+        entries: root.entries;
+        // Over the desktop there's no blurred video to frost.
+        tint: Theme.bg-a3.with-alpha(0.98);
+        selected: root.selected;
+        activated(action, index) => { root.activated(action, index); }
+        hovered(action, y) => { root.hovered(action, y); }
     }
 }
 
@@ -461,7 +488,7 @@ export component AppWindow inherits Window {
     property <bool> near-bottom: video-touch.has-hover && video-touch.mouse-y > video-touch.height - root.bottom-h - 8px;
     // Over the video, the bars show near the edges, while the pointer moves,
     // or always (Settings › Interface).
-    property <bool> show-top: !root.immersive || root.pref-bars-always || !root.cursor-idle || root.near-top || title.hovered || root.menu == MenuKind.more;
+    property <bool> show-top: !root.immersive || root.pref-bars-always || !root.cursor-idle || root.near-top || title.hovered || root.menu == MenuKind.more || root.native-menu-open;
     // The full library has the miniplayer instead.
     property <bool> show-bottom: !root.lib-full && (!root.immersive || root.pref-bars-always || !root.cursor-idle || root.tracks-open || root.queue-open || root.settings-open || root.near-bottom || controls.hovered);
     property <bool> mini-left;
@@ -486,7 +513,7 @@ export component AppWindow inherits Window {
     property <bool> network-open;
     property <bool> network-save;
 
-    property <[MenuEntry]> context-entries: [
+    out property <[MenuEntry]> context-entries: [
         { action: MenuAction.play, icon: root.playing ? Icons.pause : Icons.playback-two-tone, label: root.playing ? "Pause" : "Play", hint: "Space" },
         { action: MenuAction.stop, icon: Icons.stop-two-tone, label: "Stop", hint: "S", disabled: !root.has-media },
         { action: MenuAction.previous, icon: Icons.previous-two-tone, label: "Previous Item", hint: "P", disabled: !root.has-media },
@@ -587,9 +614,41 @@ export component AppWindow inherits Window {
         root.submenu = MenuAction.none;
     }
 
+    // Menus as popups that can reach outside the window (src/popup.rs), where
+    // the desktop allows it; otherwise they're drawn in the window.
+    in property <bool> native-menus;
+    // One is open: the keys and the bars are the popup's business meanwhile.
+    in property <bool> native-menu-open;
+    callback open-native-menu(MenuKind, length, length);
+    public pure function menu-entries(kind: MenuKind) -> [MenuEntry] {
+        if kind == MenuKind.context { return root.context-entries; }
+        if kind == MenuKind.library { return root.lib-menu-entries; }
+        if kind == MenuKind.more { return root.more-entries; }
+        return [];
+    }
+    // What a menu's row opens beside it; empty if nothing.
+    public pure function submenu-entries(kind: MenuKind, action: MenuAction) -> [MenuEntry] {
+        if kind == MenuKind.context && action == MenuAction.open-media { return root.open-entries; }
+        if kind == MenuKind.context && action == MenuAction.playlist { return root.playlist-entries; }
+        if kind == MenuKind.library && action == MenuAction.add-to-playlist { return root.lib-playlist-entries; }
+        if kind == MenuKind.more && action == MenuAction.open-recent { return root.recent-entries; }
+        return [];
+    }
+    public function native-activate(kind: MenuKind, action: MenuAction, index: int) {
+        if kind == MenuKind.library {
+            root.lib-menu-action(action, index);
+        } else {
+            root.activate(action, index);
+        }
+    }
+
     public function open-context-menu(x: length, y: length) {
         root.close-menus();
         root.refresh-playlists();
+        if root.native-menus {
+            root.open-native-menu(MenuKind.context, x, y);
+            return;
+        }
         root.menu-x = x;
         root.menu-y = y;
         root.menu = MenuKind.context;
@@ -597,6 +656,10 @@ export component AppWindow inherits Window {
 
     function open-library-menu(x: length, y: length) {
         root.close-menus();
+        if root.native-menus {
+            root.open-native-menu(MenuKind.library, x, y);
+            return;
+        }
         root.menu-x = x;
         root.menu-y = y;
         root.menu = MenuKind.library;
@@ -605,6 +668,11 @@ export component AppWindow inherits Window {
     public function show-more-menu() {
         root.close-menus();
         root.refresh-recent();
+        if root.native-menus {
+            // Under the ⋯ button, as the in-window menu is.
+            root.open-native-menu(MenuKind.more, 47px, root.top-h);
+            return;
+        }
         root.menu = MenuKind.more;
     }
     // ⋯ › Open Recent: the last items played (src/recent.rs).
@@ -647,7 +715,7 @@ export component AppWindow inherits Window {
         }
     }
 
-    function activate(action: MenuAction, index: int) {
+    public function activate(action: MenuAction, index: int) {
         if action == MenuAction.open-media || action == MenuAction.playlist {
             root.submenu = action;
             return;
@@ -747,6 +815,9 @@ export component AppWindow inherits Window {
         // Keys act once per press, like clicking their buttons; the arrows
         // repeat while held. Ctrl shortcuts are the menus' hints.
         key-pressed(event) => {
+            // Some desktops leave keyboard focus here under a popup, which
+            // reads the keys itself (src/popup.rs).
+            if root.native-menu-open { return accept; }
             if event.modifiers.control {
                 if event.text == "\\" {
                     if !event.repeat {
@@ -1391,8 +1462,9 @@ export component AppWindow inherits Window {
         }
 
         // Clicking outside an open menu closes it; a right-click reopens the
-        // right-click menu where it was.
-        if root.menu != MenuKind.none: TouchArea {
+        // right-click menu where it was. A popup's menu closes in src/popup.rs,
+        // which sees every press; this keeps that click from pressing anything.
+        if root.menu != MenuKind.none || root.native-menu-open: TouchArea {
             pointer-event(event) => {
                 if event.kind == PointerEventKind.down {
                     if event.button == PointerEventButton.right {

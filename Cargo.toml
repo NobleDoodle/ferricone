@@ -29,7 +29,7 @@ serde_json = "1"
 # Native file dialogs: the XDG portal on Linux (over libdbus, no async runtime).
 rfd = { version = "0.17", default-features = false, features = ["xdg-portal"] }
 # ~ pin: the winit accessor is an unstable API that may change in minor releases.
-slint = { version = "~1.18.1", default-features = false, features = ["std", "compat-1-2", "backend-winit", "renderer-femtovg", "accessibility", "unstable-winit-030"] }
+slint = { version = "~1.18.1", default-features = false, features = ["std", "compat-1-2", "backend-winit", "renderer-femtovg", "renderer-software", "software-renderer-systemfonts", "accessibility", "unstable-winit-030"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 # The MPRIS media controls (src/remote/mpris.rs), on libdbus.
@@ -38,8 +38,13 @@ dbus-crossroads = "0.5"
 khronos-egl = { version = "6", features = ["static"] }
 notify = "8"
 # File drops on Wayland, which winit 0.30 doesn't receive (src/drop/wayland.rs).
-rustix = { version = "1", features = ["event", "pipe"] }
+rustix = { version = "1", features = ["event", "fs", "pipe"] }
 wayland-client = { version = "0.31", features = ["system"] }
+# Menus that reach outside the window (src/popup.rs): a real xdg_popup, drawn by
+# Slint's software renderer, on a window type only its winit backend can select.
+wayland-protocols = { version = "0.32", features = ["client"] }
+i-slint-backend-winit = { version = "=1.18.1", default-features = false }
+i-slint-core = { version = "=1.18.1", default-features = false, features = ["std"] }
 
 [dev-dependencies]
 # Headless rendering for the snapshot test (src/snapshot.rs), test builds only.
@@ -47,3 +52,8 @@ slint = { version = "~1.18.1", default-features = false, features = ["renderer-s
 
 [build-dependencies]
 slint-build = "1.18.1"
+
+# winit with `xdg_surface()` next to `xdg_toplevel()`, which an xdg_popup needs
+# as its parent. third_party/winit/README-ferricone.md has the one change.
+[patch.crates-io]
+winit = { path = "third_party/winit" }

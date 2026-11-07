@@ -334,6 +334,12 @@ fn with_state(app: &AppWindow, change: impl FnOnce(&mut State)) {
     });
 }
 
+/// Gives a menu's window the colors the player has now.
+#[cfg(target_os = "linux")]
+pub fn copy_to_menu(app: &AppWindow, menu: &crate::MenuWindow) {
+    Tokens::read(&app.global::<Theme>()).write(&menu.global::<Theme>());
+}
+
 /// Applies the saved appearance and follows the desktop and Omarchy.
 pub fn start(app: &AppWindow) {
     let dark = Tokens::read(&app.global::<Theme>());
