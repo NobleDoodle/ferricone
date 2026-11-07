@@ -155,6 +155,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     diag.frame_shown();
                     ui.set_video_frame(frame);
                 }
+                ui.set_video_failed(p.video().output_failed());
                 // Blurred only while a frosted overlay is over the video.
                 if ui.get_wants_backdrop()
                     && let Some(backdrop) = p.video().backdrop(ui.get_video_aspect())

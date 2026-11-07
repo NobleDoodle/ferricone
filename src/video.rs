@@ -26,9 +26,13 @@ use std::{
     ffi::{CStr, c_void},
     sync::{
         Mutex,
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicU32, Ordering},
     },
 };
+
+/// A working output starts once or twice for a video; failing, about 30 times
+/// a second.
+const FAILED_AFTER_STARTS: u32 = 20;
 
 pub struct Bridge {
     context: SharedContext,
@@ -36,6 +40,8 @@ pub struct Bridge {
     frames: Mutex<Frames>,
     redraw: Box<dyn Fn() + Send + Sync>,
     redraw_pending: AtomicBool,
+    /// Outputs set up since the last finished frame (`output_failed`).
+    starts_without_frame: AtomicU32,
     /// UI thread only.
     backdrop: Mutex<Backdrop>,
 }
@@ -80,6 +86,7 @@ impl Bridge {
             }),
             redraw: Box::new(redraw),
             redraw_pending: AtomicBool::new(false),
+            starts_without_frame: AtomicU32::new(0),
             backdrop: Mutex::default(),
         })
     }
@@ -93,6 +100,10 @@ impl Bridge {
     /// (Re)creates the three render targets. VLC may call this with or without
     /// its context current.
     pub fn resize(&self, width: u32, height: u32) -> bool {
+        // Wakes the UI once, to show the output as failed.
+        if self.starts_without_frame.fetch_add(1, Ordering::AcqRel) + 1 == FAILED_AFTER_STARTS {
+            self.request_redraw();
+        }
         let entered = !self.context.is_current() && self.context.make_current();
         let mut f = self.frames.lock().unwrap();
         let context = &self.context;
@@ -144,6 +155,7 @@ impl Bridge {
 
     /// VLC finished a frame (its context is no longer current).
     pub fn frame_done(&self) {
+        self.starts_without_frame.store(0, Ordering::Release);
         {
             let mut f = self.frames.lock().unwrap();
             (f.render, f.ready) = (f.ready, f.render);
@@ -172,6 +184,17 @@ impl Bridge {
     }
 
     // UI thread -------------------------------------------------------------
+
+    /// The output keeps failing to start: VLC retries for every decoded frame
+    /// and none ever finishes, so the picture stays black.
+    pub fn output_failed(&self) -> bool {
+        self.starts_without_frame.load(Ordering::Acquire) >= FAILED_AFTER_STARTS
+    }
+
+    /// New media gets a new chance.
+    pub fn forget_output_failure(&self) {
+        self.starts_without_frame.store(0, Ordering::Release);
+    }
 
     /// VLC's newest finished frame, or `None` if there is none since the last
     /// call. The caller must show it in this frame. Call while Slint's context

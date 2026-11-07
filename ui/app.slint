@@ -200,6 +200,8 @@ export component AppWindow inherits Window {
     in property <bool> has-media;
     // False for audio: the music control bar, the waveform and the cover.
     in property <bool> has-video: true;
+    // Video output can't start, so the picture stays black (src/video.rs).
+    in property <bool> video-failed;
     in property <image> cover;
     // The music player's backdrop and caption (src/art.rs).
     in property <image> cover-blur;
@@ -960,6 +962,18 @@ export component AppWindow inherits Window {
                 text: "Drop media here, or press Ctrl + O to open a file";
                 font-size: 14px;
                 color: Theme.fg-a3;
+            }
+
+            // `visible`, not `if`: Rust sets the flag in BeforeRendering, too
+            // late for an `if` to create its element.
+            Text {
+                visible: root.has-media && root.video-failed;
+                width: min(parent.width - 40px, 560px);
+                text: "Can't show the picture: video output failed to start.\nSound keeps playing. For details, turn on Settings › General › Save a log.";
+                font-size: 14px;
+                color: Theme.fg-a1;
+                horizontal-alignment: center;
+                wrap: word-wrap;
             }
 
             video-touch := TouchArea {

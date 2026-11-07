@@ -167,6 +167,9 @@ pub fn play_current(app: &AppWindow, s: &Session) {
     app.set_media_title(source.title().into());
     app.set_folder_name(source.folder().into());
     app.set_has_media(true);
+    if let Some(player) = &*s.player.borrow() {
+        player.video().forget_output_failure();
+    }
     app.set_position(0.0);
     app.set_time_text(hms(Duration::ZERO).into());
     app.set_length_text(hms(Duration::ZERO).into());
