@@ -60,8 +60,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends m4 libgmp-dev &
 ENV RUSTUP_HOME=/opt/rustup CARGO_HOME=/opt/cargo PATH=/opt/cargo/bin:$PATH
 RUN curl -sSf --retry 5 --retry-all-errors https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable
 
-# AppImage's tool, run unpacked (no FUSE in containers).
+# AppImage's tool, run unpacked (no FUSE in containers). Its magic bytes
+# ("AI\2" in the ELF header's padding) are zeroed: with them, binfmt_misc
+# doesn't hand an arm64 AppImage to QEMU on an x86-64 machine.
 RUN curl -sSL --retry 5 --retry-all-errors -o /usr/local/bin/appimagetool \
-      https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage \
+      https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-"$(uname -m)".AppImage \
+    && printf '\0\0\0' | dd of=/usr/local/bin/appimagetool bs=1 seek=8 conv=notrunc status=none \
     && chmod +x /usr/local/bin/appimagetool
 ENV APPIMAGE_EXTRACT_AND_RUN=1

@@ -1,0 +1,155 @@
+# Builds and tests every package on GitHub's runners: arm64 natively instead of
+# under QEMU. A pushed tag `v<version>` also makes a draft release; publishing it
+# stays a person's decision. Run by hand, it only keeps the packages as artifacts.
+name: Packages
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: packages-${{ github.ref }}
+
+env:
+  CONTAINER_ENGINE: docker
+  # The runners have 16 GB and 4 CPUs, all ours.
+  FERRICONE_BUILD_MEMORY: 13g
+  FERRICONE_BUILD_MEMORY_SWAP: 14g
+  FERRICONE_BUILD_CPUS: "4"
+
+jobs:
+  build:
+    name: ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 300
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: x86_64, runner: ubuntu-24.04 }
+          - { arch: aarch64, runner: ubuntu-24.04-arm }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check the tag matches the version
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          [ "$TAG" = "v$version" ] || { echo "::error::tag $TAG, but Cargo.toml says $version"; exit 1; }
+
+      # libVLC and the Rust dependencies, so only what changed is compiled. The
+      # image and libVLC's sources and patches decide if a cache still applies.
+      - name: Restore the build cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .package-cache
+          key: packages-${{ matrix.arch }}-${{ hashFiles('packaging/Dockerfile', 'scripts/build-libvlc.sh', 'patches/**') }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: packages-${{ matrix.arch }}-${{ hashFiles('packaging/Dockerfile', 'scripts/build-libvlc.sh', 'patches/**') }}-
+
+      - name: Build the packages
+        run: packaging/build.sh --arch ${{ matrix.arch }} all
+
+      # Files a failed container run left as root would keep the cache from saving.
+      - name: Take back the build files
+        if: always()
+        run: sudo chown -R "$(id -u):$(id -g)" .package-cache dist 2>/dev/null || true
+
+      # Even after a failure: what did compile shouldn't cost the next run its time.
+      - name: Save the build cache
+        if: always()
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .package-cache
+          key: packages-${{ matrix.arch }}-${{ hashFiles('packaging/Dockerfile', 'scripts/build-libvlc.sh', 'patches/**') }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Keep the packages
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: packages-${{ matrix.arch }}
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            dist/*.deb
+            dist/*.rpm
+            dist/*.pkg.tar.zst
+            dist/*.AppImage
+            dist/*.tar.gz
+
+  # On a runner of its own: the distributions' images get a whole disk instead of
+  # sharing one with the build, and "Re-run failed jobs" repeats only this.
+  test:
+    name: Test ${{ matrix.arch }}
+    needs: build
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: x86_64, runner: ubuntu-24.04 }
+          - { arch: aarch64, runner: ubuntu-24.04-arm }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: packages-${{ matrix.arch }}
+          path: dist
+
+      # test.sh skips a format whose file is missing, and that must not pass.
+      - name: Check all five packages arrived
+        run: |
+          ls -lh dist
+          [ "$(ls dist | wc -l)" = 5 ]
+
+      - name: Install and check them on each distribution
+        run: packaging/test.sh --arch ${{ matrix.arch }}
+
+  draft-release:
+    name: Draft release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      # The only job that can change anything: it makes a draft, nobody sees it
+      # until it's published by hand, and it's never marked as the latest release.
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          path: packages
+          merge-multiple: true
+
+      - name: Create the draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          cd packages
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+          prerelease=()
+          case $TAG in *-*) prerelease=(--prerelease) ;; esac
+          # A rerun may refresh its own draft, never what's already published.
+          if draft=$(gh release view "$TAG" --json isDraft --jq .isDraft 2>/dev/null); then
+            [ "$draft" = true ] || { echo "::error::$TAG is already published"; exit 1; }
+            gh release upload "$TAG" --clobber ./*
+          else
+            gh release create "$TAG" --draft --verify-tag --latest=false "${prerelease[@]}" \
+              --title "$TAG" --notes "Built by Actions; notes to come." ./*
+          fi

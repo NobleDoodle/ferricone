@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# package-rpm.sh <bundle>: dist/ferricone-<version>-1.x86_64.rpm, for
+# package-rpm.sh <bundle>: dist/ferricone-<version>-1.<arch>.rpm, for
 # Fedora, openSUSE and RHEL 10 (RHEL 9's glibc 2.34 is too old). It requires libraries by soname, which every
 # RPM distribution provides under its own package names.
 source /src/packaging/common.sh "$@"
@@ -13,12 +13,12 @@ cat > "$top/SPECS/ferricone.spec" <<SPEC
 %global _binary_payload w19.zstdio
 
 Name:           ferricone
-Version:        $version
+Version:        $tilde_version
 Release:        1
 Summary:        $summary
 License:        GPL-3.0-or-later
 URL:            $homepage
-BuildArch:      x86_64
+BuildArch:      $arch
 AutoReqProv:    no
 $(for l in $(syslibs required); do echo "Requires:       $l()(64bit)"; done)
 Requires:       libc.so.6(GLIBC_2.35)(64bit)
@@ -47,6 +47,6 @@ cp -a $top/stage/. %{buildroot}/
 SPEC
 stage "$top/stage"
 rpmbuild --quiet -bb --define "_topdir $top" "$top/SPECS/ferricone.spec"
-rpm=$out/ferricone-$version-1.x86_64.rpm
-cp "$top/RPMS/x86_64/$(basename "$rpm")" "$rpm"
+rpm=$out/ferricone-$version-1.$arch.rpm
+cp "$top/RPMS/$arch/ferricone-$tilde_version-1.$arch.rpm" "$rpm"
 finish "$rpm"

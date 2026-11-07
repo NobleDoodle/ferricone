@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# package-appimage.sh <bundle>: dist/Ferricone_Player-<version>-x86_64.AppImage,
+# package-appimage.sh <bundle>: dist/Ferricone_Player-<version>-<arch>.AppImage,
 # for any distribution: one file, made executable and run.
 source /src/packaging/common.sh "$@"
 
@@ -16,6 +16,6 @@ cp "$bundle/share/applications/$app.desktop" "$appdir/$app.desktop"
 cp "$bundle/share/icons/hicolor/scalable/apps/$app.svg" "$appdir/$app.svg"
 ln -s "$app.svg" "$appdir/.DirIcon"
 
-image=$out/Ferricone_Player-$version-x86_64.AppImage
-ARCH=x86_64 appimagetool --no-appstream "$appdir" "$image" >/dev/null
+image=$out/Ferricone_Player-$version-$arch.AppImage
+ARCH=$arch appimagetool --no-appstream "$appdir" "$image" >/dev/null
 finish "$image"

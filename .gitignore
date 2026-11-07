@@ -3,3 +3,5 @@
 __pycache__/
 /dist/
 /.package-cache/
+# QEMU core dumps from emulated builds
+*.core

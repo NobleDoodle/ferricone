@@ -8,6 +8,8 @@ mod art;
 mod cast;
 mod audio_fx;
 mod chrome;
+#[cfg(target_os = "linux")]
+mod popup;
 mod controls;
 mod diag;
 mod drop;
@@ -68,11 +70,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .collect();
 
     // libVLC's OpenGL output needs desktop GL; Slint picks GLES 2.0 by default.
+    #[cfg(target_os = "linux")]
+    popup::select_backend()?;
+    #[cfg(not(target_os = "linux"))]
     slint::BackendSelector::new().require_opengl().select()?;
 
     let app = AppWindow::new()?;
     theme::start(&app);
     chrome::connect(&app);
+    #[cfg(target_os = "linux")]
+    popup::connect(&app);
 
     let vlc = Rc::new(vlc::Vlc::new(&diag::vlc_args())?);
     let ui = app.as_weak();
@@ -155,6 +162,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     diag.frame_shown();
                     ui.set_video_frame(frame);
                 }
+                ui.set_video_failed(p.video().output_failed());
                 // Blurred only while a frosted overlay is over the video.
                 if ui.get_wants_backdrop()
                     && let Some(backdrop) = p.video().backdrop(ui.get_video_aspect())

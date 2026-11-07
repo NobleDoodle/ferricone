@@ -357,6 +357,12 @@ export component TitleBar inherits Rectangle {
     in property <bool> dock-open;
     callback toggle-dock();
     callback reveal-folder();
+    // Minimize, maximize and close: everywhere but Omarchy (src/chrome.rs).
+    in property <bool> window-buttons;
+    in property <bool> maximized;
+    callback minimize-window();
+    callback toggle-maximized();
+    callback close-window();
 
     height: 40px;
     background: root.glass ? transparent : Theme.bg-a3;
@@ -367,9 +373,11 @@ export component TitleBar inherits Rectangle {
     }
 
     // Dragging empty space moves the window; the buttons take their own clicks.
+    // Only once the pointer has moved: from then on the compositor keeps the
+    // pointer, which a plain click or double-click must not lose.
     drag := TouchArea {
-        pointer-event(event) => {
-            if event.kind == PointerEventKind.down && event.button == PointerEventButton.left {
+        moved => {
+            if self.pressed && (abs(self.mouse-x - self.pressed-x) > 3px || abs(self.mouse-y - self.pressed-y) > 3px) {
                 root.start-move();
             }
         }
@@ -432,6 +440,22 @@ export component TitleBar inherits Rectangle {
                 crumb := TouchArea { clicked => { root.reveal-folder(); } }
             }
             }
+        }
+
+        if root.window-buttons: HorizontalLayout {
+            padding: 6px;
+            spacing: 10px;
+            alignment: end;
+
+            IconButton { icon: Icons.minimize; width: 28px; height: 28px; clicked => { root.minimize-window(); } }
+            IconButton {
+                // The design has no restore icon.
+                icon: root.maximized ? { fg: @image-url("window-restore.svg") } : Icons.maximize;
+                width: 28px;
+                height: 28px;
+                clicked => { root.toggle-maximized(); }
+            }
+            IconButton { icon: Icons.close; width: 28px; height: 28px; clicked => { root.close-window(); } }
         }
     }
 }

@@ -8,9 +8,10 @@
 //! VLC's `doc/libvlc/sdl_opengl_player.cpp`.
 //!
 //! Framebuffers belong to VLC's context and are deleted there. Textures are
-//! shared, so when VLC resizes or releases its output it only retires them;
-//! the UI deletes them once a newer frame replaces them. The last frame stays
-//! up meanwhile, so a reload (plan §9) freezes the picture instead of blanking it.
+//! shared, so when VLC resizes or releases its output it deletes them too,
+//! except the one on screen, which the UI deletes once a newer frame replaces
+//! it. The last frame stays up meanwhile, so a reload (plan §9) freezes the
+//! picture instead of blanking it.
 
 mod backdrop;
 
@@ -25,9 +26,13 @@ use std::{
     ffi::{CStr, c_void},
     sync::{
         Mutex,
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicU32, Ordering},
     },
 };
+
+/// A working output starts once or twice for a video; failing, about 30 times
+/// a second.
+const FAILED_AFTER_STARTS: u32 = 20;
 
 pub struct Bridge {
     context: SharedContext,
@@ -35,6 +40,8 @@ pub struct Bridge {
     frames: Mutex<Frames>,
     redraw: Box<dyn Fn() + Send + Sync>,
     redraw_pending: AtomicBool,
+    /// Outputs set up since the last finished frame (`output_failed`).
+    starts_without_frame: AtomicU32,
     /// UI thread only.
     backdrop: Mutex<Backdrop>,
 }
@@ -79,6 +86,7 @@ impl Bridge {
             }),
             redraw: Box::new(redraw),
             redraw_pending: AtomicBool::new(false),
+            starts_without_frame: AtomicU32::new(0),
             backdrop: Mutex::default(),
         })
     }
@@ -92,6 +100,10 @@ impl Bridge {
     /// (Re)creates the three render targets. VLC may call this with or without
     /// its context current.
     pub fn resize(&self, width: u32, height: u32) -> bool {
+        // Wakes the UI once, to show the output as failed.
+        if self.starts_without_frame.fetch_add(1, Ordering::AcqRel) + 1 == FAILED_AFTER_STARTS {
+            self.request_redraw();
+        }
         let entered = !self.context.is_current() && self.context.make_current();
         let mut f = self.frames.lock().unwrap();
         let context = &self.context;
@@ -143,6 +155,7 @@ impl Bridge {
 
     /// VLC finished a frame (its context is no longer current).
     pub fn frame_done(&self) {
+        self.starts_without_frame.store(0, Ordering::Release);
         {
             let mut f = self.frames.lock().unwrap();
             (f.render, f.ready) = (f.ready, f.render);
@@ -171,6 +184,17 @@ impl Bridge {
     }
 
     // UI thread -------------------------------------------------------------
+
+    /// The output keeps failing to start: VLC retries for every decoded frame
+    /// and none ever finishes, so the picture stays black.
+    pub fn output_failed(&self) -> bool {
+        self.starts_without_frame.load(Ordering::Acquire) >= FAILED_AFTER_STARTS
+    }
+
+    /// New media gets a new chance.
+    pub fn forget_output_failure(&self) {
+        self.starts_without_frame.store(0, Ordering::Release);
+    }
 
     /// VLC's newest finished frame, or `None` if there is none since the last
     /// call. The caller must show it in this frame. Call while Slint's context
@@ -229,10 +253,14 @@ impl Bridge {
 }
 
 impl Frames {
-    /// Deletes VLC's framebuffers and fences and hands the textures to the UI.
-    /// Needs VLC's context current.
+    /// Deletes VLC's framebuffers and fences, and every texture but the one
+    /// on screen, which goes to the UI to delete once a newer frame replaces
+    /// it. Waiting for that frame with the others would leak them for as long
+    /// as none comes: an output that fails to start retries many times a
+    /// second, each time with new targets. Needs VLC's context current.
     fn retire_targets(&mut self) {
         let Some(gl) = &self.gl else { return };
+        let on_screen = self.on_screen.map(|(texture, _)| texture);
         unsafe {
             for fbo in self.fbos.drain(..) {
                 gl.delete_framebuffer(fbo);
@@ -240,8 +268,14 @@ impl Frames {
             for Fence(fence) in self.fences.iter_mut().filter_map(Option::take) {
                 gl.delete_sync(fence);
             }
+            for texture in self.textures.drain(..) {
+                if Some(texture) == on_screen {
+                    self.retired.push(texture);
+                } else {
+                    gl.delete_texture(texture);
+                }
+            }
         }
-        self.retired.append(&mut self.textures);
     }
 }
 
