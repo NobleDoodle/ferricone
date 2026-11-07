@@ -4,7 +4,7 @@ layout: default
 <main>
   <section class="hero">
     <div class="hero-copy">
-      <p class="eyebrow">Version {{ site.version }} · Linux</p>
+      <p class="eyebrow">Version {{ site.version }} · Linux · x86-64 and ARM</p>
       <h1>Every format VLC plays.<br><em>A player you'll want to look at.</em></h1>
       <p class="lede">Ferricone runs on VLC's own engine, libVLC&nbsp;4, with a new interface written in Rust and Slint:
         a library beside the player, a subtitle timeline, and settings that remember a show.</p>
@@ -63,18 +63,26 @@ layout: default
 
   <section id="download" class="download">
     <h2>Download</h2>
-    <p class="note">One build for every x86-64 distribution from 2022 on (glibc 2.35 or newer), with libVLC&nbsp;4 inside.</p>
-    <div class="packages">
+    <p class="note">One build for every distribution from 2022 on (glibc 2.35 or newer), with libVLC&nbsp;4 inside.</p>
+    <div class="tabs arch" role="tablist" aria-label="Processor">
+      <button class="on" data-arch="x86_64" role="tab" aria-selected="true">x86-64 <small>Intel · AMD</small></button>
+      <button data-arch="aarch64" role="tab" aria-selected="false">ARM64 <small>aarch64</small></button>
+    </div>
+    <p class="note arch-note" data-arch="aarch64" hidden>For Omarchy's ARM build, Arch Linux ARM, Asahi on Apple Silicon, Raspberry Pi 4 and 5 on a 64-bit system, and ARM laptops and boards.</p>
+    {% assign arches = "x86_64,aarch64" | split: "," %}
+    {% for arch in arches %}
+    <div class="packages" data-arch="{{ arch }}"{% if arch != "x86_64" %} hidden{% endif %}>
       {% for p in site.data.packages %}
+      {% assign f = p[arch] %}
       <div class="package">
         <div class="pkg-head">
           <div>
             <h3>{{ p.system }}</h3>
-            <span class="kind">{{ p.kind }} · {{ p.size }}</span>
+            <span class="kind">{{ p.kind }} · {{ f.size }}</span>
           </div>
-          <a class="button primary small" href="{{ site.release }}/{{ p.file }}">Download</a>
+          <a class="button primary small" href="{{ site.release }}/{{ f.file }}">Download</a>
         </div>
-        <div class="cmd"><code>{{ p.install }}</code><button data-copy>Copy</button></div>
+        <div class="cmd"><code>{{ f.install }}</code><button data-copy>Copy</button></div>
       </div>
       {% endfor %}
       <div class="package chromeos">
@@ -82,6 +90,8 @@ layout: default
         <p>Turn on the Linux development environment (Settings › About ChromeOS › Developers), then open the <code>.deb</code> from Files and choose <em>Install with Linux</em>.</p>
       </div>
     </div>
+    {% endfor %}
+    <noscript><p class="note">The ARM64 packages are on the <a href="https://github.com/{{ site.repository }}/releases/latest">release page</a>.</p></noscript>
     <p class="note">All files, checksums and notes are on the <a href="https://github.com/{{ site.repository }}/releases/latest">release page</a>.</p>
   </section>
 

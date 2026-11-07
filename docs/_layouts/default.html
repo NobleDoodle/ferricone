@@ -41,7 +41,7 @@
         });
       });
     });
-    document.querySelectorAll('.tabs button').forEach(function (t) {
+    document.querySelectorAll('.shots .tabs button').forEach(function (t) {
       t.addEventListener('click', function () {
         var box = t.closest('.shots');
         box.querySelectorAll('.tabs button').forEach(function (o) {
@@ -52,6 +52,27 @@
         box.querySelectorAll('figure').forEach(function (f) { f.hidden = f.dataset.shot !== t.dataset.shot; });
       });
     });
+    // The download toggle: the visitor's processor where the browser says, x86-64
+    // otherwise; a click always wins over the guess.
+    var picked = false;
+    function showArch(arch) {
+      document.querySelectorAll('.tabs.arch button').forEach(function (o) {
+        var on = o.dataset.arch === arch;
+        o.classList.toggle('on', on);
+        o.setAttribute('aria-selected', on);
+      });
+      document.querySelectorAll('.download [data-arch]:not(button)').forEach(function (e) { e.hidden = e.dataset.arch !== arch; });
+    }
+    document.querySelectorAll('.tabs.arch button').forEach(function (t) {
+      t.addEventListener('click', function () { picked = true; showArch(t.dataset.arch); });
+    });
+    if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+      navigator.userAgentData.getHighEntropyValues(['architecture']).then(function (v) {
+        if (!picked && v.architecture === 'arm') showArch('aarch64');
+      }).catch(function () {});
+    } else if (/aarch64|arm64/i.test(navigator.userAgent)) {
+      showArch('aarch64');
+    }
   </script>
 </body>
 </html>

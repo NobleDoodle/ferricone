@@ -44,41 +44,46 @@ player, settings that remember a show, and a subtitle timeline.
 ## Install
 
 Every package holds the same build: Ferricone and libVLC 4 with the libraries a
-desktop doesn't already have. It runs on any x86-64 distribution from 2022 on
-(glibc 2.35 or newer). Download from the
+desktop doesn't already have. It runs on any x86-64 or 64-bit ARM distribution
+from 2022 on (glibc 2.35 or newer). Download from the
 [latest release](https://github.com/NobleDoodle/ferricone/releases/latest).
 
-| System | Package | Size |
+| System | x86-64 | 64-bit ARM |
 |---|---|---|
-| Debian, Ubuntu, Mint, Pop!_OS | `ferricone_1.0.0_amd64.deb` | 58 MB |
-| Fedora, openSUSE, RHEL 10 and its rebuilds | `ferricone-1.0.0-1.x86_64.rpm` | 63 MB |
-| Arch, Omarchy, EndeavourOS, Manjaro | `ferricone-1.0.0-1-x86_64.pkg.tar.zst` | 75 MB |
-| Any distribution | `Ferricone_Player-1.0.0-x86_64.AppImage` | 73 MB |
-| Any distribution, no root | `ferricone-1.0.0-x86_64.tar.gz` | 79 MB |
+| Debian, Ubuntu, Mint, Pop!_OS, Raspberry Pi OS | `ferricone_1.1.0_amd64.deb` | `ferricone_1.1.0_arm64.deb` |
+| Fedora, openSUSE, RHEL 10 and its rebuilds | `ferricone-1.1.0-1.x86_64.rpm` | `ferricone-1.1.0-1.aarch64.rpm` |
+| Arch, Omarchy, EndeavourOS, Manjaro, Arch Linux ARM | `ferricone-1.1.0-1-x86_64.pkg.tar.zst` | `ferricone-1.1.0-1-aarch64.pkg.tar.zst` |
+| Any distribution | `Ferricone_Player-1.1.0-x86_64.AppImage` | `Ferricone_Player-1.1.0-aarch64.AppImage` |
+| Any distribution, no root | `ferricone-1.1.0-x86_64.tar.gz` | `ferricone-1.1.0-aarch64.tar.gz` |
+
+64-bit ARM covers Omarchy's ARM build and other Arch Linux ARM systems, Asahi on
+Apple Silicon, Raspberry Pi 4 and 5 on a 64-bit system, and ARM laptops and
+boards. The commands below use the x86-64 names; on ARM, use the files with
+`arm64` or `aarch64` in their names the same way.
 
 **Debian, Ubuntu, Mint**
 
 ```sh
-sudo apt install ./ferricone_1.0.0_amd64.deb
+sudo apt install ./ferricone_1.1.0_amd64.deb
 ```
 
 **Fedora, RHEL 10** (`sudo zypper install` on openSUSE)
 
 ```sh
-sudo dnf install ./ferricone-1.0.0-1.x86_64.rpm
+sudo dnf install ./ferricone-1.1.0-1.x86_64.rpm
 ```
 
 **Arch, Omarchy, EndeavourOS, Manjaro**
 
 ```sh
-sudo pacman -U ferricone-1.0.0-1-x86_64.pkg.tar.zst
+sudo pacman -U ferricone-1.1.0-1-x86_64.pkg.tar.zst
 ```
 
 **AppImage**
 
 ```sh
-chmod +x Ferricone_Player-1.0.0-x86_64.AppImage
-./Ferricone_Player-1.0.0-x86_64.AppImage
+chmod +x Ferricone_Player-1.1.0-x86_64.AppImage
+./Ferricone_Player-1.1.0-x86_64.AppImage
 ```
 
 It needs FUSE 2 (`libfuse2`); without it, run it with `--appimage-extract-and-run`.
@@ -86,19 +91,13 @@ It needs FUSE 2 (`libfuse2`); without it, run it with `--appimage-extract-and-ru
 **Archive**, installed into `~/.local` for your user only:
 
 ```sh
-tar xzf ferricone-1.0.0-x86_64.tar.gz
-ferricone-1.0.0-x86_64/install.sh      # uninstall.sh removes it again
+tar xzf ferricone-1.1.0-x86_64.tar.gz
+ferricone-1.1.0-x86_64/install.sh      # uninstall.sh removes it again
 ```
 
-**Development builds** of the `dev` branch, for x86-64 and for 64-bit ARM
-(aarch64: Omarchy's ARM build and other Arch Linux ARM systems, Asahi on Apple
-Silicon, Raspberry Pi 4 and 5 on a 64-bit system, ARM laptops and boards), are on the
+**Development builds** of the `dev` branch are on the
 [releases page](https://github.com/NobleDoodle/ferricone/releases) as
-prereleases, in the same five formats with `amd64`/`arm64` or
-`x86_64`/`aarch64` in their names. The ARM build uses desktop OpenGL, as on
-x86-64 (Mesa provides it on those GPUs); it is tested by installing it on each
-distribution's ARM image and running it under emulation, not yet on ARM
-hardware, so reports are welcome.
+prereleases, in the same formats.
 
 **ChromeOS:** turn on the Linux development environment (Settings › About
 ChromeOS › Developers), then open the `.deb` from Files and choose Install with
@@ -119,11 +118,11 @@ Podman or Docker: everything else is built in containers (Ubuntu 22.04, and Arch
 or Arch Linux ARM for the Arch package).
 
 ```sh
-packaging/build-deb.sh         # dist/ferricone_1.0.0_amd64.deb
-packaging/build-rpm.sh         # dist/ferricone-1.0.0-1.x86_64.rpm
-packaging/build-pacman.sh      # dist/ferricone-1.0.0-1-x86_64.pkg.tar.zst
-packaging/build-appimage.sh    # dist/Ferricone_Player-1.0.0-x86_64.AppImage
-packaging/build-tarball.sh     # dist/ferricone-1.0.0-x86_64.tar.gz
+packaging/build-deb.sh         # dist/ferricone_1.1.0_amd64.deb
+packaging/build-rpm.sh         # dist/ferricone-1.1.0-1.x86_64.rpm
+packaging/build-pacman.sh      # dist/ferricone-1.1.0-1-x86_64.pkg.tar.zst
+packaging/build-appimage.sh    # dist/Ferricone_Player-1.1.0-x86_64.AppImage
+packaging/build-tarball.sh     # dist/ferricone-1.1.0-x86_64.tar.gz
 packaging/build.sh all         # all five
 packaging/build.sh --arch aarch64 all     # all five for 64-bit ARM
 packaging/build.sh --arch all all         # both architectures

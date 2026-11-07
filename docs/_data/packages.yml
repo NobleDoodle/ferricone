@@ -1,25 +1,52 @@
+# One entry per format, with its file for each processor. The sizes are the
+# release's, in MB; docs/index.html shows the set the toggle picks.
 - system: Debian · Ubuntu · Mint
   kind: .deb
-  file: ferricone_1.0.0_amd64.deb
-  size: 58 MB
-  install: sudo apt install ./ferricone_1.0.0_amd64.deb
+  x86_64:
+    file: ferricone_1.1.0_amd64.deb
+    size: 58 MB
+    install: sudo apt install ./ferricone_1.1.0_amd64.deb
+  aarch64:
+    file: ferricone_1.1.0_arm64.deb
+    size: 53 MB
+    install: sudo apt install ./ferricone_1.1.0_arm64.deb
 - system: Fedora · openSUSE · RHEL 10
   kind: .rpm
-  file: ferricone-1.0.0-1.x86_64.rpm
-  size: 63 MB
-  install: sudo dnf install ./ferricone-1.0.0-1.x86_64.rpm
-- system: Arch · Manjaro
+  x86_64:
+    file: ferricone-1.1.0-1.x86_64.rpm
+    size: 64 MB
+    install: sudo dnf install ./ferricone-1.1.0-1.x86_64.rpm
+  aarch64:
+    file: ferricone-1.1.0-1.aarch64.rpm
+    size: 61 MB
+    install: sudo dnf install ./ferricone-1.1.0-1.aarch64.rpm
+- system: Arch · Omarchy · Manjaro
   kind: .pkg.tar.zst
-  file: ferricone-1.0.0-1-x86_64.pkg.tar.zst
-  size: 75 MB
-  install: sudo pacman -U ferricone-1.0.0-1-x86_64.pkg.tar.zst
+  x86_64:
+    file: ferricone-1.1.0-1-x86_64.pkg.tar.zst
+    size: 76 MB
+    install: sudo pacman -U ferricone-1.1.0-1-x86_64.pkg.tar.zst
+  aarch64:
+    file: ferricone-1.1.0-1-aarch64.pkg.tar.zst
+    size: 73 MB
+    install: sudo pacman -U ferricone-1.1.0-1-aarch64.pkg.tar.zst
 - system: Any distribution
   kind: AppImage
-  file: Ferricone_Player-1.0.0-x86_64.AppImage
-  size: 73 MB
-  install: chmod +x Ferricone_Player-1.0.0-x86_64.AppImage && ./Ferricone_Player-1.0.0-x86_64.AppImage
+  x86_64:
+    file: Ferricone_Player-1.1.0-x86_64.AppImage
+    size: 74 MB
+    install: chmod +x Ferricone_Player-1.1.0-x86_64.AppImage && ./Ferricone_Player-1.1.0-x86_64.AppImage
+  aarch64:
+    file: Ferricone_Player-1.1.0-aarch64.AppImage
+    size: 70 MB
+    install: chmod +x Ferricone_Player-1.1.0-aarch64.AppImage && ./Ferricone_Player-1.1.0-aarch64.AppImage
 - system: Archive, no root
   kind: .tar.gz
-  file: ferricone-1.0.0-x86_64.tar.gz
-  size: 79 MB
-  install: tar xzf ferricone-1.0.0-x86_64.tar.gz && ferricone-1.0.0-x86_64/install.sh
+  x86_64:
+    file: ferricone-1.1.0-x86_64.tar.gz
+    size: 79 MB
+    install: tar xzf ferricone-1.1.0-x86_64.tar.gz && ferricone-1.1.0-x86_64/install.sh
+  aarch64:
+    file: ferricone-1.1.0-aarch64.tar.gz
+    size: 75 MB
+    install: tar xzf ferricone-1.1.0-aarch64.tar.gz && ferricone-1.1.0-aarch64/install.sh

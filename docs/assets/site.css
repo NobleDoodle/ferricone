@@ -1,4 +1,5 @@
 :root {
+  color-scheme: dark;
   --ferric: #901407;
   --ferric-hi: #b01c0a;
   --ferric-lo: #6e0f05;
@@ -17,6 +18,7 @@
 
 @media (prefers-color-scheme: light) {
   :root {
+    color-scheme: light;
     --bg: #fbf7f3;
     --bg-2: #f3ebe4;
     --card: #ffffff;
@@ -205,6 +207,11 @@ main > section {
 .pkg-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
 .kind { color: var(--muted); font-size: 14px; }
 .chromeos p { color: var(--muted); margin: 10px 0 0; }
+/* Author display rules would otherwise beat the hidden attribute. */
+.download [hidden] { display: none !important; }
+.download .tabs { justify-content: flex-start; margin: 26px 0 0; }
+.tabs button small { font-size: 13px; font-weight: 500; margin-left: 4px; opacity: 0.75; }
+.arch-note { margin: 16px 0 0; }
 
 .cmd {
   display: flex;
@@ -215,7 +222,7 @@ main > section {
   background: var(--bg-2);
   border: 1px solid var(--line);
 }
-.cmd code { flex: 1; overflow-x: auto; white-space: pre; scrollbar-width: thin; }
+.cmd code { flex: 1; overflow-x: auto; white-space: pre; scrollbar-width: thin; scrollbar-color: var(--muted) transparent; }
 .cmd button {
   font: inherit;
   font-size: 13px;
