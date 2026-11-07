@@ -28,10 +28,24 @@ wanted() { case $only in *" $1 "*) return 0 ;; esac; return 1; }
 
 pass=() fail=()
 log=$(mktemp)
+run_target() { # run_target <image> <setup and install commands> <strict>
+  "$engine" run --rm --platform "$platform" --memory=3g --memory-swap=6g --cpus=4 --ulimit core=0 -v "$root/dist:/dist:ro,z" -v "$root/packaging:/pkg:ro,z" -e STRICT="$3" "$1" \
+    sh -c "$2 && sh /pkg/check-install.sh" > "$log" 2>&1
+}
+
 try() { # try <label> <image> <setup and install commands> [strict]
   echo "== $1 ($2, $arch)"
-  if "$engine" run --rm --platform "$platform" --memory=3g --memory-swap=6g --cpus=4 --ulimit core=0 -v "$root/dist:/dist:ro,z" -v "$root/packaging:/pkg:ro,z" -e STRICT="${4:-}" "$2" \
-      sh -c "$3 && sh /pkg/check-install.sh" > "$log" 2>&1; then
+  local result=0
+  run_target "$2" "$3" "${4:-}" || result=$?
+  # Failing before Ferricone even ran is the distribution's mirrors, once in a
+  # while (a bad repomd.xml). A failure after it ran is ours: no second chance.
+  if [ $result != 0 ] && ! grep -q "^Ferricone Player" "$log"; then
+    echo "   not installed: $(tail -1 "$log" | cut -c1-100). Once more in 30 s."
+    sleep 30
+    result=0
+    run_target "$2" "$3" "${4:-}" || result=$?
+  fi
+  if [ $result = 0 ]; then
     pass+=("$1/$arch")
   else
     fail+=("$1/$arch")
@@ -76,7 +90,7 @@ for arch in "${arches[@]}"; do
     # so it is unpacked, as --appimage-extract does, from a copy without the
     # AppImage magic bytes, which keep binfmt_misc from handing an arm64
     # AppImage to QEMU.
-    try "AppImage on debian" docker.io/library/debian:12 "apt-get update -qq >/dev/null && apt-get install -y -qq file \$(dpkg-deb -f $deb Depends | sed 's/([^)]*)//g; s/|[^,]*//g; s/,/ /g') >/dev/null && cd /tmp && cp $img /tmp/f.AppImage && printf '\\0\\0\\0' | dd of=/tmp/f.AppImage bs=1 seek=8 conv=notrunc status=none && /tmp/f.AppImage --appimage-extract >/dev/null && ln -s /tmp/squashfs-root/usr/bin/ferricone /usr/local/bin/ferricone && ln -s /tmp/squashfs-root/usr /opt/ferricone"
+    try "AppImage on debian" docker.io/library/debian:12 "apt-get update -qq >/dev/null && apt-get install -y -qq file \$(dpkg-deb -f $deb Depends | sed 's/([^)]*)//g; s/|[^,]*//g; s/,/ /g') >/dev/null && cd /tmp && cp $img /tmp/f.AppImage && printf '\\0\\0\\0' | dd of=/tmp/f.AppImage bs=1 seek=8 conv=notrunc status=none && chmod +x /tmp/f.AppImage && /tmp/f.AppImage --appimage-extract >/dev/null && ln -s /tmp/squashfs-root/usr/bin/ferricone /usr/local/bin/ferricone && ln -s /tmp/squashfs-root/usr /opt/ferricone"
   fi
   if wanted tarball && [ -f "$root$tgz" ]; then
     # A desktop's libraries: the .rpm's dependencies.

@@ -145,6 +145,10 @@ openSUSE Tumbleweed, and Arch, or on aarch64 Arch Linux ARM and Manjaro ARM)
 and checks that it starts, that no library is missing, and that no bundled
 library breaks a system one loaded beside it.
 
+Pushing a tag `v<version>` does all of this on GitHub's runners, arm64 natively
+(`.github/workflows/packages.yml`), and leaves a draft release to look over and
+publish by hand.
+
 ### For development
 
 ```sh
