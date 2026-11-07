@@ -8,9 +8,10 @@
 //! VLC's `doc/libvlc/sdl_opengl_player.cpp`.
 //!
 //! Framebuffers belong to VLC's context and are deleted there. Textures are
-//! shared, so when VLC resizes or releases its output it only retires them;
-//! the UI deletes them once a newer frame replaces them. The last frame stays
-//! up meanwhile, so a reload (plan §9) freezes the picture instead of blanking it.
+//! shared, so when VLC resizes or releases its output it deletes them too,
+//! except the one on screen, which the UI deletes once a newer frame replaces
+//! it. The last frame stays up meanwhile, so a reload (plan §9) freezes the
+//! picture instead of blanking it.
 
 mod backdrop;
 
@@ -229,10 +230,14 @@ impl Bridge {
 }
 
 impl Frames {
-    /// Deletes VLC's framebuffers and fences and hands the textures to the UI.
-    /// Needs VLC's context current.
+    /// Deletes VLC's framebuffers and fences, and every texture but the one
+    /// on screen, which goes to the UI to delete once a newer frame replaces
+    /// it. Waiting for that frame with the others would leak them for as long
+    /// as none comes: an output that fails to start retries many times a
+    /// second, each time with new targets. Needs VLC's context current.
     fn retire_targets(&mut self) {
         let Some(gl) = &self.gl else { return };
+        let on_screen = self.on_screen.map(|(texture, _)| texture);
         unsafe {
             for fbo in self.fbos.drain(..) {
                 gl.delete_framebuffer(fbo);
@@ -240,8 +245,14 @@ impl Frames {
             for Fence(fence) in self.fences.iter_mut().filter_map(Option::take) {
                 gl.delete_sync(fence);
             }
+            for texture in self.textures.drain(..) {
+                if Some(texture) == on_screen {
+                    self.retired.push(texture);
+                } else {
+                    gl.delete_texture(texture);
+                }
+            }
         }
-        self.retired.append(&mut self.textures);
     }
 }
 
