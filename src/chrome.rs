@@ -71,6 +71,30 @@ pub fn connect(app: &AppWindow) {
 /// the button's release never reaches the app, and Slint would send every
 /// later click to the item still pressed. Deferred: this runs inside the
 /// handling of a pointer event.
+/// X11 compositors (xfwm4, picom) show a new window at its first damage after
+/// they start tracking it. When the first frame lands before that, an idle
+/// window stays invisible until something redraws it: about half the starts
+/// under picom, and reported on a Raspberry Pi's Xfce. So on X11 a few more
+/// frames follow the first. Call when rendering is set up.
+pub fn redraw_after_map(app: &AppWindow) {
+    use slint::winit_030::winit::raw_window_handle::{HasDisplayHandle, RawDisplayHandle};
+    let on_x11 = app.window().with_winit_window(|w| {
+        w.display_handle()
+            .is_ok_and(|h| matches!(h.as_raw(), RawDisplayHandle::Xlib(_) | RawDisplayHandle::Xcb(_)))
+    });
+    if on_x11 != Some(true) {
+        return;
+    }
+    for ms in [250, 1000, 3000] {
+        let ui = app.as_weak();
+        slint::Timer::single_shot(Duration::from_millis(ms), move || {
+            if let Some(app) = ui.upgrade() {
+                app.window().request_redraw();
+            }
+        });
+    }
+}
+
 fn release_pointer(ui: &Weak<AppWindow>) {
     let ui = ui.clone();
     slint::Timer::single_shot(Duration::ZERO, move || {

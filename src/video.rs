@@ -15,7 +15,7 @@
 
 mod backdrop;
 
-#[cfg_attr(target_os = "linux", path = "video/egl.rs")]
+#[cfg_attr(target_os = "linux", path = "video/linux.rs")]
 #[cfg_attr(not(target_os = "linux"), path = "video/unsupported.rs")]
 mod context;
 

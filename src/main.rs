@@ -127,6 +127,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     app.window()
         .set_rendering_notifier(move |state, api| match state {
             RenderingState::RenderingSetup => {
+                if let Some(app) = ui.upgrade() {
+                    chrome::redraw_after_map(&app);
+                }
                 let GraphicsAPI::NativeOpenGL { get_proc_address } = api else {
                     return eprintln!("ferricone: Slint is not rendering with OpenGL");
                 };
