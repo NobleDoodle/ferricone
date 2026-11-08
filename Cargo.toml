@@ -3,7 +3,7 @@ members = ["libvlc-sys"]
 
 [package]
 name = "ferricone"
-version = "1.1.0"
+version = "1.2.0-dev.1"
 edition = "2024"
 description = "Ferricone Player: a VLC redesign on libVLC 4 with a Rust + Slint interface"
 license = "GPL-3.0-or-later"
@@ -26,6 +26,14 @@ png = "0.17"
 # so no system TLS library is needed on any platform.
 ureq = "3"
 serde_json = "1"
+# Updates (src/update.rs): the release key's Ed25519 signature and SHA-256 from
+# ring (rustls already builds it), release versions, and the tarball. All were
+# already in the build.
+ring = "0.17"
+semver = "1"
+base64 = "0.23"
+flate2 = "1"
+tar = "0.4"
 # Native file dialogs: the XDG portal on Linux (over libdbus, no async runtime).
 rfd = { version = "0.17", default-features = false, features = ["xdg-portal"] }
 # ~ pin: the winit accessor is an unstable API that may change in minor releases.

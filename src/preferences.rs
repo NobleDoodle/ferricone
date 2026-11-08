@@ -176,8 +176,27 @@ fn pages(app: &AppWindow, page: usize, state: &State) -> Vec<SettingGroup> {
                 ),
                 follows_omarchy,
             ));
+            let (status, action) = crate::update::describe(now());
+            let mut updates = vec![
+                toggle(
+                    "check-updates",
+                    "Check for updates automatically",
+                    "Once a day, Ferricone asks GitHub for its newest release. Nothing about you or what you play is sent.",
+                    p.check_updates,
+                ),
+                note("update", &status, action),
+            ];
+            if let Some(version) = crate::update::news() {
+                updates.push(button(
+                    "release-notes",
+                    &format!("What's new in {version}"),
+                    "The release notes on GitHub.",
+                    "Open",
+                ));
+            }
             vec![
                 group("Appearance", appearance),
+                group("Updates", updates),
                 group(
                     "Diagnostics",
                     vec![
@@ -595,9 +614,36 @@ pub fn apply(app: &AppWindow) {
     app.set_pref_scrub_preview(p.scrub_preview);
 }
 
+thread_local! {
+    static OPEN: std::cell::RefCell<Option<std::rc::Rc<State>>> = const { std::cell::RefCell::new(None) };
+}
+
+/// Shows the rows again while the General page is open: the update status
+/// changed.
+pub fn refresh(app: &AppWindow) {
+    if !app.get_prefs_open() {
+        return;
+    }
+    OPEN.with(|open| {
+        if let Some(state) = &*open.borrow()
+            && state.page.get() == 0
+            && state.query.borrow().trim().is_empty()
+        {
+            show(app, state);
+        }
+    });
+}
+
+fn now() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs())
+}
+
 pub fn connect(app: &AppWindow, session: &Shared) {
     apply(app);
     let state = std::rc::Rc::new(State::default());
+    OPEN.with(|open| *open.borrow_mut() = Some(state.clone()));
 
     let (ui, st) = (app.as_weak(), state.clone());
     app.on_prefs_show_page(move |page| {
@@ -621,6 +667,7 @@ pub fn connect(app: &AppWindow, session: &Shared) {
             "omarchy" => app.global::<crate::Appearance>().invoke_set_omarchy(on),
             id => prefs::update(|p| match id {
                 "log" => p.log = on,
+                "check-updates" => p.check_updates = on,
                 "title-file" => p.title_shows_file = on,
                 "save-history" => p.save_history = on,
                 "remember-position" => p.remember_position = on,
@@ -635,6 +682,9 @@ pub fn connect(app: &AppWindow, session: &Shared) {
         }
         apply(&app);
         show(&app, &st);
+        if id == "check-updates" && on {
+            crate::update::check_if_due(&app);
+        }
     });
 
     let (ui, st) = (app.as_weak(), state.clone());
@@ -732,6 +782,8 @@ fn pressed(app: &AppWindow, s: &Shared, st: &std::rc::Rc<State>, id: &str) {
                 st.confirm_reset.set(true);
             }
         }
+        "update" => crate::update::act(app),
+        "release-notes" => crate::update::open_page(&crate::update::release_page()),
         "intro" => {
             app.set_prefs_open(false);
             app.invoke_show_intro(0, false);

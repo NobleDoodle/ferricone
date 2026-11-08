@@ -134,6 +134,32 @@ jobs:
           path: packages
           merge-multiple: true
 
+      # The release key's public half, as Ferricone builds it in (src/update.rs).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: packaging/update-key.pub
+          sparse-checkout-cone-mode: false
+          path: source
+
+      # Ferricone installs an update only when SHA256SUMS carries this signature.
+      # It is checked against the key in the tagged source, so a release can't
+      # go out signed with a key the app doesn't know.
+      - name: Checksums and signature
+        env:
+          SIGNING_KEY: ${{ secrets.FERRICONE_SIGNING_KEY }}
+        run: |
+          cd packages
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+          [ -n "$SIGNING_KEY" ] || { echo "::error::the FERRICONE_SIGNING_KEY secret is missing"; exit 1; }
+          key=$RUNNER_TEMP/signing-key.pem
+          (umask 077 && printf '%s\n' "$SIGNING_KEY" > "$key")
+          openssl pkeyutl -sign -inkey "$key" -rawin -in SHA256SUMS -out SHA256SUMS.sig
+          rm -f "$key"
+          openssl pkeyutl -verify -pubin -inkey ../source/packaging/update-key.pub \
+            -rawin -in SHA256SUMS -sigfile SHA256SUMS.sig
+
       - name: Create the draft
         env:
           GH_TOKEN: ${{ github.token }}
@@ -141,8 +167,6 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           cd packages
-          sha256sum * > SHA256SUMS
-          cat SHA256SUMS
           prerelease=()
           case $TAG in *-*) prerelease=(--prerelease) ;; esac
           # A rerun may refresh its own draft, never what's already published.
