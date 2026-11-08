@@ -3,50 +3,50 @@
 - system: Debian · Ubuntu · Mint
   kind: .deb
   x86_64:
-    file: ferricone_1.1.0_amd64.deb
+    file: ferricone_1.2.0_amd64.deb
     size: 58 MB
-    install: sudo apt install ./ferricone_1.1.0_amd64.deb
+    install: sudo apt install ./ferricone_1.2.0_amd64.deb
   aarch64:
-    file: ferricone_1.1.0_arm64.deb
+    file: ferricone_1.2.0_arm64.deb
     size: 53 MB
-    install: sudo apt install ./ferricone_1.1.0_arm64.deb
+    install: sudo apt install ./ferricone_1.2.0_arm64.deb
 - system: Fedora · openSUSE · RHEL 10
   kind: .rpm
   x86_64:
-    file: ferricone-1.1.0-1.x86_64.rpm
+    file: ferricone-1.2.0-1.x86_64.rpm
     size: 64 MB
-    install: sudo dnf install ./ferricone-1.1.0-1.x86_64.rpm
+    install: sudo dnf install ./ferricone-1.2.0-1.x86_64.rpm
   aarch64:
-    file: ferricone-1.1.0-1.aarch64.rpm
+    file: ferricone-1.2.0-1.aarch64.rpm
     size: 61 MB
-    install: sudo dnf install ./ferricone-1.1.0-1.aarch64.rpm
+    install: sudo dnf install ./ferricone-1.2.0-1.aarch64.rpm
 - system: Arch · Omarchy · Manjaro
   kind: .pkg.tar.zst
   x86_64:
-    file: ferricone-1.1.0-1-x86_64.pkg.tar.zst
+    file: ferricone-1.2.0-1-x86_64.pkg.tar.zst
     size: 76 MB
-    install: sudo pacman -U ferricone-1.1.0-1-x86_64.pkg.tar.zst
+    install: sudo pacman -U ferricone-1.2.0-1-x86_64.pkg.tar.zst
   aarch64:
-    file: ferricone-1.1.0-1-aarch64.pkg.tar.zst
+    file: ferricone-1.2.0-1-aarch64.pkg.tar.zst
     size: 73 MB
-    install: sudo pacman -U ferricone-1.1.0-1-aarch64.pkg.tar.zst
+    install: sudo pacman -U ferricone-1.2.0-1-aarch64.pkg.tar.zst
 - system: Any distribution
   kind: AppImage
   x86_64:
-    file: Ferricone_Player-1.1.0-x86_64.AppImage
+    file: Ferricone_Player-1.2.0-x86_64.AppImage
     size: 74 MB
-    install: chmod +x Ferricone_Player-1.1.0-x86_64.AppImage && ./Ferricone_Player-1.1.0-x86_64.AppImage
+    install: chmod +x Ferricone_Player-1.2.0-x86_64.AppImage && ./Ferricone_Player-1.2.0-x86_64.AppImage
   aarch64:
-    file: Ferricone_Player-1.1.0-aarch64.AppImage
+    file: Ferricone_Player-1.2.0-aarch64.AppImage
     size: 70 MB
-    install: chmod +x Ferricone_Player-1.1.0-aarch64.AppImage && ./Ferricone_Player-1.1.0-aarch64.AppImage
+    install: chmod +x Ferricone_Player-1.2.0-aarch64.AppImage && ./Ferricone_Player-1.2.0-aarch64.AppImage
 - system: Archive, no root
   kind: .tar.gz
   x86_64:
-    file: ferricone-1.1.0-x86_64.tar.gz
-    size: 79 MB
-    install: tar xzf ferricone-1.1.0-x86_64.tar.gz && ferricone-1.1.0-x86_64/install.sh
+    file: ferricone-1.2.0-x86_64.tar.gz
+    size: 80 MB
+    install: tar xzf ferricone-1.2.0-x86_64.tar.gz && ferricone-1.2.0-x86_64/install.sh
   aarch64:
-    file: ferricone-1.1.0-aarch64.tar.gz
+    file: ferricone-1.2.0-aarch64.tar.gz
     size: 75 MB
-    install: tar xzf ferricone-1.1.0-aarch64.tar.gz && ferricone-1.1.0-aarch64/install.sh
+    install: tar xzf ferricone-1.2.0-aarch64.tar.gz && ferricone-1.2.0-aarch64/install.sh
