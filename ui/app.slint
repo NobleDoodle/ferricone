@@ -215,6 +215,8 @@ export component AppWindow inherits Window {
     in property <bool> fullscreen;
     // Minimize, maximize and close in the title bar: everywhere but Omarchy.
     in property <bool> window-buttons;
+    // The title bar's update notice (src/update.rs); empty hides it.
+    in property <string> update-notice;
     in property <bool> window-maximized;
     callback minimize-window();
     callback toggle-maximized();
@@ -1184,6 +1186,11 @@ export component AppWindow inherits Window {
             minimize-window => { root.minimize-window(); }
             toggle-maximized => { root.toggle-maximized(); }
             close-window => { root.quit(); }
+            notice: root.update-notice;
+            notice-clicked => {
+                root.prefs-page = 0;
+                root.open-preferences();
+            }
             more => {
                 if root.menu == MenuKind.more {
                     root.close-menus();

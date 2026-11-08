@@ -1187,9 +1187,11 @@ dependencies = [
 name = "ferricone"
 version = "1.2.0-dev.1"
 dependencies = [
+ "base64",
  "dbus",
  "dbus-crossroads",
  "directories",
+ "flate2",
  "fontique",
  "glow",
  "i-slint-backend-winit",
@@ -1199,11 +1201,14 @@ dependencies = [
  "notify",
  "png 0.17.16",
  "rfd",
+ "ring",
  "rustix 1.1.5",
+ "semver",
  "serde",
  "serde_json",
  "slint",
  "slint-build",
+ "tar",
  "toml",
  "ureq",
  "wayland-client",

@@ -77,6 +77,9 @@ pub struct Prefs {
     pub log_level: LogLevel,
     /// More libVLC options, as on its command line.
     pub extra_args: String,
+    // General: updates (update.rs)
+    /// Ask GitHub for a newer release at most once a day.
+    pub check_updates: bool,
     // Interface
     pub title_shows_file: bool,
     pub auto_hide: AutoHide,
@@ -124,6 +127,7 @@ impl Default for Prefs {
             log_file: default_log_file(),
             log_level: LogLevel::Errors,
             extra_args: String::new(),
+            check_updates: true,
             title_shows_file: true,
             auto_hide: AutoHide::Fullscreen,
             hide_after: 2.0,

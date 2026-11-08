@@ -109,6 +109,15 @@ you've watched in `~/.local/state/ferricone`, and playlists, streams and
 downloaded subtitles in `~/.local/share/ferricone`; removing the package leaves
 them.
 
+**Updates.** From 1.2.0, Ferricone asks GitHub for a newer release once a day
+and shows *Update to …* in the title bar when there is one; Settings › General ›
+Updates turns the check off or runs it now. An update is installed only when the
+release's `SHA256SUMS` carries the signature of Ferricone's release key
+(`packaging/update-key.pub`) and the file matches it. The AppImage and the
+tarball replace themselves; `.deb`, `.rpm` and Arch packages are installed by
+the system's package manager after your password prompt. Development builds
+also get the newer development builds.
+
 ## Build from source
 
 ### The packages
@@ -145,8 +154,9 @@ and checks that it starts, that no library is missing, and that no bundled
 library breaks a system one loaded beside it.
 
 Pushing a tag `v<version>` does all of this on GitHub's runners, arm64 natively
-(`.github/workflows/packages.yml`), and leaves a draft release to look over and
-publish by hand.
+(`.github/workflows/packages.yml`), signs `SHA256SUMS` with the release key
+(the `FERRICONE_SIGNING_KEY` secret, checked against `packaging/update-key.pub`),
+and leaves a draft release to look over and publish by hand.
 
 ### For development
 
@@ -178,11 +188,12 @@ All are written for upstream.
 | Path | Role |
 |---|---|
 | `src/vlc.rs` | The only code that calls libVLC |
-| `src/video.rs`, `src/video/egl.rs` | Hands frames from VLC's GL thread to Slint through a shared EGL context |
+| `src/video.rs`, `src/video/` | Hands frames from VLC's GL thread to Slint through a shared EGL context (GLX on X11) |
 | `src/controls.rs`, `src/queue.rs` | Playback, resume and the queue |
 | `src/library.rs`, `src/music.rs`, `src/thumbs.rs` | The library, the music index and cached thumbnails |
 | `src/prefs.rs`, `src/preferences.rs`, `src/shortcuts.rs` | Settings (`app.toml`) and their window |
 | `src/addsubs.rs`, `src/opensubtitles.rs` | Subtitle matching and OpenSubtitles |
+| `src/update.rs` | The daily update check, the signature check and installing an update |
 | `src/theme.rs`, `ui/theme.slint` | Themes, accents and Omarchy colors |
 | `ui/` | The Slint interface |
 | `src/popup.rs` | Menus as Wayland popups that can reach outside the window; in-window on X11 |

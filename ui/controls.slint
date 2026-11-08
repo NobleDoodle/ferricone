@@ -363,6 +363,9 @@ export component TitleBar inherits Rectangle {
     callback minimize-window();
     callback toggle-maximized();
     callback close-window();
+    // "Update to 1.2.1" or "Restart to update" (src/update.rs); empty hides it.
+    in property <string> notice;
+    callback notice-clicked();
 
     height: 40px;
     background: root.glass ? transparent : Theme.bg-a3;
@@ -442,20 +445,38 @@ export component TitleBar inherits Rectangle {
             }
         }
 
-        if root.window-buttons: HorizontalLayout {
+        HorizontalLayout {
             padding: 6px;
             spacing: 10px;
             alignment: end;
 
-            IconButton { icon: Icons.minimize; width: 28px; height: 28px; clicked => { root.minimize-window(); } }
-            IconButton {
+            if root.notice != "": Rectangle {
+                width: notice-text.preferred-width + 24px;
+                height: 28px;
+                border-radius: 14px;
+                background: notice-touch.has-hover ? Theme.accent-dim : Theme.bg-accent-bright;
+                border-width: 1px;
+                border-color: Theme.accent-dim;
+                notice-text := Text {
+                    x: 12px;
+                    height: parent.height;
+                    text: root.notice;
+                    color: notice-touch.has-hover ? Theme.fg-1 : Theme.accent-bright;
+                    font-size: 13px;
+                    font-weight: 600;
+                    vertical-alignment: center;
+                }
+                notice-touch := TouchArea { clicked => { root.notice-clicked(); } }
+            }
+            if root.window-buttons: IconButton { icon: Icons.minimize; width: 28px; height: 28px; clicked => { root.minimize-window(); } }
+            if root.window-buttons: IconButton {
                 // The design has no restore icon.
                 icon: root.maximized ? { fg: @image-url("window-restore.svg") } : Icons.maximize;
                 width: 28px;
                 height: 28px;
                 clicked => { root.toggle-maximized(); }
             }
-            IconButton { icon: Icons.close; width: 28px; height: 28px; clicked => { root.close-window(); } }
+            if root.window-buttons: IconButton { icon: Icons.close; width: 28px; height: 28px; clicked => { root.close-window(); } }
         }
     }
 }

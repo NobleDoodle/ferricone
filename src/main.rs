@@ -35,6 +35,7 @@ mod state;
 mod subtimeline;
 mod theme;
 mod thumbs;
+mod update;
 mod video;
 mod video_fx;
 mod vlc;
@@ -121,6 +122,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let _ = ui.upgrade_in_event_loop(move |app| controls::remote_command(&app, command));
         }
     });
+    update::start(&app);
     let diag = diag::Diagnostics::from_env(&session);
     diag::open_panel(&app);
 
