@@ -1,4 +1,5 @@
-//! Linux: VLC's GL context, created next to Slint's EGL context and sharing its objects.
+//! EGL (Wayland, and X11 when Slint falls back to it): VLC's GL context,
+//! created next to Slint's and sharing its objects.
 
 use khronos_egl as egl;
 use std::{

@@ -1208,6 +1208,7 @@ dependencies = [
  "ureq",
  "wayland-client",
  "wayland-protocols",
+ "x11-dl",
 ]
 
 [[package]]

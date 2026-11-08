@@ -43,6 +43,9 @@ wayland-client = { version = "0.31", features = ["system"] }
 # Menus that reach outside the window (src/popup.rs): a real xdg_popup, drawn by
 # Slint's software renderer, on a window type only its winit backend can select.
 wayland-protocols = { version = "0.32", features = ["client"] }
+# VLC's GL context on X11, where Slint draws with GLX (src/video/glx.rs); winit
+# loads the same libraries.
+x11-dl = "2.21"
 i-slint-backend-winit = { version = "=1.18.1", default-features = false }
 i-slint-core = { version = "=1.18.1", default-features = false, features = ["std"] }
 
