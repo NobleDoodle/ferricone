@@ -116,7 +116,8 @@ release's `SHA256SUMS` carries the signature of Ferricone's release key
 (`packaging/update-key.pub`) and the file matches it. The AppImage and the
 tarball replace themselves; `.deb`, `.rpm` and Arch packages are installed by
 the system's package manager after your password prompt. Development builds
-also get the newer development builds.
+also get the newer development builds. A release's AppImage also carries
+update information for AppImageUpdate and similar tools.
 
 ## Build from source
 
