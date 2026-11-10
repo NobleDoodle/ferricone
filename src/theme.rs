@@ -346,7 +346,8 @@ pub fn start(app: &AppWindow) {
     let state = State {
         dark,
         omarchy: omarchy::read(),
-        system_light: false,
+        // Until the portal answers (it says dark only if the desktop is).
+        system_light: true,
     };
     state.show(app);
     STATE.with(|cell| *cell.borrow_mut() = Some(state));
@@ -485,7 +486,8 @@ mod omarchy {
 
 /// The desktop's light or dark preference (System mode), from the XDG
 /// settings portal's `org.freedesktop.appearance color-scheme`: 1 dark,
-/// 2 light, 0 none (dark).
+/// 2 light, 0 no preference. Only a desktop that asks for dark gets it;
+/// without a portal or a preference, System is light.
 #[cfg(target_os = "linux")]
 mod portal {
     use crate::AppWindow;
@@ -505,7 +507,7 @@ mod portal {
     fn is_light(value: &dyn RefArg) -> bool {
         // ReadOne gives the u32; the older Read nests it once more.
         let inner = value.as_iter().and_then(|mut i| i.next().map(|v| v.as_u64()));
-        value.as_u64().or(inner.flatten()) == Some(2)
+        value.as_u64().or(inner.flatten()) != Some(1)
     }
 
     /// Reads the preference now and calls `changed` on the UI thread with it
@@ -535,7 +537,7 @@ mod portal {
                         return;
                     }
                 }
-                // No portal: System stays dark.
+                // No portal: System stays light.
                 Err(_) => return,
             }
             let rule = MatchRule::new_signal(SETTINGS, "SettingChanged");
