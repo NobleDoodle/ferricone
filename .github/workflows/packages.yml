@@ -82,6 +82,7 @@ jobs:
             dist/*.rpm
             dist/*.pkg.tar.zst
             dist/*.AppImage
+            dist/*.AppImage.zsync
             dist/*.tar.gz
 
   # On a runner of its own: the distributions' images get a whole disk instead of
@@ -110,10 +111,11 @@ jobs:
           path: dist
 
       # test.sh skips a format whose file is missing, and that must not pass.
+      # A release's AppImage also has its .zsync (packaging/package-appimage.sh).
       - name: Check all five packages arrived
         run: |
           ls -lh dist
-          [ "$(ls dist | wc -l)" = 5 ]
+          [ "$(ls dist | grep -vc '\.zsync$')" = 5 ]
 
       - name: Install and check them on each distribution
         run: packaging/test.sh --arch ${{ matrix.arch }}

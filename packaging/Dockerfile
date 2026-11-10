@@ -8,7 +8,7 @@ FROM docker.io/library/ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential pkg-config git ca-certificates curl file python3-pip ninja-build \
-    flex bison gettext nasm patchelf rpm zstd desktop-file-utils \
+    flex bison gettext nasm patchelf rpm zstd desktop-file-utils zsync \
     # libVLC's modules (those whose libraries are missing are skipped)
     libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev \
     libass-dev libfreetype-dev libfontconfig-dev libfribidi-dev libharfbuzz-dev \

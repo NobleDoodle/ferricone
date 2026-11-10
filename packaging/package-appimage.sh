@@ -18,5 +18,17 @@ cp "$bundle/share/icons/hicolor/scalable/apps/$app.svg" "$appdir/$app.svg"
 cp /src/assets/ferricone-256.png "$appdir/.DirIcon"
 
 image=$out/Ferricone_Player-$version-$arch.AppImage
-ARCH=$arch appimagetool --no-appstream "$appdir" "$image" >/dev/null
+# Update information and a .zsync file for AppImageUpdate and similar tools,
+# beside Ferricone's own updater (src/update.rs). Releases only: "latest"
+# would take a development build back to the last release.
+update=()
+case $version in
+  *-*) ;;
+  *) update=(-u "gh-releases-zsync|NobleDoodle|ferricone|latest|Ferricone_Player-*-$arch.AppImage.zsync") ;;
+esac
+(cd "$out" && ARCH=$arch appimagetool --no-appstream "${update[@]}" "$appdir" "$image" >/dev/null)
 finish "$image"
+if [ ${#update[@]} -gt 0 ]; then
+  [ -s "$image.zsync" ] || { echo "no $image.zsync" >&2; exit 1; }
+  finish "$image.zsync"
+fi
