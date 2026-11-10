@@ -49,6 +49,16 @@ desktop-file-validate "$bundle/share/applications/$app.desktop"
 
 python3 "$src/packaging/collect-deps.py" "$bundle"
 
+# Libraries winit loads on X11 that a bare system may lack (a stock Ubuntu has
+# no libxkbcommon-x11): src/fallback.rs loads these only when the system has
+# none. RUNPATH $ORIGIN lets libxkbcommon-x11 find libxcb-xkb beside it.
+mkdir -p "$bundle/lib/fallback"
+for soname in libxcb-xkb.so.1 libxkbcommon-x11.so.0; do
+  cp -L "/usr/lib/$arch-linux-gnu/$soname" "$bundle/lib/fallback/$soname"
+  patchelf --set-rpath '$ORIGIN' "$bundle/lib/fallback/$soname"
+  strip --strip-unneeded "$bundle/lib/fallback/$soname"
+done
+
 # Smoke test: the binary starts and loads the bundled libVLC.
 "$bundle/bin/ferricone" --version
 

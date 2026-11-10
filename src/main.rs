@@ -13,6 +13,8 @@ mod popup;
 mod controls;
 mod diag;
 mod drop;
+#[cfg(target_os = "linux")]
+mod fallback;
 mod intro;
 mod library;
 mod media;
@@ -62,6 +64,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         _ => {}
     }
+    // Before winit: the libraries it loads that this system may lack.
+    #[cfg(target_os = "linux")]
+    fallback::load();
     let sources: Vec<Source> = std::env::args_os()
         .skip(1)
         .filter_map(|arg| match arg.to_str() {

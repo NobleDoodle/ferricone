@@ -44,6 +44,8 @@ slint = { version = "~1.18.1", default-features = false, features = ["std", "com
 dbus = "0.9"
 dbus-crossroads = "0.5"
 khronos-egl = { version = "6", features = ["static"] }
+# dlopen for the libraries a system may lack (src/fallback.rs).
+libc = "0.2"
 notify = "8"
 # File drops on Wayland, which winit 0.30 doesn't receive (src/drop/wayland.rs).
 rustix = { version = "1", features = ["event", "fs", "pipe"] }
