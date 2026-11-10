@@ -13,8 +13,9 @@ use std::{cell::RefCell, path::PathBuf};
 #[serde(rename_all = "lowercase")]
 pub enum Mode {
     Light,
-    #[default]
     Dark,
+    /// The default: light unless the desktop asks for dark.
+    #[default]
     System,
 }
 
@@ -120,7 +121,7 @@ impl Default for Prefs {
     fn default() -> Self {
         Self {
             onboarded: false,
-            mode: Mode::Dark,
+            mode: Mode::System,
             accent: "#d37918".into(),
             omarchy: true,
             log: false,
