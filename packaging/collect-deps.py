@@ -38,6 +38,9 @@ SYSTEM = [
     # every target distribution. (Nettle stays bundled, as 3.10.2: see the
     # Dockerfile.)
     "libgnutls.so", "libp11-kit.so", "libgmp.so",
+    # On the AppImage project's excludelist (part of every base system), which
+    # the AppImage catalog warns about when they're bundled.
+    "libcom_err.so", "libfribidi.so",
     "libtasn1.so", "libidn2.so", "libffi.so", "libpcre2-8.so",
     "libzstd.so", "liblzma.so", "liblz4.so", "libbrotli", "libpng16.so",
     "libsndfile.so", "libopus.so", "libvorbis.so", "libvorbisenc.so", "libogg.so",

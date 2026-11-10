@@ -1197,6 +1197,7 @@ dependencies = [
  "i-slint-backend-winit",
  "i-slint-core",
  "khronos-egl",
+ "libc",
  "libvlc-sys",
  "notify",
  "png 0.17.16",

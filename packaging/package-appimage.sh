@@ -14,7 +14,8 @@ APPRUN
 chmod +x "$appdir/AppRun"
 cp "$bundle/share/applications/$app.desktop" "$appdir/$app.desktop"
 cp "$bundle/share/icons/hicolor/scalable/apps/$app.svg" "$appdir/$app.svg"
-ln -s "$app.svg" "$appdir/.DirIcon"
+# A PNG, so that file managers and the AppImage catalog can show it as a thumbnail.
+cp /src/assets/ferricone-256.png "$appdir/.DirIcon"
 
 image=$out/Ferricone_Player-$version-$arch.AppImage
 ARCH=$arch appimagetool --no-appstream "$appdir" "$image" >/dev/null

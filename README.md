@@ -193,6 +193,7 @@ All are written for upstream.
 | `src/library.rs`, `src/music.rs`, `src/thumbs.rs` | The library, the music index and cached thumbnails |
 | `src/prefs.rs`, `src/preferences.rs`, `src/shortcuts.rs` | Settings (`app.toml`) and their window |
 | `src/addsubs.rs`, `src/opensubtitles.rs` | Subtitle matching and OpenSubtitles |
+| `src/fallback.rs` | Loads `lib/fallback`'s copies of the X11 libraries a bare system may lack |
 | `src/update.rs` | The daily update check, the signature check and installing an update |
 | `src/theme.rs`, `ui/theme.slint` | Themes, accents and Omarchy colors |
 | `ui/` | The Slint interface |
