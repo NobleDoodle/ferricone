@@ -22,9 +22,27 @@ impl Vlc {
             .collect::<Result<Vec<_>, _>>()
             .map_err(|_| "a VLC option contains a NUL byte")?;
         let argv: Vec<*const c_char> = args.iter().map(|a| a.as_ptr()).collect();
-        NonNull::new(unsafe { sys::libvlc_new(argv.len() as i32, argv.as_ptr()) })
+        let vlc = NonNull::new(unsafe { sys::libvlc_new(argv.len() as i32, argv.as_ptr()) })
             .map(Self)
-            .ok_or_else(|| "libVLC failed to start".into())
+            .ok_or("libVLC failed to start")?;
+        vlc.identify();
+        Ok(vlc)
+    }
+
+    /// Names Ferricone to the audio server instead of VLC: PipeWire and
+    /// PulseAudio remember volume and mute per application ID, and libVLC's
+    /// default, org.VideoLAN.VLC, shared them with VLC. HTTP requests keep
+    /// libVLC's own user agent, which some streaming servers expect.
+    fn identify(&self) {
+        let version = env!("CARGO_PKG_VERSION");
+        let id = c"io.github.nobledoodle.ferricone";
+        let Ok(version) = CString::new(version) else { return };
+        unsafe {
+            sys::libvlc_set_app_id(self.0.as_ptr(), id.as_ptr(), version.as_ptr(), id.as_ptr());
+            // The name mixers show; without the version, which would make
+            // every release a new application to the audio server.
+            sys::libvlc_set_user_agent(self.0.as_ptr(), c"Ferricone Player".as_ptr(), std::ptr::null());
+        }
     }
 
     /// A player with no media yet, drawing video through `video`. `events` is
@@ -863,6 +881,10 @@ pub enum Event {
     MetaChanged,
     /// The chapters, or the one playing, changed: read `Player::chapters`.
     ChaptersChanged,
+    /// The audio output's mute, also when the audio server restored it.
+    Muted(bool),
+    /// The audio output's volume, 1.0 for 100 %, also when restored.
+    Volume(f32),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1062,6 +1084,12 @@ impl Player {
 
     pub fn set_muted(&self, muted: bool) {
         unsafe { sys::libvlc_audio_set_mute(self.mp.as_ptr(), c_int::from(muted)) }
+    }
+
+    /// The audio output's volume, 1.0 for 100 %, or `None` without one.
+    pub fn volume(&self) -> Option<f32> {
+        let percent = unsafe { sys::libvlc_audio_get_volume(self.mp.as_ptr()) };
+        (percent >= 0).then(|| percent as f32 / 100.0)
     }
 
     /// The current playback time, or `None` before the first frame.
@@ -1371,6 +1399,8 @@ static PLAYER_CBS: sys::libvlc_media_player_cbs = {
     cbs.on_titles_changed = Some(on_titles_changed);
     cbs.on_title_selection_changed = Some(on_title_selection_changed);
     cbs.on_chapter_selection_changed = Some(on_chapter_selection_changed);
+    cbs.on_audio_mute_changed = Some(on_audio_mute_changed);
+    cbs.on_audio_volume_changed = Some(on_audio_volume_changed);
     cbs
 };
 
@@ -1411,6 +1441,14 @@ unsafe extern "C" fn on_recording_changed(
     _file_path: *const c_char,
 ) {
     (unsafe { callbacks(opaque) }.events)(Event::Recording(recording));
+}
+
+unsafe extern "C" fn on_audio_mute_changed(opaque: *mut c_void, muted: bool) {
+    (unsafe { callbacks(opaque) }.events)(Event::Muted(muted));
+}
+
+unsafe extern "C" fn on_audio_volume_changed(opaque: *mut c_void, volume: f32) {
+    (unsafe { callbacks(opaque) }.events)(Event::Volume(volume));
 }
 
 unsafe extern "C" fn on_titles_changed(opaque: *mut c_void) {
