@@ -304,6 +304,33 @@ fn apply(app: &AppWindow, event: Event) {
         Event::Seeked(_) => {}
         Event::MetaChanged => app.invoke_refresh_meta(),
         Event::ChaptersChanged => app.invoke_refresh_chapters(),
+        // What the audio server plays at, which it may have restored from
+        // an earlier run: the controls show that instead of their own guess.
+        Event::Muted(muted) => app.set_muted(muted),
+        Event::Volume(volume) if volume.is_finite() && volume >= 0.0 => {
+            let volume = volume.min(2.0);
+            app.set_volume(volume);
+            remote::set_volume(f64::from(volume));
+        }
+        Event::Volume(_) => {}
+    }
+}
+
+/// Shows the volume the audio server started this output at: PipeWire and
+/// PulseAudio restore an application's last one. A restored mute arrives as
+/// `Event::Muted`, but VLC drops the output's first volume report
+/// (src/player/aout.c), so it's read once the output has had time to start.
+pub fn read_volume_soon(app: &AppWindow, session: &Shared) {
+    for ms in [300, 1500] {
+        let (ui, s) = (app.as_weak(), session.clone());
+        slint::Timer::single_shot(Duration::from_millis(ms), move || {
+            let Some(app) = ui.upgrade() else { return };
+            let mut volume = None;
+            s.with_player(|p| volume = p.volume());
+            if let Some(volume) = volume {
+                apply(&app, Event::Volume(volume));
+            }
+        });
     }
 }
 

@@ -323,11 +323,15 @@ pub fn connect(app: &AppWindow, session: &Shared) {
     app.set_stereo_options(ModelRc::new(VecModel::from(stereo)));
     refresh(app, session);
 
-    // Once per item, when it starts: its preset.
-    let s = session.clone();
+    // Once per item, when it starts: its preset. Each time: the volume the
+    // audio server restored.
+    let (ui, s) = (app.as_weak(), session.clone());
     app.on_media_started(move || {
         if !s.preset_applied.replace(true) {
             apply(&s);
+        }
+        if let Some(app) = ui.upgrade() {
+            crate::controls::read_volume_soon(&app, &s);
         }
     });
 
