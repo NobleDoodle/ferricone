@@ -80,6 +80,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     popup::select_backend()?;
     #[cfg(not(target_os = "linux"))]
     slint::BackendSelector::new().require_opengl().select()?;
+    // Wayland's app_id and X11's WM_CLASS: the .desktop file's name, so docks,
+    // bars and window rules match the window to its entry and icon.
+    slint::set_xdg_app_id("io.github.nobledoodle.ferricone")?;
 
     let app = AppWindow::new()?;
     theme::start(&app);
