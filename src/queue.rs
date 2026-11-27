@@ -2,6 +2,7 @@
 //! and its chapters. Lengths are read off the UI thread by libVLC's parser
 //! (`Prober`) and arrive through the window's `durations-arrived`.
 
+use crate::i18n::{tr, trn};
 use crate::{
     AppWindow, ChapterRow, MarkRow, QueueRow, RepeatMode,
     controls::{Session, Shared, hms, play_current},
@@ -75,11 +76,7 @@ pub fn refresh(app: &AppWindow, s: &Session) {
         })
         .collect();
     let count = rows.len();
-    let items = if count == 1 {
-        "1 item".to_string()
-    } else {
-        format!("{count} items")
-    };
+    let items = trn!("{n} item", "{n} items", count);
     let summary = if total.is_zero() {
         items
     } else {
@@ -117,6 +114,13 @@ pub fn refresh_marks(app: &AppWindow, s: &Session) {
 }
 
 pub fn connect(app: &AppWindow, session: &Shared) {
+    let (ui, s) = (app.as_weak(), session.clone());
+    crate::i18n::on_change(move || {
+        if let Some(app) = ui.upgrade() {
+            refresh(&app, &s);
+            refresh_marks(&app, &s);
+        }
+    });
     let (ui, s) = (app.as_weak(), session.clone());
     app.on_durations_arrived(move || {
         let arrived: Vec<_> = std::mem::take(&mut *s.lengths.borrow().arrived.lock().unwrap());
@@ -292,7 +296,7 @@ pub fn connect(app: &AppWindow, session: &Shared) {
             .map(|(i, c)| ChapterRow {
                 title: c
                     .name
-                    .unwrap_or_else(|| format!("Chapter {}", i + 1))
+                    .unwrap_or_else(|| tr!("Chapter {}", i + 1))
                     .into(),
                 start: hms(c.start).into(),
                 playing: Some(i) == playing,
@@ -323,7 +327,7 @@ fn span_text(d: Duration) -> String {
     match (s / 3600, s / 60 % 60) {
         (0, 0) => format!("{s}s"),
         (0, m) => format!("{m}m"),
-        (h, m) => format!("{h}h {m}m"),
+        (h, m) => tr!("{}h {}m", h, m),
     }
 }
 

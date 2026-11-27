@@ -35,6 +35,9 @@ player, settings that remember a show, and a subtitle timeline.
   name, and search and download from OpenSubtitles with your own API key.
 - **Cast** to Chromecast and UPnP devices on your network.
 - **Settings** with search and a Keyboard Shortcuts editor.
+- **Languages.** The interface follows the desktop's language or the one picked
+  in Settings › General, switching at once; English for now, and
+  [translations are welcome](po/README.md).
 - **Looks.** Light, dark or system themes, nine accents or any color, and the
   Omarchy theme's colors when Omarchy is installed.
 - **Desktop.** Media keys and MPRIS, portal file dialogs, Wayland or X11, and
@@ -196,6 +199,7 @@ All are written for upstream.
 | `src/addsubs.rs`, `src/opensubtitles.rs` | Subtitle matching and OpenSubtitles |
 | `src/fallback.rs` | Loads `lib/fallback`'s copies of the X11 libraries a bare system may lack |
 | `src/update.rs` | The daily update check, the signature check and installing an update |
+| `src/i18n.rs`, `po/`, `scripts/i18n.py` | Translations: catalogs shared by `@tr()` in Slint and `tr!` in Rust ([po/README.md](po/README.md)) |
 | `src/theme.rs`, `ui/theme.slint` | Themes, accents and Omarchy colors |
 | `ui/` | The Slint interface |
 | `src/popup.rs` | Menus as Wayland popups that can reach outside the window; in-window on X11 |

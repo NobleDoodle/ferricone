@@ -4,6 +4,7 @@
 //! each item's bookmarks (`bookmarks.toml`), and what was played when and
 //! how far (`history.toml`, for the library's progress, Recent and Home).
 
+use crate::i18n::tr;
 use crate::media::Source;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::{
@@ -154,7 +155,7 @@ impl Bookmarks {
     pub fn add(&mut self, source: &Source, time: Duration) -> usize {
         let list = self.file.bookmarks.entry(key(source)).or_default();
         let bookmark = Bookmark {
-            name: format!("Bookmark {}", list.len() + 1),
+            name: tr!("Bookmark {}", list.len() + 1),
             time: time.as_secs_f64(),
         };
         let at = list.partition_point(|b| b.time <= bookmark.time);

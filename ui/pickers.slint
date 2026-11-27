@@ -178,20 +178,20 @@ export component ColorPicker inherits Rectangle {
         spacing: 12px;
 
         HorizontalLayout {
-            PillButton { text: "Cancel"; clicked => { root.cancel(); } }
+            PillButton { text: @tr("Cancel"); clicked => { root.cancel(); } }
             Text {
                 horizontal-stretch: 1;
-                text: "Select Color";
+                text: @tr("Select Color");
                 font-size: 15px;
                 font-weight: 600;
                 color: Theme.fg-1;
                 horizontal-alignment: center;
                 vertical-alignment: center;
             }
-            PillButton { text: "Select"; primary: true; clicked => { root.chosen(root.picked); } }
+            PillButton { text: @tr("Select"); primary: true; clicked => { root.chosen(root.picked); } }
         }
 
-        Tabs { options: ["Grid", "Spectrum"]; selected <=> Palette.tab; }
+        Tabs { options: [@tr("Grid"), @tr("Spectrum")]; selected <=> Palette.tab; }
 
         // Both tabs keep one height, so the popup doesn't jump.
         Rectangle {
@@ -219,7 +219,7 @@ export component ColorPicker inherits Rectangle {
                         }
                     }
                 }
-                Text { text: "Custom"; font-size: 13px; color: Theme.fg-a2; }
+                Text { text: @tr("Custom"); font-size: 13px; color: Theme.fg-a2; }
                 HorizontalLayout {
                     alignment: start;
                     spacing: 4px;
@@ -369,7 +369,7 @@ export component ColorPicker inherits Rectangle {
         HorizontalLayout {
             spacing: 10px;
             Text {
-                text: "Opacity";
+                text: @tr("Opacity");
                 font-size: 13px;
                 color: Theme.fg-a2;
                 vertical-alignment: center;
@@ -399,7 +399,7 @@ export component ColorPicker inherits Rectangle {
             }
             Text {
                 width: 40px;
-                text: "\{round(root.alpha * 100)} %";
+                text: @tr("{} %", round(root.alpha * 100));
                 font-size: 13px;
                 color: Theme.fg-a2;
                 horizontal-alignment: right;
@@ -528,7 +528,7 @@ export component FontField inherits Rectangle {
                                 }
                             }
                             if query.text == "": Text {
-                                text: "Search fonts";
+                                text: @tr("Search fonts");
                                 font-size: 14px;
                                 color: Theme.fg-a4;
                                 vertical-alignment: center;
@@ -559,7 +559,7 @@ export component FontField inherits Rectangle {
                             // A sample in the family itself; symbol fonts show
                             // their symbols here instead of in the name.
                             if name != "Default": Text {
-                                text: "Aa";
+                                text: @tr("Aa");
                                 font-family: name;
                                 font-size: 16px;
                                 color: Theme.fg-a2;
@@ -571,7 +571,7 @@ export component FontField inherits Rectangle {
                     }
                 }
                 if panel.found.length == 0: Text {
-                    text: "No installed family matches; Enter uses the name as typed.";
+                    text: @tr("No installed family matches; Enter uses the name as typed.");
                     font-size: 12px;
                     color: Theme.fg-a3;
                     wrap: word-wrap;

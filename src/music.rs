@@ -3,6 +3,7 @@
 //! in the cache folder (`music.toml`) by modification time, so only new or
 //! changed files are read again.
 
+use crate::i18n::{n_, ts};
 use crate::{
     media::{self, Source, natural_cmp},
     vlc::{Tagger, Tags, Vlc},
@@ -26,17 +27,17 @@ pub enum Tag {
 impl Tag {
     pub fn plural(self) -> &'static str {
         match self {
-            Tag::Album => "Albums",
-            Tag::Artist => "Artists",
-            Tag::Genre => "Genres",
+            Tag::Album => ts(n_!("Albums")),
+            Tag::Artist => ts(n_!("Artists")),
+            Tag::Genre => ts(n_!("Genres")),
         }
     }
 
     fn unknown(self) -> &'static str {
         match self {
-            Tag::Album => "Unknown Album",
-            Tag::Artist => "Unknown Artist",
-            Tag::Genre => "Unknown Genre",
+            Tag::Album => ts(n_!("Unknown Album")),
+            Tag::Artist => ts(n_!("Unknown Artist")),
+            Tag::Genre => ts(n_!("Unknown Genre")),
         }
     }
 }

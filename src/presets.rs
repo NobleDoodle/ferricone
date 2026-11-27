@@ -3,6 +3,7 @@
 //! every file opened from that folder. Kept in `presets.toml` in the user's
 //! config folder (`$XDG_CONFIG_HOME/ferricone` on Linux).
 
+use crate::i18n::n_;
 use crate::{
     media::Source,
     state::{read, write},
@@ -39,15 +40,16 @@ impl StereoMode {
         StereoMode::Mono,
     ];
 
+    /// In the source text; show it with `i18n::t`.
     pub fn label(self) -> &'static str {
         match self {
-            StereoMode::Original => "As Recorded",
-            StereoMode::Stereo => "Stereo",
-            StereoMode::Reverse => "Reverse Stereo",
-            StereoMode::Left => "Left Channel",
-            StereoMode::Right => "Right Channel",
-            StereoMode::Dolby => "Dolby Surround",
-            StereoMode::Mono => "Mono",
+            StereoMode::Original => n_!("As Recorded"),
+            StereoMode::Stereo => n_!("Stereo"),
+            StereoMode::Reverse => n_!("Reverse Stereo"),
+            StereoMode::Left => n_!("Left Channel"),
+            StereoMode::Right => n_!("Right Channel"),
+            StereoMode::Dolby => n_!("Dolby Surround"),
+            StereoMode::Mono => n_!("Mono"),
         }
     }
 }
@@ -343,6 +345,7 @@ pub fn parse_speed(text: &str) -> Option<f32> {
     text.trim()
         .trim_end_matches(['x', 'X', '×'])
         .trim()
+        .replace(',', ".")
         .parse()
         .ok()
 }
@@ -350,15 +353,17 @@ pub fn parse_speed(text: &str) -> Option<f32> {
 /// "-4.000 s", "−4", "+0.5s" and "250 ms" alike, in seconds.
 pub fn parse_seconds(text: &str) -> Option<f64> {
     let text = text.trim().replace('−', "-");
+    let text = text.replace(',', ".");
     if let Some(ms) = text.strip_suffix("ms") {
         return ms.trim().parse::<f64>().ok().map(|v| v / 1000.0);
     }
     text.trim_end_matches('s').trim().parse().ok()
 }
 
-/// "-4.000 s", as the design writes delays.
+/// "-4.000 s", as the design writes delays (the decimal separator is the
+/// language's; the unit stays, as typed values are read back).
 pub fn seconds_text(value: f64) -> String {
-    format!("{value:.3} s")
+    format!("{} s", crate::i18n::decimal(value, 3))
 }
 
 #[cfg(test)]

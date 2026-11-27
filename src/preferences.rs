@@ -10,51 +10,57 @@ use crate::{
     AppWindow, SettingGroup, SettingItem, SettingKind, SettingsTab,
     controls::Shared,
     prefs::{self, AutoHide, Finish, LogLevel, Mode, Resume},
+    i18n::{n_, t, tr},
     theme,
 };
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::cell::Cell;
 
 const PAGES: [&str; 13] = [
-    "General",
-    "Interface",
-    "Privacy",
-    "Controls",
-    "Playback",
-    "Video",
-    "Audio",
-    "Subtitles",
-    "Library",
-    "Network",
-    "Performance",
-    "Recording",
-    "Extensions",
+    n_!("General"),
+    n_!("Interface"),
+    n_!("Privacy"),
+    n_!("Controls"),
+    n_!("Playback"),
+    n_!("Video"),
+    n_!("Audio"),
+    n_!("Subtitles"),
+    n_!("Library"),
+    n_!("Network"),
+    n_!("Performance"),
+    n_!("Recording"),
+    n_!("Extensions"),
 ];
 
 /// The page titles, as in the Figma frames.
 fn title(page: usize) -> &'static str {
     match page {
-        0 => "Global Settings",
-        1 => "Interface Settings",
-        2 => "Privacy Settings",
-        3 => "Controls",
-        4 => "Playback Preferences",
-        5 => "Video Defaults",
-        6 => "Audio Defaults",
-        7 => "Subtitle Defaults",
-        8 => "Library",
-        9 => "Network",
-        10 => "Performance",
-        11 => "Recording",
-        _ => "Extensions",
+        0 => n_!("Global Settings"),
+        1 => n_!("Interface Settings"),
+        2 => n_!("Privacy Settings"),
+        3 => n_!("Controls"),
+        4 => n_!("Playback Preferences"),
+        5 => n_!("Video Defaults"),
+        6 => n_!("Audio Defaults"),
+        7 => n_!("Subtitle Defaults"),
+        8 => n_!("Library"),
+        9 => n_!("Network"),
+        10 => n_!("Performance"),
+        11 => n_!("Recording"),
+        _ => n_!("Extensions"),
     }
 }
 
-const NEXT_START: &str = " Takes effect the next time Ferricone starts.";
+/// `info`, then that it applies at the next start: two sentences, translated
+/// apart.
+fn next_start(info: &str) -> String {
+    format!("{} {}", t(info), t(n_!("Takes effect the next time Ferricone starts.")))
+}
 
+/// Translated: the helpers below take source text, marked with `n_!`.
 fn strings(items: &[&str]) -> ModelRc<SharedString> {
     ModelRc::new(VecModel::from(
-        items.iter().map(|s| SharedString::from(*s)).collect::<Vec<_>>(),
+        items.iter().map(|s| SharedString::from(t(s).as_ref())).collect::<Vec<_>>(),
     ))
 }
 
@@ -62,8 +68,8 @@ fn item(id: &str, kind: SettingKind, label: &str, info: &str) -> SettingItem {
     SettingItem {
         id: id.into(),
         kind,
-        label: label.into(),
-        info: info.into(),
+        label: t(label).as_ref().into(),
+        info: t(info).as_ref().into(),
         ..Default::default()
     }
 }
@@ -99,7 +105,7 @@ fn text(id: &str, label: &str, info: &str, value: &str) -> SettingItem {
 
 fn button(id: &str, label: &str, info: &str, pressed: &str) -> SettingItem {
     SettingItem {
-        value: pressed.into(),
+        value: t(pressed).as_ref().into(),
         ..item(id, SettingKind::Button, label, info)
     }
 }
@@ -107,7 +113,7 @@ fn button(id: &str, label: &str, info: &str, pressed: &str) -> SettingItem {
 /// A line of text, with a button when `pressed` isn't empty.
 fn note(id: &str, label: &str, pressed: &str) -> SettingItem {
     SettingItem {
-        value: pressed.into(),
+        value: t(pressed).as_ref().into(),
         ..item(id, SettingKind::Note, label, "")
     }
 }
@@ -119,7 +125,7 @@ fn disabled(mut item: SettingItem, off: bool) -> SettingItem {
 
 fn group(title: &str, items: Vec<SettingItem>) -> SettingGroup {
     SettingGroup {
-        title: title.into(),
+        title: t(title).as_ref().into(),
         advanced: false,
         items: ModelRc::new(VecModel::from(items)),
     }
@@ -148,17 +154,17 @@ fn pages(app: &AppWindow, page: usize, state: &State) -> Vec<SettingGroup> {
             if omarchy {
                 appearance.push(toggle(
                     "omarchy",
-                    "Use Omarchy theme colors",
-                    "Take the colors and light or dark mode of your Omarchy theme, and follow it when the theme changes.",
+                    n_!("Use Omarchy theme colors"),
+                    n_!("Take the colors and light or dark mode of your Omarchy theme, and follow it when the theme changes."),
                     p.omarchy,
                 ));
             }
             appearance.push(disabled(
                 segmented(
                     "mode",
-                    "Theme",
-                    "Dark, Light, or System to follow the desktop's light or dark setting.",
-                    &["Dark", "Light", "System"],
+                    n_!("Theme"),
+                    n_!("Dark, Light, or System to follow the desktop's light or dark setting."),
+                    &[n_!("Dark"), n_!("Light"), n_!("System")],
                     match p.mode {
                         Mode::Dark => 0,
                         Mode::Light => 1,
@@ -167,12 +173,25 @@ fn pages(app: &AppWindow, page: usize, state: &State) -> Vec<SettingGroup> {
                 ),
                 follows_omarchy,
             ));
+            let languages = crate::i18n::languages();
+            let mut names = vec![t(n_!("System")).into_owned()];
+            names.extend(languages.iter().map(|&(_, name)| name.to_string()));
+            appearance.push(SettingItem {
+                options: strings(&names.iter().map(String::as_str).collect::<Vec<_>>()),
+                selected: languages.iter().position(|&(code, _)| code == p.language).map_or(0, |i| i + 1) as i32,
+                ..item(
+                    "language",
+                    SettingKind::Choice,
+                    n_!("Language"),
+                    n_!("The language of the interface. System follows the desktop's, in English when Ferricone doesn't have it."),
+                )
+            });
             appearance.push(disabled(
                 item(
                     "accent",
                     SettingKind::Accents,
-                    "Accent color",
-                    "The color of the play button, selections and progress. The last swatch picks any color.",
+                    n_!("Accent color"),
+                    n_!("The color of the play button, selections and progress. The last swatch picks any color."),
                 ),
                 follows_omarchy,
             ));
@@ -180,8 +199,8 @@ fn pages(app: &AppWindow, page: usize, state: &State) -> Vec<SettingGroup> {
             let mut updates = vec![
                 toggle(
                     "check-updates",
-                    "Check for updates automatically",
-                    "Once a day, Ferricone asks GitHub for its newest release. Nothing about you or what you play is sent.",
+                    n_!("Check for updates automatically"),
+                    n_!("Once a day, Ferricone asks GitHub for its newest release. Nothing about you or what you play is sent."),
                     p.check_updates,
                 ),
                 note("update", &status, action),
@@ -189,29 +208,29 @@ fn pages(app: &AppWindow, page: usize, state: &State) -> Vec<SettingGroup> {
             if let Some(version) = crate::update::news() {
                 updates.push(button(
                     "release-notes",
-                    &format!("What's new in {version}"),
-                    "The release notes on GitHub.",
-                    "Open",
+                    &tr!("What's new in {}", version),
+                    n_!("The release notes on GitHub."),
+                    n_!("Open"),
                 ));
             }
             vec![
-                group("Appearance", appearance),
-                group("Updates", updates),
+                group(n_!("Appearance"), appearance),
+                group(n_!("Updates"), updates),
                 group(
-                    "Diagnostics",
+                    n_!("Diagnostics"),
                     vec![
                         toggle(
                             "log",
-                            "Save a log",
-                            &format!("Write the player engine's messages to the log file below.{NEXT_START}"),
+                            n_!("Save a log"),
+                            &next_start(n_!("Write the player engine's messages to the log file below.")),
                             p.log,
                         ),
-                        text("log-file", "Log file", "Where the log is written.", &p.log_file),
+                        text("log-file", n_!("Log file"), n_!("Where the log is written."), &p.log_file),
                         choice(
                             "log-level",
-                            "Log details",
-                            &format!("How much the engine reports, in the log and in a terminal.{NEXT_START}"),
-                            &["Nothing", "Errors only", "Errors and warnings", "Everything"],
+                            n_!("Log details"),
+                            &next_start(n_!("How much the engine reports, in the log and in a terminal.")),
+                            &[n_!("Nothing"), n_!("Errors only"), n_!("Errors and warnings"), n_!("Everything")],
                             match p.log_level {
                                 LogLevel::Nothing => 0,
                                 LogLevel::Errors => 1,
@@ -226,21 +245,21 @@ fn pages(app: &AppWindow, page: usize, state: &State) -> Vec<SettingGroup> {
                     vec![
                         text(
                             "extra-args",
-                            "Additional player engine options",
-                            &format!("libVLC command-line options, separated by spaces.{NEXT_START}"),
+                            n_!("Additional player engine options"),
+                            &next_start(n_!("libVLC command-line options, separated by spaces.")),
                             &p.extra_args,
                         ),
                         button(
                             "open-config",
-                            "Open the settings folder",
-                            "Where app.toml, presets.toml and library.toml are kept.",
-                            "Open",
+                            n_!("Open the settings folder"),
+                            n_!("Where app.toml, presets.toml and library.toml are kept."),
+                            n_!("Open"),
                         ),
                         button(
                             "reset",
-                            "Reset all settings",
-                            "Puts every setting on these pages back as it was at first. The library, playlists, history and folder presets stay.",
-                            if state.confirm_reset.get() { "Really reset?" } else { "Reset" },
+                            n_!("Reset all settings"),
+                            n_!("Puts every setting on these pages back as it was at first. The library, playlists, history and folder presets stay."),
+                            if state.confirm_reset.get() { n_!("Really reset?") } else { n_!("Reset") },
                         ),
                     ],
                 ),
@@ -248,22 +267,22 @@ fn pages(app: &AppWindow, page: usize, state: &State) -> Vec<SettingGroup> {
         }
         1 => vec![
             group(
-                "Window",
+                n_!("Window"),
                 vec![toggle(
                     "title-file",
-                    "Show the file name in the title bar",
-                    "Otherwise the title bar always reads Ferricone Player.",
+                    n_!("Show the file name in the title bar"),
+                    n_!("Otherwise the title bar always reads Ferricone Player."),
                     p.title_shows_file,
                 )],
             ),
             group(
-                "Playback Controls",
+                n_!("Playback Controls"),
                 vec![
                     choice(
                         "auto-hide",
-                        "Auto-hide the controls",
-                        "When the title and control bars slide away over the video.",
-                        &["In fullscreen only", "Never"],
+                        n_!("Auto-hide the controls"),
+                        n_!("When the title and control bars slide away over the video."),
+                        &[n_!("In fullscreen only"), n_!("Never")],
                         match p.auto_hide {
                             AutoHide::Fullscreen => 0,
                             AutoHide::Never => 1,
@@ -273,12 +292,12 @@ fn pages(app: &AppWindow, page: usize, state: &State) -> Vec<SettingGroup> {
                         SettingItem {
                             position: p.hide_after / HIDE_MAX,
                             value: format!("{:.1} s", p.hide_after).into(),
-                            labels: strings(&["0 s", "5 s", "10 s"]),
+                            labels: strings(&[n_!("0 s"), n_!("5 s"), n_!("10 s")]),
                             ..item(
                                 "hide-after",
                                 SettingKind::Slider,
-                                "Hide after",
-                                "How long the pointer can rest before the bars and the pointer hide; moving it shows them again.",
+                                n_!("Hide after"),
+                                n_!("How long the pointer can rest before the bars and the pointer hide; moving it shows them again."),
                             )
                         },
                         p.auto_hide == AutoHide::Never,
@@ -286,75 +305,75 @@ fn pages(app: &AppWindow, page: usize, state: &State) -> Vec<SettingGroup> {
                 ],
             ),
             group(
-                "Introduction",
+                n_!("Introduction"),
                 vec![button(
                     "intro",
-                    "Show the introduction again",
-                    "The welcome, theme and shortcut pages from the first start.",
-                    "Show",
+                    n_!("Show the introduction again"),
+                    n_!("The welcome, theme and shortcut pages from the first start."),
+                    n_!("Show"),
                 )],
             ),
         ],
         2 => vec![
             group(
-                "History",
+                n_!("History"),
                 vec![
                     toggle(
                         "save-history",
-                        "Save recently played items",
-                        "Keeps what you play for the library's Recent, Home and watched progress.",
+                        n_!("Save recently played items"),
+                        n_!("Keeps what you play for the library's Recent, Home and watched progress."),
                         p.save_history,
                     ),
                     toggle(
                         "remember-position",
-                        "Remember the playback position",
-                        "Offers to continue an item where you left it.",
+                        n_!("Remember the playback position"),
+                        n_!("Offers to continue an item where you left it."),
                         p.remember_position,
                     ),
                     text(
                         "never-remember",
-                        "Never remember items matching",
-                        "Words, separated by commas: items whose file path or address contains one are left out of the history and positions.",
+                        n_!("Never remember items matching"),
+                        n_!("Words, separated by commas: items whose file path or address contains one are left out of the history and positions."),
                         &p.never_remember,
                     ),
                     button(
                         "clear-history",
-                        "Clear history now",
-                        "Forgets every played item and position. Playlists and the library stay.",
-                        "Clear",
+                        n_!("Clear history now"),
+                        n_!("Forgets every played item and position. Playlists and the library stay."),
+                        n_!("Clear"),
                     ),
                 ],
             ),
             group(
-                "Network",
+                n_!("Network"),
                 vec![toggle(
                     "fetch-art",
-                    "Fetch titles and cover art from the internet",
-                    &format!("Lets the player engine look up missing titles and covers online.{NEXT_START}"),
+                    n_!("Fetch titles and cover art from the internet"),
+                    &next_start(n_!("Lets the player engine look up missing titles and covers online.")),
                     p.fetch_art,
                 )],
             ),
         ],
         3 => vec![group(
-            "Keyboard",
+            n_!("Keyboard"),
             vec![
                 button(
                     "shortcuts",
-                    "Keyboard shortcuts",
-                    "See and change the keys the player acts on.",
-                    "Change",
+                    n_!("Keyboard shortcuts"),
+                    n_!("See and change the keys the player acts on."),
+                    n_!("Change"),
                 ),
             ],
         )],
         4 => vec![
             group(
-                "Startup",
+                n_!("Startup"),
                 vec![
                     choice(
                         "resume",
-                        "Continue where you left off",
-                        "Ask offers it in a pill while the item starts from the top; Always jumps there.",
-                        &["Ask", "Always", "Never"],
+                        n_!("Continue where you left off"),
+                        n_!("Ask offers it in a pill while the item starts from the top; Always jumps there."),
+                        &[n_!("Ask"), n_!("Always"), n_!("Never")],
                         match p.resume {
                             Resume::Ask => 0,
                             Resume::Always => 1,
@@ -363,26 +382,26 @@ fn pages(app: &AppWindow, page: usize, state: &State) -> Vec<SettingGroup> {
                     ),
                     toggle(
                         "autoplay",
-                        "Start playing as soon as a file opens",
-                        "Otherwise items open paused.",
+                        n_!("Start playing as soon as a file opens"),
+                        n_!("Otherwise items open paused."),
                         p.autoplay,
                     ),
                 ],
             ),
             group(
-                "Order",
+                n_!("Order"),
                 vec![
                     toggle(
                         "stop-after-each",
-                        "Stop after each item",
-                        "Don't go on to the next item in the queue.",
+                        n_!("Stop after each item"),
+                        n_!("Don't go on to the next item in the queue."),
                         p.stop_after_each,
                     ),
                     choice(
                         "on-finish",
-                        "When the queue ends",
-                        "After the last item: offer or play the next file in its folder, stop, or quit.",
-                        &["Offer the next in the folder", "Play the next in the folder", "Stop", "Quit"],
+                        n_!("When the queue ends"),
+                        n_!("After the last item: offer or play the next file in its folder, stop, or quit."),
+                        &[n_!("Offer the next in the folder"), n_!("Play the next in the folder"), n_!("Stop"), n_!("Quit")],
                         match p.on_finish {
                             Finish::OfferNext => 0,
                             Finish::PlayNext => 1,
@@ -393,28 +412,28 @@ fn pages(app: &AppWindow, page: usize, state: &State) -> Vec<SettingGroup> {
                 ],
             ),
             group(
-                "Seeking",
+                n_!("Seeking"),
                 vec![
                     toggle(
                         "precise-seek",
-                        "Seek precisely",
-                        "Land on the exact moment clicked; off jumps to the nearest keyframe, which is quicker on large files.",
+                        n_!("Seek precisely"),
+                        n_!("Land on the exact moment clicked; off jumps to the nearest keyframe, which is quicker on large files."),
                         p.precise_seek,
                     ),
                     toggle(
                         "scrub-preview",
-                        "Show a thumbnail while scrubbing",
-                        "The frame under the pointer above the seek bar.",
+                        n_!("Show a thumbnail while scrubbing"),
+                        n_!("The frame under the pointer above the seek bar."),
                         p.scrub_preview,
                     ),
                 ],
             ),
             group(
-                "Per Folder",
+                n_!("Per Folder"),
                 vec![note(
                     "sidebar-playback",
-                    "Speed, preferred tracks and the sleep timer are in the player's settings sidebar (the gear on the control bar), where they can be kept for a folder.",
-                    "Open",
+                    n_!("Speed, preferred tracks and the sleep timer are in the player's settings sidebar (the gear on the control bar), where they can be kept for a folder."),
+                    n_!("Open"),
                 )],
             ),
         ],
@@ -422,45 +441,45 @@ fn pages(app: &AppWindow, page: usize, state: &State) -> Vec<SettingGroup> {
             "",
             vec![note(
                 "sidebar-video",
-                "Flip, rotation, zoom, aspect ratio, crop and the video filters are in the player's settings sidebar (the gear on the control bar), where they can be kept for a folder.",
-                "Open",
+                n_!("Flip, rotation, zoom, aspect ratio, crop and the video filters are in the player's settings sidebar (the gear on the control bar), where they can be kept for a folder."),
+                n_!("Open"),
             )],
         )],
         6 => vec![group(
             "",
             vec![note(
                 "sidebar-audio",
-                "The equalizer, compressor, spatial audio, stereo widening, pitch and delay are in the player's settings sidebar (the gear on the control bar), where they can be kept for a folder.",
-                "Open",
+                n_!("The equalizer, compressor, spatial audio, stereo widening, pitch and delay are in the player's settings sidebar (the gear on the control bar), where they can be kept for a folder."),
+                n_!("Open"),
             )],
         )],
         7 => vec![
             group(
-                "OpenSubtitles",
+                n_!("OpenSubtitles"),
                 vec![
                     SettingItem {
                         secret: true,
                         ..text(
                             "os-key",
-                            "API key",
-                            "Add Subtitles searches opensubtitles.com with it. Get a free key from your account there (API consumers); it is kept in app.toml, readable only by you.",
+                            n_!("API key"),
+                            n_!("Add Subtitles searches opensubtitles.com with it. Get a free key from your account there (API consumers); it is kept in app.toml, readable only by you."),
                             &p.os_key,
                         )
                     },
                     text(
                         "os-username",
-                        "Username",
-                        "Optional: logging in raises how many subtitles you can download a day.",
+                        n_!("Username"),
+                        n_!("Optional: logging in raises how many subtitles you can download a day."),
                         &p.os_username,
                     ),
                     SettingItem {
                         secret: true,
-                        ..text("os-password", "Password", "Your opensubtitles.com password, kept in app.toml, readable only by you.", &p.os_password)
+                        ..text("os-password", n_!("Password"), n_!("Your opensubtitles.com password, kept in app.toml, readable only by you."), &p.os_password)
                     },
                     choice(
                         "os-language",
-                        "Search language",
-                        "The language Add Subtitles looks for first.",
+                        n_!("Search language"),
+                        n_!("The language Add Subtitles looks for first."),
                         &crate::opensubtitles::LANGUAGES.iter().map(|(_, n)| *n).collect::<Vec<_>>(),
                         crate::opensubtitles::LANGUAGES
                             .iter()
@@ -470,85 +489,85 @@ fn pages(app: &AppWindow, page: usize, state: &State) -> Vec<SettingGroup> {
                 ],
             ),
             group(
-                "Per Folder",
+                n_!("Per Folder"),
                 vec![note(
                     "sidebar-subtitles",
-                    "Preferred subtitles, delay, font, colors, size and outline are in the player's settings sidebar (the gear on the control bar), where they can be kept for a folder.",
-                    "Open",
+                    n_!("Preferred subtitles, delay, font, colors, size and outline are in the player's settings sidebar (the gear on the control bar), where they can be kept for a folder."),
+                    n_!("Open"),
                 )],
             ),
         ],
         8 => vec![
             group(
-                "Folders",
+                n_!("Folders"),
                 vec![
                     button(
                         "add-videos",
-                        "Add a video folder",
-                        "Its videos appear under Videos in the library.",
-                        "Add",
+                        n_!("Add a video folder"),
+                        n_!("Its videos appear under Videos in the library."),
+                        n_!("Add"),
                     ),
                     button(
                         "add-music",
-                        "Add a music folder",
-                        "Its music appears under Music, read for albums, artists and genres.",
-                        "Add",
+                        n_!("Add a music folder"),
+                        n_!("Its music appears under Music, read for albums, artists and genres."),
+                        n_!("Add"),
                     ),
                 ],
             ),
             group(
-                "Thumbnails",
+                n_!("Thumbnails"),
                 vec![button(
                     "clear-thumbnails",
-                    "Clear the thumbnail cache",
-                    "Thumbnails are made again as the library shows them.",
-                    "Clear",
+                    n_!("Clear the thumbnail cache"),
+                    n_!("Thumbnails are made again as the library shows them."),
+                    n_!("Clear"),
                 )],
             ),
         ],
         9 => vec![group(
-            "Streaming",
+            n_!("Streaming"),
             vec![SettingItem {
                 position: (p.network_caching as f32 - CACHE_MIN) / (CACHE_MAX - CACHE_MIN),
                 value: format!("{:.1} s", p.network_caching as f32 / 1000.0).into(),
-                labels: strings(&["0.3 s", "5 s", "10 s"]),
+                labels: strings(&[n_!("0.3 s"), n_!("5 s"), n_!("10 s")]),
                 ..item(
                     "network-caching",
                     SettingKind::Slider,
-                    "Network buffer",
-                    &format!("How much of a stream is loaded ahead. More rides out a slow connection; less starts sooner.{NEXT_START}"),
+                    n_!("Network buffer"),
+                    &next_start(n_!("How much of a stream is loaded ahead. More rides out a slow connection; less starts sooner.")),
                 )
             }],
         )],
         10 => vec![group(
-            "Decoding",
+            n_!("Decoding"),
             vec![toggle(
                 "hardware-decoding",
-                "Hardware-accelerated decoding",
-                &format!("Decode video on the graphics card where it can. Turn off if video shows glitches.{NEXT_START}"),
+                n_!("Hardware-accelerated decoding"),
+                &next_start(n_!("Decode video on the graphics card where it can. Turn off if video shows glitches.")),
                 p.hardware_decoding,
             )],
         )],
         11 => vec![group(
-            "Recording",
+            n_!("Recording"),
             vec![
                 text(
                     "record-dir",
-                    "Recordings folder",
-                    "Where R and the menu's Record save to. Empty uses your Videos folder.",
+                    n_!("Recordings folder"),
+                    n_!("Where R and the menu's Record save to. Empty uses your Videos folder."),
                     &p.record_dir,
                 ),
                 button(
                     "record-dir-browse",
-                    "Choose the recordings folder",
-                    "Pick the folder with the file chooser instead of typing it.",
-                    "Browse",
+                    n_!("Choose the recordings folder"),
+                    n_!("Pick the folder with the file chooser instead of typing it."),
+                    n_!("Browse"),
                 ),
             ],
         )],
         _ => vec![group(
             "",
-            vec![note("", "Add-ons and skins arrive in a later update.", "")],
+            vec![note("", n_!("Add-ons and skins arrive in a later update."), "")],
         )],
     }
 }
@@ -570,8 +589,8 @@ fn search(app: &AppWindow, query: &str, state: &State) -> Vec<SettingGroup> {
                 .collect();
             if !items.is_empty() {
                 let title = match g.title.as_str() {
-                    "" => name.to_string(),
-                    section => format!("{name} › {section}"),
+                    "" => t(name).into_owned(),
+                    section => format!("{} › {section}", t(name)),
                 };
                 out.push(group(&title, items));
             }
@@ -594,12 +613,12 @@ fn show(app: &AppWindow, state: &State) {
         let page = state.page.get();
         let groups = pages(app, page, state);
         app.set_prefs_has_advanced(groups.iter().any(|g| g.advanced));
-        app.set_prefs_title(title(page).into());
+        app.set_prefs_title(t(title(page)).as_ref().into());
         app.set_prefs_page(page as i32);
         app.set_prefs_searching(false);
         app.set_prefs_groups(ModelRc::new(VecModel::from(groups)));
     } else {
-        app.set_prefs_title("Search Results".into());
+        app.set_prefs_title(tr!("Search Results").into());
         app.set_prefs_searching(true);
         app.set_prefs_groups(ModelRc::new(VecModel::from(search(app, query.trim(), state))));
     }
@@ -695,6 +714,15 @@ pub fn connect(app: &AppWindow, session: &Shared) {
             "mode" => app
                 .global::<crate::Appearance>()
                 .invoke_set_mode([1, 0, 2][index.clamp(0, 2) as usize]),
+            // System, then the languages as listed.
+            "language" => {
+                let code = match index {
+                    i if i >= 1 => crate::i18n::languages().get(i as usize - 1).map_or("", |&(c, _)| c),
+                    _ => "",
+                };
+                prefs::update(|p| p.language = code.into());
+                crate::i18n::select(code);
+            }
             id => prefs::update(|p| match id {
                 "log-level" => {
                     p.log_level = [LogLevel::Nothing, LogLevel::Errors, LogLevel::Warnings, LogLevel::Everything]
@@ -805,7 +833,7 @@ fn pressed(app: &AppWindow, s: &Shared, st: &std::rc::Rc<State>, id: &str) {
             let (ui, st) = (app.as_weak(), st.clone());
             let task = slint::spawn_local(async move {
                 let picked = rfd::AsyncFileDialog::new()
-                    .set_title("Choose the Recordings Folder")
+                    .set_title(tr!("Choose the Recordings Folder"))
                     .pick_folder()
                     .await;
                 if let (Some(dir), Some(app)) = (picked, ui.upgrade()) {

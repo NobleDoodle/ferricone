@@ -2,6 +2,7 @@
 //! offers and Browse, and, on Finish, remembering it was seen and adding the
 //! folder to Videos. It opens by itself until it has been finished once.
 
+use crate::i18n::tr;
 use crate::{
     AppWindow,
     controls::{Session, Shared},
@@ -29,7 +30,7 @@ pub fn connect(app: &AppWindow, session: &Shared) {
         let (ui, chosen) = (ui.clone(), chosen.clone());
         let task = slint::spawn_local(async move {
             let picked = rfd::AsyncFileDialog::new()
-                .set_title("Choose a Media Folder")
+                .set_title(tr!("Choose a Media Folder"))
                 .pick_folder()
                 .await;
             if let (Some(picked), Some(app)) = (picked, ui.upgrade()) {

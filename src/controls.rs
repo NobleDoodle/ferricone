@@ -1,6 +1,7 @@
 //! Connects the player to the window: VLC's events and clock become window
 //! properties, and the bars', menus' and keys' actions become player commands.
 
+use crate::i18n::tr;
 use crate::{
     AppWindow, TrackItem, TracksTab,
     diag::trace,
@@ -582,7 +583,7 @@ pub fn connect(app: &AppWindow, session: &Shared) {
         if let Err(e) = p.select_track(kind, next.map(|t| t.id.as_str())) {
             eprintln!("ferricone: {e}");
         }
-        next.map_or("None", |t| t.name.as_str()).into()
+        next.map_or_else(|| tr!("None"), |t| t.name.clone()).into()
     });
 
     let (ui, s) = (app.as_weak(), session.clone());
@@ -663,7 +664,7 @@ fn track_kind(tab: TracksTab) -> TrackKind {
 fn track_items(tracks: Vec<Track>) -> ModelRc<TrackItem> {
     let none = TrackItem {
         id: "".into(),
-        label: "None".into(),
+        label: tr!("None").into(),
         selected: !tracks.iter().any(|t| t.selected),
     };
     let items: Vec<TrackItem> = std::iter::once(none)

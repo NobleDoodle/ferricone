@@ -33,7 +33,7 @@ export component Toggle inherits Rectangle {
         border-radius: 3px;
         background: root.on ? Theme.bg-accent-bright : Theme.bg-a4;
         Text {
-            text: root.on ? "ON" : "OFF";
+            text: root.on ? @tr("ON") : @tr("OFF");
             font-size: 12px;
             color: root.on ? Theme.accent-main : Theme.fg-a3;
         }
@@ -383,7 +383,7 @@ export component FilterCard inherits Rectangle {
                 padding-left: 16px;
                 padding-right: 10px;
                 Text {
-                    text: root.expanded ? "Collapse Settings" : "Expand Settings";
+                    text: root.expanded ? @tr("Collapse Settings") : @tr("Expand Settings");
                     font-size: 14px;
                     color: head.has-hover ? Theme.fg-a2 : Theme.fg-a3;
                     vertical-alignment: center;
@@ -634,7 +634,7 @@ export component SettingsPanel inherits Rectangle {
 
     // Speed runs 0.25–2 along the slider, with a tick at each quarter.
     property <[string]> speed-labels: ["0.25", "0.5", "0.75", "1", "1.25", "1.5", "1.75", "2"];
-    property <[string]> delay-labels: ["-10 s", "0 s", "+10 s"];
+    property <[string]> delay-labels: [@tr("-10 s"), @tr("0 s"), @tr("+10 s")];
 
     width: 400px;
     border-radius: 10px;
@@ -658,10 +658,10 @@ export component SettingsPanel inherits Rectangle {
                 padding-left: 6px;
                 padding-right: 6px;
                 spacing: 1px;
-                Tab { width: 107.5px; icon: Icons.playback; label: "Playback"; active: root.tab == SettingsTab.playback; clicked => { root.tab = SettingsTab.playback; } }
-                Tab { width: 85px; icon: Icons.video; label: "Video"; active: root.tab == SettingsTab.video; clicked => { root.tab = SettingsTab.video; } }
-                Tab { width: 85px; icon: Icons.audio; label: "Audio"; active: root.tab == SettingsTab.audio; clicked => { root.tab = SettingsTab.audio; } }
-                Tab { width: 107.5px; icon: Icons.subtitles; label: "Subtitles"; active: root.tab == SettingsTab.subtitles; clicked => { root.tab = SettingsTab.subtitles; } }
+                Tab { width: 107.5px; icon: Icons.playback; label: @tr("Playback"); active: root.tab == SettingsTab.playback; clicked => { root.tab = SettingsTab.playback; } }
+                Tab { width: 85px; icon: Icons.video; label: @tr("Video"); active: root.tab == SettingsTab.video; clicked => { root.tab = SettingsTab.video; } }
+                Tab { width: 85px; icon: Icons.audio; label: @tr("Audio"); active: root.tab == SettingsTab.audio; clicked => { root.tab = SettingsTab.audio; } }
+                Tab { width: 107.5px; icon: Icons.subtitles; label: @tr("Subtitles"); active: root.tab == SettingsTab.subtitles; clicked => { root.tab = SettingsTab.subtitles; } }
             }
         }
 
@@ -678,29 +678,29 @@ export component SettingsPanel inherits Rectangle {
                     SectionBody {
                         padding-bottom: 0;
                         SettingRow {
-                            label: "Show Subtitle Timeline on Seekbar";
+                            label: @tr("Show Subtitle Timeline on Seekbar");
                             Toggle {
                                 on: root.timeline;
                                 toggled(on) => { root.set-timeline(on); }
                             }
                         }
                         if root.timeline: SettingRow {
-                            label: "Adjust Subtitle Timing on Seekbar";
-                            note: "Zooms in; drag a line to shift the subtitles";
+                            label: @tr("Adjust Subtitle Timing on Seekbar");
+                            note: @tr("Zooms in; drag a line to shift the subtitles");
                             Toggle {
                                 on: root.timeline-adjust;
                                 toggled(on) => { root.set-timeline-adjust(on); }
                             }
                         }
                         SettingRow {
-                            label: "Show Statistics";
+                            label: @tr("Show Statistics");
                             Toggle {
                                 on: root.statistics;
                                 toggled(on) => { root.set-statistics(on); }
                             }
                         }
                         SettingRow {
-                            label: "Sleep Timer";
+                            label: @tr("Sleep Timer");
                             Dropdown {
                                 width: 220px;
                                 options: root.sleep-options;
@@ -711,8 +711,8 @@ export component SettingsPanel inherits Rectangle {
                     }
                     SectionBody {
                         SettingRow {
-                            label: "Speed";
-                            note: "[ and ] step it";
+                            label: @tr("Speed");
+                            note: @tr("[ and ] step it");
                             ValueField {
                                 text: round(root.speed * 100) / 100 + "x";
                                 edited(text) => { root.typed-speed(text); }
@@ -734,11 +734,11 @@ export component SettingsPanel inherits Rectangle {
 
                 if root.tab == SettingsTab.video: VerticalLayout {
                     alignment: start;
-                    SectionTitle { text: "Play On"; }
+                    SectionTitle { text: @tr("Play On"); }
                     SectionBody {
                         SettingRow {
-                            label: "Device";
-                            note: root.render-searching ? "Looking for devices on the network…" : "Chromecast and other devices found nearby";
+                            label: @tr("Device");
+                            note: root.render-searching ? @tr("Looking for devices on the network…") : @tr("Chromecast and other devices found nearby");
                             Dropdown {
                                 width: 200px;
                                 height: 36px;
@@ -749,46 +749,46 @@ export component SettingsPanel inherits Rectangle {
                         }
                     }
                     Divider { }
-                    SectionTitle { text: "Defaults"; }
+                    SectionTitle { text: @tr("Defaults"); }
                     SectionBody {
                         spacing: 10px;
-                        SettingRow { label: "Flip"; }
+                        SettingRow { label: @tr("Flip"); }
                         Segmented {
-                            options: ["None", "Horizontal", "Vertical"];
+                            options: [@tr("None"), @tr("Horizontal"), @tr("Vertical")];
                             selected: root.flip;
                             chosen(i) => { root.set-flip(i); }
                         }
                         SettingRow {
-                            label: "Rotate";
+                            label: @tr("Rotate");
                             ValueField {
                                 text: root.rotate-text;
                                 edited(text) => { root.typed-rotate(text); }
                             }
                         }
                         SettingRow {
-                            label: "Zoom";
+                            label: @tr("Zoom");
                             Dropdown { width: 220px; options: root.zoom-options; selected: root.zoom; chosen(i) => { root.set-zoom(i); } }
                         }
                         SettingRow {
-                            label: "Aspect Ratio";
+                            label: @tr("Aspect Ratio");
                             Dropdown { width: 220px; options: root.ratio-options; selected: root.aspect; chosen(i) => { root.set-aspect(i); } }
                         }
                         SettingRow {
-                            label: "Crop";
+                            label: @tr("Crop");
                             Dropdown { width: 220px; options: root.ratio-options; selected: root.crop; chosen(i) => { root.set-crop(i); } }
                         }
                     }
                     Divider { }
-                    SectionTitle { text: "Filters"; }
+                    SectionTitle { text: @tr("Filters"); }
                     SectionBody {
                         spacing: 10px;
                         Text {
-                            text: "Essential and Colors run on the processor, so very large video may stutter while they are on.";
+                            text: @tr("Essential and Colors run on the processor, so very large video may stutter while they are on.");
                             font-size: 12px;
                             color: Theme.fg-a4;
                             wrap: word-wrap;
                         }
-                        SettingRow { label: "Essential"; }
+                        SettingRow { label: @tr("Essential"); }
                         FilterCard {
                             rows: root.essential-rows;
                             moved(i, at, done) => { root.video-moved("essential", i, at, done); }
@@ -799,7 +799,7 @@ export component SettingsPanel inherits Rectangle {
                     Divider { }
                     SectionBody {
                         spacing: 10px;
-                        SettingRow { label: "Crop"; }
+                        SettingRow { label: @tr("Crop"); }
                         FilterCard {
                             rows: root.crop-rows;
                             moved(i, at, done) => { root.video-moved("crop", i, at, done); }
@@ -809,7 +809,7 @@ export component SettingsPanel inherits Rectangle {
                     Divider { }
                     SectionBody {
                         spacing: 10px;
-                        SettingRow { label: "Colors"; }
+                        SettingRow { label: @tr("Colors"); }
                         FilterCard {
                             rows: root.colors-rows;
                             moved(i, at, done) => { root.video-moved("colors", i, at, done); }
@@ -821,20 +821,20 @@ export component SettingsPanel inherits Rectangle {
 
                 if root.tab == SettingsTab.audio: VerticalLayout {
                     alignment: start;
-                    SectionTitle { text: "Defaults"; }
+                    SectionTitle { text: @tr("Defaults"); }
                     SectionBody {
                         SettingRow {
-                            label: "Audio Track";
-                            note: "For items opened next";
+                            label: @tr("Audio Track");
+                            note: @tr("For items opened next");
                             ValueField { text: root.audio-track-text; edited(t) => { root.typed-track("audio-track", t); } }
                         }
                         SettingRow {
-                            label: "Audio Language";
-                            note: "A code or name, e.g. en, English";
+                            label: @tr("Audio Language");
+                            note: @tr("A code or name, e.g. en, English");
                             ValueField { text: root.audio-language-text; edited(t) => { root.typed-track("audio-language", t); } }
                         }
                         SettingRow {
-                            label: "Stereo Mode";
+                            label: @tr("Stereo Mode");
                         }
                         Dropdown {
                             options: root.stereo-options;
@@ -843,11 +843,11 @@ export component SettingsPanel inherits Rectangle {
                         }
                     }
                     Divider { }
-                    SectionTitle { text: "Synchronization"; }
+                    SectionTitle { text: @tr("Synchronization"); }
                     SectionBody {
                         SettingRow {
-                            label: "Audio Track Delay";
-                            note: "J and K step it by 50 ms";
+                            label: @tr("Audio Track Delay");
+                            note: @tr("J and K step it by 50 ms");
                             ValueField {
                                 text: root.audio-delay-text;
                                 edited(text) => { root.typed-audio-delay(text); }
@@ -861,10 +861,10 @@ export component SettingsPanel inherits Rectangle {
                         }
                     }
                     Divider { }
-                    SectionTitle { text: "Filters"; }
+                    SectionTitle { text: @tr("Filters"); }
                     SectionBody {
                         spacing: 10px;
-                        SettingRow { label: "Equalizer"; }
+                        SettingRow { label: @tr("Equalizer"); }
                         Dropdown {
                             options: root.eq-presets;
                             selected: root.eq-preset;
@@ -876,8 +876,8 @@ export component SettingsPanel inherits Rectangle {
                             typed(i, text) => { root.eq-typed(i, text); }
                         }
                         SettingRow {
-                            label: "2 Pass";
-                            note: "Filters twice, for a stronger effect";
+                            label: @tr("2 Pass");
+                            note: @tr("Filters twice, for a stronger effect");
                             Toggle {
                                 on: root.two-pass;
                                 enabled: root.eq-preset > 0;
@@ -889,7 +889,7 @@ export component SettingsPanel inherits Rectangle {
                     SectionBody {
                         spacing: 10px;
                         SettingRow {
-                            label: "Compressor";
+                            label: @tr("Compressor");
                             Toggle { on: root.compressor-on; toggled(on) => { root.set-filter("compressor", on); } }
                         }
                         FilterCard {
@@ -901,7 +901,7 @@ export component SettingsPanel inherits Rectangle {
                     SectionBody {
                         spacing: 10px;
                         SettingRow {
-                            label: "Spatializer";
+                            label: @tr("Spatializer");
                             Toggle { on: root.spatializer-on; toggled(on) => { root.set-filter("spatializer", on); } }
                         }
                         FilterCard {
@@ -913,7 +913,7 @@ export component SettingsPanel inherits Rectangle {
                     SectionBody {
                         spacing: 10px;
                         SettingRow {
-                            label: "Stereo Widener";
+                            label: @tr("Stereo Widener");
                             Toggle { on: root.widener-on; toggled(on) => { root.set-filter("widener", on); } }
                         }
                         FilterCard {
@@ -924,7 +924,7 @@ export component SettingsPanel inherits Rectangle {
                     Divider { }
                     SectionBody {
                         SettingRow {
-                            label: "Adjust Pitch";
+                            label: @tr("Adjust Pitch");
                             Text { text: root.pitch-text; font-size: 14px; color: Theme.fg-a3; vertical-alignment: center; }
                         }
                         RangeSlider {
@@ -937,18 +937,18 @@ export component SettingsPanel inherits Rectangle {
 
                 if root.tab == SettingsTab.subtitles: VerticalLayout {
                     alignment: start;
-                    SectionTitle { text: "Subtitle Files"; }
+                    SectionTitle { text: @tr("Subtitle Files"); }
                     SectionBody {
                         SettingRow {
-                            label: "Add Subtitles";
-                            note: "Files for this video, or matched for its whole folder";
+                            label: @tr("Add Subtitles");
+                            note: @tr("Files for this video, or matched for its whole folder");
                             Rectangle {
                                 width: 140px;
                                 height: 36px;
                                 border-radius: 6px;
                                 background: add-touch.has-hover && root.can-add-subtitles ? Theme.bg-a1 : Theme.bg-a3;
                                 opacity: root.can-add-subtitles ? 1 : 0.4;
-                                Text { text: "Add…"; font-size: 14px; color: Theme.fg-a2; }
+                                Text { text: @tr("Add…"); font-size: 14px; color: Theme.fg-a2; }
                                 add-touch := TouchArea {
                                     enabled: root.can-add-subtitles;
                                     clicked => { root.add-subtitles(); }
@@ -957,25 +957,25 @@ export component SettingsPanel inherits Rectangle {
                         }
                     }
                     Divider { }
-                    SectionTitle { text: "Defaults"; }
+                    SectionTitle { text: @tr("Defaults"); }
                     SectionBody {
                         SettingRow {
-                            label: "Subtitle Track";
-                            note: "For items opened next";
+                            label: @tr("Subtitle Track");
+                            note: @tr("For items opened next");
                             ValueField { text: root.subtitle-track-text; edited(t) => { root.typed-track("subtitle-track", t); } }
                         }
                         SettingRow {
-                            label: "Subtitle Language";
-                            note: "A code or name, e.g. en, English";
+                            label: @tr("Subtitle Language");
+                            note: @tr("A code or name, e.g. en, English");
                             ValueField { text: root.subtitle-language-text; edited(t) => { root.typed-track("subtitle-language", t); } }
                         }
                     }
                     Divider { }
-                    SectionTitle { text: "Synchronization"; }
+                    SectionTitle { text: @tr("Synchronization"); }
                     SectionBody {
                         SettingRow {
-                            label: "Subtitle Track Delay";
-                            note: "G and H step it by 50 ms";
+                            label: @tr("Subtitle Track Delay");
+                            note: @tr("G and H step it by 50 ms");
                             ValueField {
                                 text: root.subtitle-delay-text;
                                 edited(text) => { root.typed-subtitle-delay(text); }
@@ -989,34 +989,34 @@ export component SettingsPanel inherits Rectangle {
                         }
                     }
                     Divider { }
-                    SectionTitle { text: "Appearance"; }
+                    SectionTitle { text: @tr("Appearance"); }
                     SectionBody {
                         Text {
-                            text: "Changes show from the next subtitle line.";
+                            text: @tr("Changes show from the next subtitle line.");
                             font-size: 12px;
                             color: Theme.fg-a4;
                             wrap: word-wrap;
                         }
                         SettingRow {
-                            label: "Subtitle Font";
-                            note: "Type to search the installed fonts";
+                            label: @tr("Subtitle Font");
+                            note: @tr("Type to search the installed fonts");
                             FontField { text: root.sub-font-text; edited(t) => { root.typed-subtitle-style("font", t); } }
                         }
                         SettingRow {
-                            label: "Text Color";
+                            label: @tr("Text Color");
                             ColorField { text: root.sub-color-text; swatch: root.sub-color; diag-first: true; edited(t) => { root.typed-subtitle-style("color", t); } }
                         }
                         SettingRow {
-                            label: "Outline Color";
+                            label: @tr("Outline Color");
                             ColorField { text: root.sub-outline-color-text; swatch: root.sub-outline-color; edited(t) => { root.typed-subtitle-style("outline-color", t); } }
                         }
                         SettingRow {
-                            label: "Subtitle Offset";
-                            note: "Pixels up from the bottom";
+                            label: @tr("Subtitle Offset");
+                            note: @tr("Pixels up from the bottom");
                             ValueField { text: root.sub-offset-text; edited(t) => { root.typed-subtitle-style("offset", t); } }
                         }
                         SettingRow {
-                            label: "Font Size";
+                            label: @tr("Font Size");
                             Text { text: root.sub-scale-text; font-size: 14px; color: Theme.fg-a3; vertical-alignment: center; }
                         }
                         // 25–300 %.
@@ -1025,7 +1025,7 @@ export component SettingsPanel inherits Rectangle {
                             moved(at, done) => { root.set-subtitle-level("scale", 25 + at * 275); }
                         }
                         SettingRow {
-                            label: "Outline Thickness";
+                            label: @tr("Outline Thickness");
                             Text { text: root.sub-outline-text; font-size: 14px; color: Theme.fg-a3; vertical-alignment: center; }
                         }
                         RangeSlider {
@@ -1034,7 +1034,7 @@ export component SettingsPanel inherits Rectangle {
                             moved(at, done) => { root.set-subtitle-level("outline", round(at * 3)); }
                         }
                         SettingRow {
-                            label: "Background Opacity";
+                            label: @tr("Background Opacity");
                             Text { text: root.sub-background-text; font-size: 14px; color: Theme.fg-a3; vertical-alignment: center; }
                         }
                         RangeSlider {
@@ -1070,7 +1070,7 @@ export component SettingsPanel inherits Rectangle {
                         alignment: center;
                         spacing: 6px;
                         Rectangle { width: 20px; Icon { icon: Icons.settings; size: 20px; } }
-                        Text { text: "Open Advanced Settings"; font-size: 14px; color: Theme.fg-a3; vertical-alignment: center; }
+                        Text { text: @tr("Open Advanced Settings"); font-size: 14px; color: Theme.fg-a3; vertical-alignment: center; }
                     }
                 }
             }

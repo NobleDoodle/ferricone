@@ -316,7 +316,7 @@ export component Onboarding inherits Rectangle {
                             }
                         }
                         Text {
-                            text: "Welcome to Ferricone!";
+                            text: @tr("Welcome to Ferricone!");
                             font-size: 32px;
                             font-weight: 300;
                             color: Theme.fg-1;
@@ -326,7 +326,7 @@ export component Onboarding inherits Rectangle {
                             alignment: center;
                             Text {
                                 width: min(595px, root.width - 80px);
-                                text: "Ferricone is a free, open media player built on VLC's engine. It plays most video and audio files, network streams and subtitles, and keeps your library close at hand.";
+                                text: @tr("Ferricone is a free, open media player built on VLC's engine. It plays most video and audio files, network streams and subtitles, and keeps your library close at hand.");
                                 font-size: 16px;
                                 font-weight: 300;
                                 color: Theme.fg-a1;
@@ -340,7 +340,7 @@ export component Onboarding inherits Rectangle {
                             VerticalLayout {
                                 width: min(595px, root.width - 80px);
                                 spacing: 16px;
-                                Text { text: "Choose a Media Folder to get started with"; font-size: 14px; color: Theme.fg-a2; }
+                                Text { text: @tr("Choose a Media Folder to get started with"); font-size: 14px; color: Theme.fg-a2; }
                                 HorizontalLayout {
                                     height: 36px;
                                     spacing: 10px;
@@ -353,7 +353,7 @@ export component Onboarding inherits Rectangle {
                                         Text {
                                             x: 12px;
                                             width: parent.width - 24px;
-                                            text: root.folder == "" ? "No folder: add one later from the library" : root.folder;
+                                            text: root.folder == "" ? @tr("No folder: add one later from the library") : root.folder;
                                             font-size: 16px;
                                             color: root.folder == "" ? Theme.fg-a4 : Theme.fg-2;
                                             vertical-alignment: center;
@@ -364,7 +364,7 @@ export component Onboarding inherits Rectangle {
                                         width: 114px;
                                         border-radius: 6px;
                                         background: browse-touch.has-hover ? Theme.bg-a1 : Theme.bg-a3;
-                                        Text { text: "Browse"; font-size: 16px; color: Theme.fg-a2; }
+                                        Text { text: @tr("Browse"); font-size: 16px; color: Theme.fg-a2; }
                                         browse-touch := TouchArea { mouse-cursor: pointer; clicked => { root.browse(); } }
                                     }
                                 }
@@ -377,7 +377,7 @@ export component Onboarding inherits Rectangle {
                         spacing: root.short ? 24px : 50px;
                         alignment: center;
                         Text {
-                            text: "Select your preferred theme and color.";
+                            text: @tr("Select your preferred theme and color.");
                             font-size: 24px;
                             font-weight: 300;
                             color: Theme.fg-a1;
@@ -388,21 +388,21 @@ export component Onboarding inherits Rectangle {
                             alignment: center;
                             spacing: 40px;
                             ThemeTile {
-                                text: "Light";
+                                text: @tr("Light");
                                 look: 0;
                                 chosen: !root.omarchy && Appearance.mode == 0;
                                 enabled: !root.omarchy;
                                 clicked => { Appearance.set-mode(0); }
                             }
                             ThemeTile {
-                                text: "Dark";
+                                text: @tr("Dark");
                                 look: 1;
                                 chosen: !root.omarchy && Appearance.mode == 1;
                                 enabled: !root.omarchy;
                                 clicked => { Appearance.set-mode(1); }
                             }
                             ThemeTile {
-                                text: "System";
+                                text: @tr("System");
                                 look: 2;
                                 chosen: !root.omarchy && Appearance.mode == 2;
                                 enabled: !root.omarchy;
@@ -418,9 +418,9 @@ export component Onboarding inherits Rectangle {
                                 VerticalLayout {
                                     horizontal-stretch: 1;
                                     alignment: center;
-                                    Text { text: "Use Omarchy theme colors"; font-size: 16px; color: Theme.fg-a1; }
+                                    Text { text: @tr("Use Omarchy theme colors"); font-size: 16px; color: Theme.fg-a1; }
                                     Text {
-                                        text: root.omarchy ? "Colors follow your Omarchy theme" : "Pick a theme and color here instead";
+                                        text: root.omarchy ? @tr("Colors follow your Omarchy theme") : @tr("Pick a theme and color here instead");
                                         font-size: 12px;
                                         color: Theme.fg-a3;
                                     }
@@ -441,7 +441,7 @@ export component Onboarding inherits Rectangle {
                         spacing: root.short ? 24px : 50px;
                         alignment: center;
                         Text {
-                            text: "Learn the basic keyboard shortcuts.";
+                            text: @tr("Learn the basic keyboard shortcuts.");
                             font-size: 24px;
                             font-weight: 300;
                             color: Theme.fg-a1;
@@ -453,27 +453,27 @@ export component Onboarding inherits Rectangle {
                             spacing: 80px;
                             VerticalLayout {
                                 spacing: root.narrow || root.short ? 16px : 34px;
-                                Shortcut { label: "Play / Pause"; keys: [Keys.play-pause.name]; }
-                                Shortcut { label: "Seek Backward / Forward"; keys: [Keys.back.name, Keys.forward.name]; }
-                                Shortcut { label: "Previous / Next Item"; keys: [Keys.previous.name, Keys.next.name]; }
-                                Shortcut { label: "Cycle Subtitle Track"; keys: [Keys.subtitle-track.name]; }
-                                Shortcut { label: "Cycle Audio Track"; keys: [Keys.audio-track.name]; }
-                                Shortcut { label: "Stop"; keys: [Keys.stop.name]; }
-                                if root.narrow: Shortcut { label: "Toggle Fullscreen"; keys: [Keys.fullscreen.name]; }
-                                if root.narrow: Shortcut { label: "Increase / Decrease Volume"; keys: [Keys.volume-up.name, Keys.volume-down.name]; }
-                                if root.narrow: Shortcut { label: "Mute"; keys: [Keys.mute.name]; }
-                                if root.narrow: Shortcut { label: "Slower / Faster"; keys: [Keys.slower.name, Keys.faster.name]; }
-                                if root.narrow: Shortcut { label: "Record"; keys: [Keys.record.name]; }
-                                if root.narrow: Shortcut { label: "Hide the Interface"; keys: ["Ctrl", "\\"]; joiner: "+"; }
+                                Shortcut { label: @tr("Play / Pause"); keys: [Keys.play-pause.name]; }
+                                Shortcut { label: @tr("Seek Backward / Forward"); keys: [Keys.back.name, Keys.forward.name]; }
+                                Shortcut { label: @tr("Previous / Next Item"); keys: [Keys.previous.name, Keys.next.name]; }
+                                Shortcut { label: @tr("Cycle Subtitle Track"); keys: [Keys.subtitle-track.name]; }
+                                Shortcut { label: @tr("Cycle Audio Track"); keys: [Keys.audio-track.name]; }
+                                Shortcut { label: @tr("Stop"); keys: [Keys.stop.name]; }
+                                if root.narrow: Shortcut { label: @tr("Toggle Fullscreen"); keys: [Keys.fullscreen.name]; }
+                                if root.narrow: Shortcut { label: @tr("Increase / Decrease Volume"); keys: [Keys.volume-up.name, Keys.volume-down.name]; }
+                                if root.narrow: Shortcut { label: @tr("Mute"); keys: [Keys.mute.name]; }
+                                if root.narrow: Shortcut { label: @tr("Slower / Faster"); keys: [Keys.slower.name, Keys.faster.name]; }
+                                if root.narrow: Shortcut { label: @tr("Record"); keys: [Keys.record.name]; }
+                                if root.narrow: Shortcut { label: @tr("Hide the Interface"); keys: [@tr("Ctrl"), "\\"]; joiner: "+"; }
                             }
                             if !root.narrow: VerticalLayout {
                                 spacing: root.short ? 16px : 34px;
-                                Shortcut { label: "Toggle Fullscreen"; keys: [Keys.fullscreen.name]; }
-                                Shortcut { label: "Increase / Decrease Volume"; keys: [Keys.volume-up.name, Keys.volume-down.name]; }
-                                Shortcut { label: "Mute"; keys: [Keys.mute.name]; }
-                                Shortcut { label: "Slower / Faster"; keys: [Keys.slower.name, Keys.faster.name]; }
-                                Shortcut { label: "Record"; keys: [Keys.record.name]; }
-                                Shortcut { label: "Hide the Interface"; keys: ["Ctrl", "\\"]; joiner: "+"; }
+                                Shortcut { label: @tr("Toggle Fullscreen"); keys: [Keys.fullscreen.name]; }
+                                Shortcut { label: @tr("Increase / Decrease Volume"); keys: [Keys.volume-up.name, Keys.volume-down.name]; }
+                                Shortcut { label: @tr("Mute"); keys: [Keys.mute.name]; }
+                                Shortcut { label: @tr("Slower / Faster"); keys: [Keys.slower.name, Keys.faster.name]; }
+                                Shortcut { label: @tr("Record"); keys: [Keys.record.name]; }
+                                Shortcut { label: @tr("Hide the Interface"); keys: [@tr("Ctrl"), "\\"]; joiner: "+"; }
                             }
                         }
                     }
@@ -532,7 +532,7 @@ export component Onboarding inherits Rectangle {
                 }
             }
             if root.step == 2: Text {
-                text: "Find more in the right-click and ⋯ menus.";
+                text: @tr("Find more in the right-click and ⋯ menus.");
                 font-size: 14px;
                 color: Theme.fg-a3;
                 vertical-alignment: center;
@@ -542,7 +542,7 @@ export component Onboarding inherits Rectangle {
             if !root.only && root.step > 0: VerticalLayout {
                 alignment: center;
                 Button {
-                    text: "Back";
+                    text: @tr("Back");
                     clicked => { root.step -= 1; keys.focus(); }
                 }
             }
@@ -550,7 +550,7 @@ export component Onboarding inherits Rectangle {
                 alignment: center;
                 Button {
                     primary: true;
-                    text: root.only ? "Done" : root.step >= 2 ? "Finish" : "Next";
+                    text: root.only ? @tr("Done") : root.step >= 2 ? @tr("Finish") : @tr("Next");
                     clicked => { root.next(); }
                 }
             }

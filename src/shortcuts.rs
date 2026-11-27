@@ -3,7 +3,11 @@
 //! in prefs (`app.toml`, `keys`, only those that differ from the defaults);
 //! a key moved to another action leaves the old one unassigned.
 
-use crate::{AppWindow, KeyBinding, Keys, ShortcutRow, prefs};
+use crate::{
+    AppWindow, KeyBinding, Keys, ShortcutRow,
+    i18n::{n_, t},
+    prefs,
+};
 use slint::{ComponentHandle, Global, ModelRc, SharedString, VecModel};
 use std::{cell::RefCell, rc::Rc};
 
@@ -20,61 +24,65 @@ const fn a(id: &'static str, section: &'static str, label: &'static str, key: &'
 }
 
 const ACTIONS: &[Action] = &[
-    a("play-pause", "Playback", "Play / pause", " "),
-    a("stop", "Playback", "Stop", "s"),
-    a("previous", "Playback", "Previous item", "p"),
-    a("next", "Playback", "Next item", "n"),
-    a("back", "Playback", "Back 10 seconds", "\u{F702}"),
-    a("forward", "Playback", "Forward 10 seconds", "\u{F703}"),
-    a("slower", "Playback", "Slower", "["),
-    a("faster", "Playback", "Faster", "]"),
-    a("record", "Playback", "Record", "r"),
-    a("fullscreen", "View and Sound", "Toggle fullscreen", "f"),
-    a("volume-up", "View and Sound", "Volume up", "\u{F700}"),
-    a("volume-down", "View and Sound", "Volume down", "\u{F701}"),
-    a("mute", "View and Sound", "Mute", "m"),
-    a("audio-track", "View and Sound", "Audio tracks", "b"),
-    a("subtitle-track", "View and Sound", "Subtitle tracks", "v"),
-    a("audio-earlier", "Sync", "Audio earlier", "j"),
-    a("audio-later", "Sync", "Audio later", "k"),
-    a("subtitles-earlier", "Sync", "Subtitles earlier", "g"),
-    a("subtitles-later", "Sync", "Subtitles later", "h"),
+    a("play-pause", n_!("Playback"), n_!("Play / pause"), " "),
+    a("stop", n_!("Playback"), n_!("Stop"), "s"),
+    a("previous", n_!("Playback"), n_!("Previous item"), "p"),
+    a("next", n_!("Playback"), n_!("Next item"), "n"),
+    a("back", n_!("Playback"), n_!("Back 10 seconds"), "\u{F702}"),
+    a("forward", n_!("Playback"), n_!("Forward 10 seconds"), "\u{F703}"),
+    a("slower", n_!("Playback"), n_!("Slower"), "["),
+    a("faster", n_!("Playback"), n_!("Faster"), "]"),
+    a("record", n_!("Playback"), n_!("Record"), "r"),
+    a("fullscreen", n_!("View and Sound"), n_!("Toggle fullscreen"), "f"),
+    a("volume-up", n_!("View and Sound"), n_!("Volume up"), "\u{F700}"),
+    a("volume-down", n_!("View and Sound"), n_!("Volume down"), "\u{F701}"),
+    a("mute", n_!("View and Sound"), n_!("Mute"), "m"),
+    a("audio-track", n_!("View and Sound"), n_!("Audio tracks"), "b"),
+    a("subtitle-track", n_!("View and Sound"), n_!("Subtitle tracks"), "v"),
+    a("audio-earlier", n_!("Sync"), n_!("Audio earlier"), "j"),
+    a("audio-later", n_!("Sync"), n_!("Audio later"), "k"),
+    a("subtitles-earlier", n_!("Sync"), n_!("Subtitles earlier"), "g"),
+    a("subtitles-later", n_!("Sync"), n_!("Subtitles later"), "h"),
 ];
 
 /// Keys that can't be changed, shown under the rest.
 const FIXED: &[(&str, &str)] = &[
-    ("Close a panel, a menu or fullscreen", "Esc"),
-    ("Continue where you left off, or play the next item", "Enter"),
-    ("Hide the interface", "Ctrl + \\"),
-    ("Open files", "Ctrl + O"),
-    ("Open a folder", "Ctrl + F"),
-    ("Open a network stream", "Ctrl + N"),
-    ("Add a bookmark", "Ctrl + B"),
-    ("Settings", "Ctrl + P"),
-    ("Quit", "Ctrl + Q"),
+    (n_!("Close a panel, a menu or fullscreen"), n_!("Esc")),
+    (n_!("Continue where you left off, or play the next item"), n_!("Enter")),
+    (n_!("Hide the interface"), n_!("Ctrl + \\")),
+    (n_!("Open files"), n_!("Ctrl + O")),
+    (n_!("Open a folder"), n_!("Ctrl + F")),
+    (n_!("Open a network stream"), n_!("Ctrl + N")),
+    (n_!("Add a bookmark"), n_!("Ctrl + B")),
+    (n_!("Settings"), n_!("Ctrl + P")),
+    (n_!("Quit"), n_!("Ctrl + Q")),
 ];
 
-/// How a key's text is shown.
+/// How a key's text is shown, in the interface's language.
 pub fn name(key: &str) -> String {
+    t(&raw_name(key)).into_owned()
+}
+
+fn raw_name(key: &str) -> String {
     let mut chars = key.chars();
     let (Some(c), None) = (chars.next(), chars.next()) else {
         return key.to_uppercase();
     };
     match c {
-        ' ' => "Space".into(),
-        '\t' => "Tab".into(),
-        '\u{8}' => "Backspace".into(),
-        '\u{7f}' => "Delete".into(),
+        ' ' => n_!("Space").into(),
+        '\t' => n_!("Tab").into(),
+        '\u{8}' => n_!("Backspace").into(),
+        '\u{7f}' => n_!("Delete").into(),
         '\u{F700}' => "↑".into(),
         '\u{F701}' => "↓".into(),
         '\u{F702}' => "←".into(),
         '\u{F703}' => "→".into(),
         '\u{F704}'..='\u{F71B}' => format!("F{}", c as u32 - 0xF704 + 1),
-        '\u{F727}' => "Insert".into(),
-        '\u{F729}' => "Home".into(),
-        '\u{F72B}' => "End".into(),
-        '\u{F72C}' => "Page Up".into(),
-        '\u{F72D}' => "Page Down".into(),
+        '\u{F727}' => n_!("Insert").into(),
+        '\u{F729}' => n_!("Home").into(),
+        '\u{F72B}' => n_!("End").into(),
+        '\u{F72C}' => n_!("Page Up").into(),
+        '\u{F72D}' => n_!("Page Down").into(),
         c => c.to_uppercase().collect(),
     }
 }
@@ -136,19 +144,19 @@ fn rows(draft: &[String]) -> ModelRc<ShortcutRow> {
     let mut section = "";
     for (action, key) in ACTIONS.iter().zip(draft) {
         out.push(ShortcutRow {
-            section: if action.section != section { action.section.into() } else { SharedString::new() },
+            section: if action.section != section { t(action.section).as_ref().into() } else { SharedString::new() },
             id: action.id.into(),
-            label: action.label.into(),
+            label: t(action.label).as_ref().into(),
             name: if key.is_empty() { SharedString::new() } else { name(key).into() },
         });
         section = action.section;
     }
     for (i, (label, keys)) in FIXED.iter().enumerate() {
         out.push(ShortcutRow {
-            section: if i == 0 { "Fixed".into() } else { SharedString::new() },
+            section: if i == 0 { t(n_!("Fixed")).as_ref().into() } else { SharedString::new() },
             id: SharedString::new(),
-            label: (*label).into(),
-            name: (*keys).into(),
+            label: t(label).as_ref().into(),
+            name: t(keys).as_ref().into(),
         });
     }
     ModelRc::new(VecModel::from(out))
@@ -169,6 +177,16 @@ fn assign(draft: &mut [String], index: usize, key: &str) {
 pub fn connect(app: &AppWindow) {
     apply(app);
     let draft: Rc<RefCell<Vec<String>>> = Rc::default();
+
+    // Key names and the dialog's rows in a new language.
+    let (ui, d) = (app.as_weak(), draft.clone());
+    crate::i18n::on_change(move || {
+        let Some(app) = ui.upgrade() else { return };
+        apply(&app);
+        if !d.borrow().is_empty() {
+            app.set_shortcut_rows(rows(&d.borrow()));
+        }
+    });
 
     let (ui, d) = (app.as_weak(), draft.clone());
     app.on_open_shortcuts(move || {

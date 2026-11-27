@@ -4,6 +4,7 @@
 //! file beside the video (SRT, WebVTT, ASS/SSA), or, for an embedded track,
 //! from `ffmpeg` when it is installed. Reading runs on a thread of its own.
 
+use crate::i18n::tr;
 use crate::{
     AppWindow, CueBlock, Icons,
     controls::{Session, Shared},
@@ -208,7 +209,7 @@ pub fn connect(app: &AppWindow, session: &Shared) {
         app.invoke_tick();
         if done {
             s.timeline.drag_base.set(None);
-            let text = format!("Subtitle delay {}", presets::seconds_text(delay));
+            let text = tr!("Subtitle delay {}", presets::seconds_text(delay));
             app.invoke_show_osd(Icons::get(&app).get_subtitles(), text.into(), "".into());
         }
     });

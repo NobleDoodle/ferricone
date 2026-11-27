@@ -1,0 +1,26 @@
+# The translation template matches the source, and every catalog compiles
+# (scripts/i18n.py check). Cheap: no build, only Python and gettext.
+name: Translations
+
+on:
+  push:
+    branches: [main, dev]
+    paths: ["ui/**", "src/**", "po/**", "scripts/i18n.py", ".github/workflows/translations.yml"]
+  pull_request:
+    paths: ["ui/**", "src/**", "po/**", "scripts/i18n.py", ".github/workflows/translations.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install gettext
+        run: sudo apt-get install -y -q gettext
+      - name: Check the template and catalogs
+        run: python3 scripts/i18n.py check

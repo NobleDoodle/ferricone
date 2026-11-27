@@ -8,6 +8,7 @@
 //! results of a search are ticked and downloaded into the data folder's
 //! `subtitles`.
 
+use crate::i18n::{t, tr, trn};
 use crate::{
     AppWindow, SubFileRow, SubPairRow,
     controls::{Session, Shared},
@@ -343,7 +344,7 @@ fn show(app: &AppWindow) {
                 .map(|(name, &chosen)| SubFileRow { name: name.clone(), chosen, ..Default::default() })
                 .collect::<Vec<_>>(),
         )));
-        let mut options = vec![SharedString::from("None")];
+        let mut options = vec![SharedString::from(tr!("None"))];
         options.extend(names);
         let options = ModelRc::new(VecModel::from(options));
         app.set_addsubs_pairs(ModelRc::new(VecModel::from(
@@ -367,14 +368,17 @@ fn show(app: &AppWindow) {
                 .zip(&d.picked)
                 .map(|(f, &chosen)| SubFileRow {
                     name: f.file_name.clone().into(),
-                    detail: format!(
-                        "{}{} · {} downloads{}",
-                        f.language,
-                        if f.release.is_empty() { String::new() } else { format!(" · {}", f.release) },
-                        f.downloads,
-                        if f.exact { " · made for this file" } else { "" }
-                    )
-                    .into(),
+                    detail: {
+                        let mut parts = vec![f.language.clone()];
+                        if !f.release.is_empty() {
+                            parts.push(f.release.clone());
+                        }
+                        parts.push(trn!("{n} download", "{n} downloads", f.downloads));
+                        if f.exact {
+                            parts.push(tr!("made for this file"));
+                        }
+                        parts.join(" · ").into()
+                    },
                     chosen,
                 })
                 .collect::<Vec<_>>(),
@@ -384,9 +388,9 @@ fn show(app: &AppWindow) {
         } else if let Some(problem) = &d.problem {
             problem.clone()
         } else if d.online {
-            if d.results.is_empty() { "Search to see subtitles from opensubtitles.com.".into() } else { String::new() }
+            if d.results.is_empty() { tr!("Search to see subtitles from opensubtitles.com.") } else { String::new() }
         } else if d.candidates.is_empty() {
-            "No subtitle files here. Browse to look in another folder or pick files.".into()
+            tr!("No subtitle files here. Browse to look in another folder or pick files.")
         } else {
             String::new()
         };
@@ -396,12 +400,22 @@ fn show(app: &AppWindow) {
 
 pub fn connect(app: &AppWindow, session: &Shared) {
     SESSION.with(|s| *s.borrow_mut() = Some(session.clone()));
-    app.set_addsubs_languages(ModelRc::new(VecModel::from(
-        crate::opensubtitles::LANGUAGES
-            .iter()
-            .map(|(_, name)| SharedString::from(*name))
-            .collect::<Vec<_>>(),
-    )));
+    let languages = |app: &AppWindow| {
+        app.set_addsubs_languages(ModelRc::new(VecModel::from(
+            crate::opensubtitles::LANGUAGES
+                .iter()
+                .map(|(_, name)| SharedString::from(t(name).as_ref()))
+                .collect::<Vec<_>>(),
+        )));
+    };
+    languages(app);
+    let ui = app.as_weak();
+    crate::i18n::on_change(move || {
+        if let Some(app) = ui.upgrade() {
+            languages(&app);
+            show(&app);
+        }
+    });
     // The settings sidebar's Subtitles tab: for the item playing.
     let (ui, s) = (app.as_weak(), session.clone());
     app.on_addsubs_for_loaded(move || {
@@ -538,7 +552,7 @@ fn add_new(s: &Session, before: &[PathBuf], now: &[PathBuf]) {
 fn search(ui: &slint::Weak<AppWindow>) {
     let (query, language, video) = DIALOG.with(|d| {
         let mut d = d.borrow_mut();
-        d.busy = Some("Searching OpenSubtitles…".into());
+        d.busy = Some(tr!("Searching OpenSubtitles…"));
         d.problem = None;
         let code = crate::opensubtitles::LANGUAGES.get(d.language).map_or("en", |(c, _)| *c);
         (d.query.clone(), code.to_string(), d.videos.first().cloned())
@@ -557,7 +571,7 @@ fn search(ui: &slint::Weak<AppWindow>) {
                 d.busy = None;
                 match found {
                     Ok(results) => {
-                        d.problem = results.is_empty().then(|| "OpenSubtitles found nothing; try other words or another language.".into());
+                        d.problem = results.is_empty().then(|| tr!("OpenSubtitles found nothing; try other words or another language."));
                         // The one made for this file comes ticked.
                         d.picked = results.iter().enumerate().map(|(i, f)| i == 0 && f.exact).collect();
                         d.results = results;
@@ -590,7 +604,7 @@ fn download(app: &AppWindow) {
             .map(|(f, _)| f.clone())
             .collect();
         if !wanted.is_empty() {
-            d.busy = Some("Downloading…".into());
+            d.busy = Some(tr!("Downloading…"));
             d.problem = None;
         }
         (wanted, d.videos.first().cloned())
@@ -606,7 +620,7 @@ fn download(app: &AppWindow) {
     let stem = video.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
     std::thread::spawn(move || {
         let result = (|| -> Result<Vec<PathBuf>, String> {
-            let dir = dir.ok_or("there is no data folder")?;
+            let dir = dir.ok_or(tr!("there is no data folder"))?;
             std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
             let client = crate::opensubtitles::Client::new(&p.os_key, &p.os_username, &p.os_password)?;
             let mut saved = Vec::new();
@@ -662,12 +676,12 @@ fn browse(ui: &slint::Weak<AppWindow>) {
     let task = slint::spawn_local(async move {
         let dialog = rfd::AsyncFileDialog::new().set_directory(&start);
         if folder_mode {
-            let Some(dir) = dialog.set_title("Look for Subtitles In").pick_folder().await else { return };
+            let Some(dir) = dialog.set_title(tr!("Look for Subtitles In")).pick_folder().await else { return };
             DIALOG.with(|d| look_in(&mut d.borrow_mut(), dir.path().to_path_buf()));
         } else {
             let Some(files) = dialog
-                .set_title("Choose Subtitle Files")
-                .add_filter("Subtitles", SUB_EXTENSIONS)
+                .set_title(tr!("Choose Subtitle Files"))
+                .add_filter(tr!("Subtitles"), SUB_EXTENSIONS)
                 .pick_files()
                 .await
             else {

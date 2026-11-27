@@ -6,7 +6,7 @@
 export struct KeyBinding { key: string, name: string }
 
 export global Keys {
-    in property <KeyBinding> play-pause: { key: Key.Space, name: "Space" };
+    in property <KeyBinding> play-pause: { key: Key.Space, name: @tr("Space") };
     in property <KeyBinding> back: { key: Key.LeftArrow, name: "←" };
     in property <KeyBinding> forward: { key: Key.RightArrow, name: "→" };
     in property <KeyBinding> volume-up: { key: Key.UpArrow, name: "↑" };

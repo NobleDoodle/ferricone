@@ -4,6 +4,7 @@
 //! statistics overlay. Keys [ ] (speed), J K (audio delay) and G H
 //! (subtitle delay) step the same values.
 
+use crate::i18n::{n_, t, tr};
 use crate::{
     AppWindow, FilterRow, Icons, audio_fx,
     controls::{Session, Shared},
@@ -16,13 +17,13 @@ use slint::{ComponentHandle, Global, ModelRc, SharedString, Timer, TimerMode, Ve
 use std::time::Duration;
 
 const SLEEP: [(&str, Option<u64>); 7] = [
-    ("Off", None),
-    ("15 Minutes", Some(15)),
-    ("30 Minutes", Some(30)),
-    ("45 Minutes", Some(45)),
-    ("1 Hour", Some(60)),
-    ("2 Hours", Some(120)),
-    ("End of This Item", None),
+    (n_!("Off"), None),
+    (n_!("15 Minutes"), Some(15)),
+    (n_!("30 Minutes"), Some(30)),
+    (n_!("45 Minutes"), Some(45)),
+    (n_!("1 Hour"), Some(60)),
+    (n_!("2 Hours"), Some(120)),
+    (n_!("End of This Item"), None),
 ];
 /// The sleep option that pauses when the item ends.
 const SLEEP_END_OF_ITEM: usize = 6;
@@ -87,7 +88,7 @@ fn apply_subtitles(p: &Player, style: &presets::SubtitleStyle) {
 
 fn track_text(track: u32) -> String {
     if track == 0 {
-        "Auto".into()
+        tr!("Auto")
     } else {
         track.to_string()
     }
@@ -95,7 +96,7 @@ fn track_text(track: u32) -> String {
 
 fn language_text(language: &str) -> String {
     if language.is_empty() {
-        "Any".into()
+        tr!("Any")
     } else {
         language.into()
     }
@@ -114,7 +115,7 @@ fn rgba(color: u32, alpha: u32) -> slint::Color {
     slint::Color::from_argb_u8(alpha as u8, (color >> 16) as u8, (color >> 8) as u8, color as u8)
 }
 
-const OUTLINES: [&str; 4] = ["None", "Thin", "Normal", "Thick"];
+const OUTLINES: [&str; 4] = [n_!("None"), n_!("Thin"), n_!("Normal"), n_!("Thick")];
 
 /// Shows the preset in use in the sidebar.
 pub fn refresh(app: &AppWindow, s: &Session) {
@@ -169,24 +170,24 @@ pub fn refresh(app: &AppWindow, s: &Session) {
     app.set_sub_offset_text(format!("{}px", st.offset).into());
     app.set_sub_scale(st.scale as f32);
     app.set_sub_scale_text(if st.scale == 100 {
-        "Normal".into()
+        tr!("Normal").into()
     } else {
         format!("{} %", st.scale).into()
     });
     app.set_sub_outline(st.outline as f32 / 2.0);
-    app.set_sub_outline_text(OUTLINES[(st.outline / 2).min(3) as usize].into());
+    app.set_sub_outline_text(crate::i18n::t(OUTLINES[(st.outline / 2).min(3) as usize]).as_ref().into());
     app.set_sub_background(st.background as f32);
     app.set_sub_background_text(format!("{} %", (st.background * 100 + 127) / 255).into());
     app.set_essential_rows(rows(video_fx::rows(&preset, "essential")));
     app.set_crop_rows(rows(video_fx::crop_rows(&preset.view)));
     app.set_colors_rows(rows(video_fx::rows(&preset, "colors")));
-    let mut options: Vec<SharedString> = vec!["Default Preset".into()];
+    let mut options: Vec<SharedString> = vec![tr!("Default Preset").into()];
     let folder_name = s.loaded.borrow().as_ref().and_then(|source| {
         presets::folder(source)?;
         Some(source.folder())
     });
     if let Some(name) = folder_name {
-        options.push(format!("This Folder: {name}").into());
+        options.push(tr!("This Folder: {}", name).into());
     }
     app.set_presets(ModelRc::new(VecModel::from(options)));
     app.set_preset(i32::from(own));
@@ -230,7 +231,7 @@ fn show_view(app: &AppWindow, preset: &Preset) {
         presets::Flip::Vertical => 2,
     });
     app.set_view_rotate(view.rotate);
-    app.set_rotate_text(format!("{} deg", view.rotate).into());
+    app.set_rotate_text(format!("{} deg", crate::i18n::number(view.rotate)).into());
     app.set_view_zoom(view.zoom);
     app.set_zoom(video_fx::zoom_index(view.zoom) as i32);
     app.set_view_aspect(presets::ratio(&view.aspect).unwrap_or(0.0));
@@ -317,10 +318,21 @@ fn osd(app: &AppWindow, icon: crate::IconLayers, text: String, key: &str) {
 }
 
 pub fn connect(app: &AppWindow, session: &Shared) {
-    let names: Vec<SharedString> = SLEEP.iter().map(|(n, _)| (*n).into()).collect();
-    app.set_sleep_options(ModelRc::new(VecModel::from(names)));
-    let stereo: Vec<SharedString> = StereoMode::ALL.iter().map(|m| m.label().into()).collect();
-    app.set_stereo_options(ModelRc::new(VecModel::from(stereo)));
+    // Option names, again in a new language.
+    let options = |app: &AppWindow| {
+        let names: Vec<SharedString> = SLEEP.iter().map(|(n, _)| t(n).as_ref().into()).collect();
+        app.set_sleep_options(ModelRc::new(VecModel::from(names)));
+        let stereo: Vec<SharedString> = StereoMode::ALL.iter().map(|m| t(m.label()).as_ref().into()).collect();
+        app.set_stereo_options(ModelRc::new(VecModel::from(stereo)));
+    };
+    options(app);
+    let (ui, s) = (app.as_weak(), session.clone());
+    crate::i18n::on_change(move || {
+        if let Some(app) = ui.upgrade() {
+            options(&app);
+            refresh(&app, &s);
+        }
+    });
     refresh(app, session);
 
     // Once per item, when it starts: its preset. Each time: the volume the
@@ -360,7 +372,7 @@ pub fn connect(app: &AppWindow, session: &Shared) {
         osd(
             &app,
             Icons::get(&app).get_speed(),
-            format!("Speed {speed}x"),
+            tr!("Speed {}x", crate::i18n::number(speed)),
             key,
         );
     });
@@ -390,7 +402,7 @@ pub fn connect(app: &AppWindow, session: &Shared) {
         osd(
             &app,
             Icons::get(&app).get_audio(),
-            format!("Audio delay {delay}"),
+            tr!("Audio delay {}", delay),
             key,
         );
     });
@@ -420,7 +432,7 @@ pub fn connect(app: &AppWindow, session: &Shared) {
         osd(
             &app,
             Icons::get(&app).get_subtitles(),
-            format!("Subtitle delay {delay}"),
+            tr!("Subtitle delay {}", delay),
             key,
         );
     });
@@ -564,6 +576,7 @@ pub fn connect(app: &AppWindow, session: &Shared) {
             .trim_end_matches("deg")
             .trim_end_matches('°')
             .trim()
+            .replace(',', ".")
             .parse::<f32>();
         match degrees {
             Ok(degrees) => edit_part(&app, &s, |p| p.view.rotate = degrees, |_, _| {}),
@@ -653,7 +666,7 @@ pub fn connect(app: &AppWindow, session: &Shared) {
             osd(
                 &app,
                 Icons::get(&app).get_settings_two_tone(),
-                "Applies to the next item opened".into(),
+                tr!("Applies to the next item opened"),
                 "",
             );
         }
@@ -721,10 +734,10 @@ pub fn connect(app: &AppWindow, session: &Shared) {
         };
         let text = if index == 1 {
             s.presets.borrow_mut().make_folder(&source);
-            format!("Settings now stick to “{}”", source.folder())
+            tr!("Settings now stick to “{}”", source.folder())
         } else {
             s.presets.borrow_mut().forget_folder(&source);
-            format!("“{}” uses the default preset", source.folder())
+            tr!("“{}” uses the default preset", source.folder())
         };
         apply(&s);
         refresh(&app, &s);
@@ -749,7 +762,7 @@ pub fn connect(app: &AppWindow, session: &Shared) {
                         osd(
                             &app,
                             Icons::get(&app).get_pause(),
-                            "Sleep timer: paused".into(),
+                            tr!("Sleep timer: paused"),
                             "",
                         );
                     }
@@ -783,15 +796,15 @@ fn show_stats(app: &AppWindow, s: &Session) {
     let Some(p) = player.as_ref() else { return };
     let mut lines = Vec::new();
     if let Some((w, h)) = p.video_size() {
-        lines.push(format!("Video {w} × {h}"));
+        lines.push(tr!("Video {} × {}", w, h));
     }
     if let Some(stats) = p.stats() {
-        lines.push(format!("Frames decoded {}", stats.decoded));
-        lines.push(format!("Frames shown {}", stats.displayed));
-        lines.push(format!("Late {} · lost {}", stats.late, stats.lost));
+        lines.push(tr!("Frames decoded {}", stats.decoded));
+        lines.push(tr!("Frames shown {}", stats.displayed));
+        lines.push(tr!("Late {} · lost {}", stats.late, stats.lost));
     }
     let (preset, _) = current(s);
-    lines.push(format!("Speed {}x", preset.speed));
+    lines.push(tr!("Speed {}x", crate::i18n::number(preset.speed)));
     app.set_stats_text(lines.join("\n").into());
 }
 

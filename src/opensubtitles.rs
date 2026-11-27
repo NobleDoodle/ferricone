@@ -5,6 +5,7 @@
 //! logging in raises the download quota. Calls block, so run them off the
 //! UI thread.
 
+use crate::i18n::{n_, tr};
 use serde_json::Value;
 use std::{
     fs::File,
@@ -45,11 +46,11 @@ fn agent() -> ureq::Agent {
 /// The API's message from an error reply, or the error itself.
 fn explain(e: ureq::Error) -> String {
     match e {
-        ureq::Error::StatusCode(401 | 403) => "OpenSubtitles refused the API key or login".into(),
-        ureq::Error::StatusCode(406) => "OpenSubtitles' download limit for today is reached".into(),
-        ureq::Error::StatusCode(429) => "OpenSubtitles asks to slow down; try again shortly".into(),
-        ureq::Error::StatusCode(code) => format!("OpenSubtitles answered {code}"),
-        e => format!("couldn't reach OpenSubtitles: {e}"),
+        ureq::Error::StatusCode(401 | 403) => tr!("OpenSubtitles refused the API key or login"),
+        ureq::Error::StatusCode(406) => tr!("OpenSubtitles' download limit for today is reached"),
+        ureq::Error::StatusCode(429) => tr!("OpenSubtitles asks to slow down; try again shortly"),
+        ureq::Error::StatusCode(code) => tr!("OpenSubtitles answered {}", code),
+        e => tr!("couldn't reach OpenSubtitles: {}", e),
     }
 }
 
@@ -57,7 +58,7 @@ impl Client {
     /// A client with `key`, logged in when a username is given.
     pub fn new(key: &str, username: &str, password: &str) -> Result<Self, String> {
         if key.trim().is_empty() {
-            return Err("Add your OpenSubtitles API key in Settings › Subtitles first.".into());
+            return Err(tr!("Add your OpenSubtitles API key in Settings › Subtitles first."));
         }
         let mut client = Self {
             agent: agent(),
@@ -89,7 +90,7 @@ impl Client {
             .body_mut()
             .read_to_string()
             .map_err(explain)?;
-        serde_json::from_str(&text).map_err(|e| format!("OpenSubtitles sent something unreadable: {e}"))
+        serde_json::from_str(&text).map_err(|e| tr!("OpenSubtitles sent something unreadable: {}", e))
     }
 
     /// Subtitles for `video` in `language` (an ISO code, "en"): by its hash
@@ -114,7 +115,7 @@ impl Client {
             .read_to_string()
             .map_err(explain)?;
         let reply: Value =
-            serde_json::from_str(&text).map_err(|e| format!("OpenSubtitles sent something unreadable: {e}"))?;
+            serde_json::from_str(&text).map_err(|e| tr!("OpenSubtitles sent something unreadable: {}", e))?;
         Ok(parse_search(&reply))
     }
 
@@ -123,7 +124,7 @@ impl Client {
         let reply = self.post("/download", &serde_json::json!({ "file_id": file_id }))?;
         let link = reply["link"]
             .as_str()
-            .ok_or("OpenSubtitles gave no download link")?;
+            .ok_or(tr!("OpenSubtitles gave no download link"))?;
         let mut response = self.agent.get(link).header("User-Agent", USER_AGENT).call().map_err(explain)?;
         response.body_mut().read_to_vec().map_err(explain)
     }
@@ -157,7 +158,7 @@ pub fn movie_hash(path: &Path) -> std::io::Result<String> {
     let mut file = File::open(path)?;
     let size = file.metadata()?.len();
     if size < CHUNK {
-        return Err(std::io::Error::other("too small to hash"));
+        return Err(std::io::Error::other(tr!("too small to hash")));
     }
     let mut hash = size;
     let mut buffer = vec![0u8; CHUNK as usize];
@@ -173,36 +174,36 @@ pub fn movie_hash(path: &Path) -> std::io::Result<String> {
 
 /// The languages offered, as OpenSubtitles codes and names.
 pub const LANGUAGES: &[(&str, &str)] = &[
-    ("en", "English"),
-    ("es", "Spanish"),
-    ("fr", "French"),
-    ("de", "German"),
-    ("it", "Italian"),
-    ("pt-pt", "Portuguese"),
-    ("pt-br", "Portuguese (Brazil)"),
-    ("nl", "Dutch"),
-    ("sv", "Swedish"),
-    ("da", "Danish"),
-    ("no", "Norwegian"),
-    ("fi", "Finnish"),
-    ("pl", "Polish"),
-    ("cs", "Czech"),
-    ("hu", "Hungarian"),
-    ("ro", "Romanian"),
-    ("el", "Greek"),
-    ("tr", "Turkish"),
-    ("ru", "Russian"),
-    ("uk", "Ukrainian"),
-    ("ar", "Arabic"),
-    ("he", "Hebrew"),
-    ("hi", "Hindi"),
-    ("ja", "Japanese"),
-    ("ko", "Korean"),
-    ("zh-cn", "Chinese (Simplified)"),
-    ("zh-tw", "Chinese (Traditional)"),
-    ("vi", "Vietnamese"),
-    ("th", "Thai"),
-    ("id", "Indonesian"),
+    ("en", n_!("English")),
+    ("es", n_!("Spanish")),
+    ("fr", n_!("French")),
+    ("de", n_!("German")),
+    ("it", n_!("Italian")),
+    ("pt-pt", n_!("Portuguese")),
+    ("pt-br", n_!("Portuguese (Brazil)")),
+    ("nl", n_!("Dutch")),
+    ("sv", n_!("Swedish")),
+    ("da", n_!("Danish")),
+    ("no", n_!("Norwegian")),
+    ("fi", n_!("Finnish")),
+    ("pl", n_!("Polish")),
+    ("cs", n_!("Czech")),
+    ("hu", n_!("Hungarian")),
+    ("ro", n_!("Romanian")),
+    ("el", n_!("Greek")),
+    ("tr", n_!("Turkish")),
+    ("ru", n_!("Russian")),
+    ("uk", n_!("Ukrainian")),
+    ("ar", n_!("Arabic")),
+    ("he", n_!("Hebrew")),
+    ("hi", n_!("Hindi")),
+    ("ja", n_!("Japanese")),
+    ("ko", n_!("Korean")),
+    ("zh-cn", n_!("Chinese (Simplified)")),
+    ("zh-tw", n_!("Chinese (Traditional)")),
+    ("vi", n_!("Vietnamese")),
+    ("th", n_!("Thai")),
+    ("id", n_!("Indonesian")),
 ];
 
 /// "Show Name S01E02" from "Show.Name.S01E02.1080p.mkv": separators to

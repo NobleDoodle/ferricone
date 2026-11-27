@@ -64,7 +64,7 @@ export component NetworkDialog {
                     padding: 9px;
                     padding-left: 19px;
                     Text {
-                        text: "Open Network Stream";
+                        text: @tr("Open Network Stream");
                         font-size: 14px;
                         color: Theme.fg-a2;
                         vertical-alignment: center;
@@ -87,8 +87,8 @@ export component NetworkDialog {
 
                 VerticalLayout {
                     spacing: 5px;
-                    Text { text: "Network URL"; font-size: 16px; color: Theme.fg-2; }
-                    Text { text: "You can enter multiple links to load, one per line."; font-size: 14px; color: Theme.fg-a3; }
+                    Text { text: @tr("Network URL"); font-size: 16px; color: Theme.fg-2; }
+                    Text { text: @tr("You can enter multiple links to load, one per line."); font-size: 14px; color: Theme.fg-a3; }
                 }
 
                 // The name part only adds its spacing when saving.
@@ -132,7 +132,7 @@ export component NetworkDialog {
                         if input.text == "": Text {
                             x: input.x;
                             y: input.y;
-                            text: "e.g., https://www.example.com/stream.avi";
+                            text: @tr("e.g., https://www.example.com/stream.avi");
                             font-size: 14px;
                             color: Theme.fg-a4;
                         }
@@ -141,8 +141,8 @@ export component NetworkDialog {
                     if root.save-mode: Rectangle { height: 1px; background: Theme.divider-dim; }
                     if root.save-mode: VerticalLayout {
                         spacing: 5px;
-                        Text { text: "Playlist Name (optional)"; font-size: 16px; color: Theme.fg-2; }
-                        Text { text: "The playlist will be saved and displayed with this title."; font-size: 14px; color: Theme.fg-a3; }
+                        Text { text: @tr("Playlist Name (optional)"); font-size: 16px; color: Theme.fg-2; }
+                        Text { text: @tr("The playlist will be saved and displayed with this title."); font-size: 14px; color: Theme.fg-a3; }
                     }
                     // Always made (hidden when opening) so Enter can move to it.
                     Rectangle {
@@ -172,7 +172,7 @@ export component NetworkDialog {
                         }
                         if name.text == "": Text {
                             x: 12px;
-                            text: "e.g., Favorite TV Channels";
+                            text: @tr("e.g., Favorite TV Channels");
                             font-size: 14px;
                             color: Theme.fg-a4;
                             vertical-alignment: center;
@@ -185,12 +185,12 @@ export component NetworkDialog {
                 padding: 20px;
                 alignment: space-between;
                 DialogButton {
-                    text: "Cancel";
+                    text: @tr("Cancel");
                     background: Theme.bg-a3;
                     clicked => { root.cancel(); }
                 }
                 DialogButton {
-                    text: root.save-mode ? "Save" : "Open";
+                    text: root.save-mode ? @tr("Save") : @tr("Open");
                     text-color: Theme.accent-main;
                     background: Theme.bg-accent-bright;
                     // Half strength until there is a link, as in the frame.
@@ -258,7 +258,7 @@ export component NewPlaylistDialog {
                     padding: 9px;
                     padding-left: 19px;
                     Text {
-                        text: "New Playlist";
+                        text: @tr("New Playlist");
                         font-size: 14px;
                         color: Theme.fg-a2;
                         vertical-alignment: center;
@@ -285,8 +285,8 @@ export component NewPlaylistDialog {
                         spacing: 20px;
                         VerticalLayout {
                             spacing: 5px;
-                            Text { text: "Playlist Details"; font-size: 16px; color: Theme.fg-2; }
-                            Text { text: "The playlist will be saved and shown in the right-click menu."; font-size: 14px; color: Theme.fg-a3; wrap: word-wrap; }
+                            Text { text: @tr("Playlist Details"); font-size: 16px; color: Theme.fg-2; }
+                            Text { text: @tr("The playlist will be saved and shown in the right-click menu."); font-size: 14px; color: Theme.fg-a3; wrap: word-wrap; }
                         }
                         Rectangle {
                             height: 37px;
@@ -318,7 +318,7 @@ export component NewPlaylistDialog {
                             }
                             if name.text == "": Text {
                                 x: name.x;
-                                text: "e.g., Favorite Videos";
+                                text: @tr("e.g., Favorite Videos");
                                 font-size: 14px;
                                 color: Theme.fg-a4;
                                 vertical-alignment: center;
@@ -356,8 +356,8 @@ export component NewPlaylistDialog {
 
                 VerticalLayout {
                     spacing: 5px;
-                    Text { text: "Select Files"; font-size: 16px; color: Theme.fg-2; }
-                    Text { text: "These files will be added to the playlist."; font-size: 14px; color: Theme.fg-a3; }
+                    Text { text: @tr("Select Files"); font-size: 16px; color: Theme.fg-2; }
+                    Text { text: @tr("These files will be added to the playlist."); font-size: 14px; color: Theme.fg-a3; }
                 }
 
                 Rectangle {
@@ -372,7 +372,7 @@ export component NewPlaylistDialog {
                         alignment: center;
                         spacing: 20px;
                         Text {
-                            text: "Drag files into the box or click here to add them.";
+                            text: @tr("Drag files into the box or click here to add them.");
                             font-size: 14px;
                             color: Theme.fg-a4;
                             horizontal-alignment: center;
@@ -408,12 +408,12 @@ export component NewPlaylistDialog {
                 padding: 20px;
                 alignment: space-between;
                 DialogButton {
-                    text: "Cancel";
+                    text: @tr("Cancel");
                     background: Theme.bg-a3;
                     clicked => { root.cancel(); }
                 }
                 DialogButton {
-                    text: "Save";
+                    text: @tr("Save");
                     text-color: Theme.accent-main;
                     background: Theme.bg-accent-bright;
                     opacity: root.named ? 1 : 0.4;
