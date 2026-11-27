@@ -1,0 +1,11 @@
+# English, Ferricone's source language: empty translations fall back to the
+# text as written. See po/README.md to add a language.
+msgid ""
+msgstr ""
+"Project-Id-Version: Ferricone\n"
+"Language: en\n"
+"X-Language-Name: English\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"

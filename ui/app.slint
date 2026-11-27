@@ -480,7 +480,7 @@ export component AppWindow inherits Window {
     callback select-device(string);
     callback refresh-devices();
 
-    property <string> display-title: root.media-title == "" ? "Ferricone Player" : root.media-title;
+    property <string> display-title: root.media-title == "" ? @tr("Ferricone Player") : root.media-title;
     property <length> grip: 6px;
     property <length> top-h: 40px;
     property <length> bottom-h: 54px;
@@ -516,46 +516,46 @@ export component AppWindow inherits Window {
     property <bool> network-save;
 
     out property <[MenuEntry]> context-entries: [
-        { action: MenuAction.play, icon: root.playing ? Icons.pause : Icons.playback-two-tone, label: root.playing ? "Pause" : "Play", hint: "Space" },
-        { action: MenuAction.stop, icon: Icons.stop-two-tone, label: "Stop", hint: "S", disabled: !root.has-media },
-        { action: MenuAction.previous, icon: Icons.previous-two-tone, label: "Previous Item", hint: "P", disabled: !root.has-media },
-        { action: MenuAction.next, icon: Icons.next-two-tone, label: "Next Item", hint: "N", disabled: !root.has-next },
-        { action: MenuAction.record, icon: root.recording ? Icons.record-active : Icons.record-two-tone, label: root.recording ? "Stop Recording" : "Record", hint: "R", disabled: !root.has-media },
-        { action: MenuAction.hide-ui, icon: Icons.ui, label: root.ui-hidden ? "Show UI" : "Hide UI", hint: "Ctrl + \\", divider-before: true },
-        { action: MenuAction.playback, icon: Icons.playback-selected-two-tone, label: "Playback", submenu: true, divider-before: true },
-        { action: MenuAction.video, icon: Icons.video-two-tone, label: "Video", submenu: true, disabled: !root.has-media },
-        { action: MenuAction.audio, icon: Icons.audio-two-tone, label: "Audio", submenu: true, disabled: !root.has-media },
-        { action: MenuAction.subtitle, icon: Icons.subtitles-two-tone, label: "Subtitle", submenu: true, disabled: !root.has-media },
-        { action: MenuAction.more-settings, icon: Icons.settings-two-tone, label: "More Settings", submenu: true, disabled: true, divider-before: true },
-        { action: MenuAction.playlist, icon: Icons.playlist-two-tone, label: "Playlist", submenu: true },
-        { action: MenuAction.open-media, icon: Icons.file-two-tone, label: "Open Media", submenu: true },
-        { action: MenuAction.quit, icon: Icons.quit-two-tone, label: "Quit", hint: "Ctrl + Q" },
+        { action: MenuAction.play, icon: root.playing ? Icons.pause : Icons.playback-two-tone, label: root.playing ? @tr("Pause") : @tr("Play"), hint: @tr("Space") },
+        { action: MenuAction.stop, icon: Icons.stop-two-tone, label: @tr("Stop"), hint: "S", disabled: !root.has-media },
+        { action: MenuAction.previous, icon: Icons.previous-two-tone, label: @tr("Previous Item"), hint: "P", disabled: !root.has-media },
+        { action: MenuAction.next, icon: Icons.next-two-tone, label: @tr("Next Item"), hint: "N", disabled: !root.has-next },
+        { action: MenuAction.record, icon: root.recording ? Icons.record-active : Icons.record-two-tone, label: root.recording ? @tr("Stop Recording") : @tr("Record"), hint: "R", disabled: !root.has-media },
+        { action: MenuAction.hide-ui, icon: Icons.ui, label: root.ui-hidden ? @tr("Show UI") : @tr("Hide UI"), hint: @tr("Ctrl + \\"), divider-before: true },
+        { action: MenuAction.playback, icon: Icons.playback-selected-two-tone, label: @tr("Playback"), submenu: true, divider-before: true },
+        { action: MenuAction.video, icon: Icons.video-two-tone, label: @tr("Video"), submenu: true, disabled: !root.has-media },
+        { action: MenuAction.audio, icon: Icons.audio-two-tone, label: @tr("Audio"), submenu: true, disabled: !root.has-media },
+        { action: MenuAction.subtitle, icon: Icons.subtitles-two-tone, label: @tr("Subtitle"), submenu: true, disabled: !root.has-media },
+        { action: MenuAction.more-settings, icon: Icons.settings-two-tone, label: @tr("More Settings"), submenu: true, disabled: true, divider-before: true },
+        { action: MenuAction.playlist, icon: Icons.playlist-two-tone, label: @tr("Playlist"), submenu: true },
+        { action: MenuAction.open-media, icon: Icons.file-two-tone, label: @tr("Open Media"), submenu: true },
+        { action: MenuAction.quit, icon: Icons.quit-two-tone, label: @tr("Quit"), hint: @tr("Ctrl + Q") },
     ];
     // The ⋯ menu's open section, which is also the Open Media submenu.
     property <[MenuEntry]> open-entries: [
-        { action: MenuAction.open-file, icon: Icons.file-two-tone, label: "Open File(s)", hint: "Ctrl + O" },
-        { action: MenuAction.open-folder, icon: Icons.folder-two-tone, label: "Open Folder", hint: "Ctrl + F" },
-        { action: MenuAction.open-network, icon: Icons.streaming-two-tone, label: "Open Network Stream", hint: "Ctrl + N" },
-        { action: MenuAction.open-disc, icon: Icons.disc-two-tone, label: "Open Disc", hint: "Ctrl + D", disabled: true },
-        { action: MenuAction.open-capture, icon: Icons.capture-device-two-tone, label: "Open Capture Device", hint: "Ctrl + C", disabled: true },
-        { action: MenuAction.convert, icon: Icons.swap-two-tone, label: "Convert", hint: "Ctrl + R", disabled: true },
-        { action: MenuAction.open-recent, icon: Icons.recent-two-tone, label: "Open Recent", submenu: true },
+        { action: MenuAction.open-file, icon: Icons.file-two-tone, label: @tr("Open File(s)"), hint: @tr("Ctrl + O") },
+        { action: MenuAction.open-folder, icon: Icons.folder-two-tone, label: @tr("Open Folder"), hint: @tr("Ctrl + F") },
+        { action: MenuAction.open-network, icon: Icons.streaming-two-tone, label: @tr("Open Network Stream"), hint: @tr("Ctrl + N") },
+        { action: MenuAction.open-disc, icon: Icons.disc-two-tone, label: @tr("Open Disc"), hint: @tr("Ctrl + D"), disabled: true },
+        { action: MenuAction.open-capture, icon: Icons.capture-device-two-tone, label: @tr("Open Capture Device"), hint: @tr("Ctrl + C"), disabled: true },
+        { action: MenuAction.convert, icon: Icons.swap-two-tone, label: @tr("Convert"), hint: @tr("Ctrl + R"), disabled: true },
+        { action: MenuAction.open-recent, icon: Icons.recent-two-tone, label: @tr("Open Recent"), submenu: true },
     ];
     property <[MenuEntry]> more-entries: [
-        { action: MenuAction.open-file, icon: Icons.file-two-tone, label: "Open File(s)", hint: "Ctrl + O" },
-        { action: MenuAction.open-folder, icon: Icons.folder-two-tone, label: "Open Folder", hint: "Ctrl + F" },
-        { action: MenuAction.open-network, icon: Icons.streaming-two-tone, label: "Open Network Stream", hint: "Ctrl + N" },
-        { action: MenuAction.open-disc, icon: Icons.disc-two-tone, label: "Open Disc", hint: "Ctrl + D", disabled: true },
-        { action: MenuAction.open-capture, icon: Icons.capture-device-two-tone, label: "Open Capture Device", hint: "Ctrl + C", disabled: true },
-        { action: MenuAction.convert, icon: Icons.swap-two-tone, label: "Convert", hint: "Ctrl + R", disabled: true },
-        { action: MenuAction.open-recent, icon: Icons.recent-two-tone, label: "Open Recent", submenu: true },
-        { action: MenuAction.profile, icon: Icons.profile-two-tone, label: "Profile (Movies)", submenu: true, disabled: true, divider-before: true },
-        { action: MenuAction.shortcuts, icon: Icons.hotkeys-two-tone, label: "Keyboard Shortcuts" },
-        { action: MenuAction.appearance, icon: Icons.paint-two-tone, label: "Appearance" },
-        { action: MenuAction.customize, icon: Icons.paint-two-tone, label: "Customize Player", check: true, disabled: true },
-        { action: MenuAction.settings, icon: Icons.settings-two-tone, label: "Settings", hint: "Ctrl + P" },
-        { action: MenuAction.about, icon: Icons.info-two-tone, label: "About Ferricone", hint: "Shift + F1" },
-        { action: MenuAction.introduction, icon: Icons.info-two-tone, label: "Show Introduction" },
+        { action: MenuAction.open-file, icon: Icons.file-two-tone, label: @tr("Open File(s)"), hint: @tr("Ctrl + O") },
+        { action: MenuAction.open-folder, icon: Icons.folder-two-tone, label: @tr("Open Folder"), hint: @tr("Ctrl + F") },
+        { action: MenuAction.open-network, icon: Icons.streaming-two-tone, label: @tr("Open Network Stream"), hint: @tr("Ctrl + N") },
+        { action: MenuAction.open-disc, icon: Icons.disc-two-tone, label: @tr("Open Disc"), hint: @tr("Ctrl + D"), disabled: true },
+        { action: MenuAction.open-capture, icon: Icons.capture-device-two-tone, label: @tr("Open Capture Device"), hint: @tr("Ctrl + C"), disabled: true },
+        { action: MenuAction.convert, icon: Icons.swap-two-tone, label: @tr("Convert"), hint: @tr("Ctrl + R"), disabled: true },
+        { action: MenuAction.open-recent, icon: Icons.recent-two-tone, label: @tr("Open Recent"), submenu: true },
+        { action: MenuAction.profile, icon: Icons.profile-two-tone, label: @tr("Profile (Movies)"), submenu: true, disabled: true, divider-before: true },
+        { action: MenuAction.shortcuts, icon: Icons.hotkeys-two-tone, label: @tr("Keyboard Shortcuts") },
+        { action: MenuAction.appearance, icon: Icons.paint-two-tone, label: @tr("Appearance") },
+        { action: MenuAction.customize, icon: Icons.paint-two-tone, label: @tr("Customize Player"), check: true, disabled: true },
+        { action: MenuAction.settings, icon: Icons.settings-two-tone, label: @tr("Settings"), hint: @tr("Ctrl + P") },
+        { action: MenuAction.about, icon: Icons.info-two-tone, label: @tr("About Ferricone"), hint: @tr("Shift + F1") },
+        { action: MenuAction.introduction, icon: Icons.info-two-tone, label: @tr("Show Introduction") },
     ];
 
     // The on-screen message for the last key, shown for 1.5 s.
@@ -595,9 +595,9 @@ export component AppWindow inherits Window {
 
     function show-volume(key: string) {
         if root.muted {
-            root.show-osd(Icons.volume-high, "Muted", key);
+            root.show-osd(Icons.volume-high, @tr("Muted"), key);
         } else {
-            root.show-osd(Icons.volume-high, "Volume \{round(root.volume * 100)} %", key);
+            root.show-osd(Icons.volume-high, @tr("Volume {} %", round(root.volume * 100)), key);
         }
     }
 
@@ -605,9 +605,9 @@ export component AppWindow inherits Window {
         let name = root.cycle-track(tab);
         if name == "" { return; }
         if tab == TracksTab.audio {
-            root.show-osd(Icons.audio, "Audio track: \{name}", key);
+            root.show-osd(Icons.audio, @tr("Audio track: {}", name), key);
         } else {
-            root.show-osd(Icons.subtitles, "Subtitles: \{name}", key);
+            root.show-osd(Icons.subtitles, @tr("Subtitles: {}", name), key);
         }
     }
 
@@ -779,7 +779,7 @@ export component AppWindow inherits Window {
     function add-bookmark() {
         let name = root.add-mark();
         if name != "" {
-            root.show-osd(Icons.bookmark, "\{name} at \{root.time-text}", "Ctrl + B");
+            root.show-osd(Icons.bookmark, @tr("{} at {}", name, root.time-text), @tr("Ctrl + B"));
         }
     }
 
@@ -824,7 +824,7 @@ export component AppWindow inherits Window {
                 if event.text == "\\" {
                     if !event.repeat {
                         root.ui-hidden = !root.ui-hidden;
-                        root.show-osd(Icons.ui, root.ui-hidden ? "Interface hidden" : "Interface shown", "Ctrl + \\");
+                        root.show-osd(Icons.ui, root.ui-hidden ? @tr("Interface hidden") : @tr("Interface shown"), @tr("Ctrl + \\"));
                     }
                     return accept;
                 }
@@ -845,19 +845,19 @@ export component AppWindow inherits Window {
                     let was-playing = root.playing;
                     root.toggle-play();
                     if root.has-media {
-                        root.show-osd(was-playing ? Icons.pause : Icons.play, was-playing ? "Paused" : "Playing", Keys.play-pause.name);
+                        root.show-osd(was-playing ? Icons.pause : Icons.play, was-playing ? @tr("Paused") : @tr("Playing"), Keys.play-pause.name);
                     }
                 }
                 return accept;
             }
-            if event.text == Keys.back.key { root.jump(-10); root.show-osd(Icons.backward-10-sec, "Back 10 s", Keys.back.name); return accept; }
-            if event.text == Keys.forward.key { root.jump(10); root.show-osd(Icons.forward-10-sec, "Forward 10 s", Keys.forward.name); return accept; }
+            if event.text == Keys.back.key { root.jump(-10); root.show-osd(Icons.backward-10-sec, @tr("Back 10 s"), Keys.back.name); return accept; }
+            if event.text == Keys.forward.key { root.jump(10); root.show-osd(Icons.forward-10-sec, @tr("Forward 10 s"), Keys.forward.name); return accept; }
             if event.text == Keys.volume-up.key { root.set-volume(min(2, root.volume + 0.05)); root.show-volume(Keys.volume-up.name); return accept; }
             if event.text == Keys.volume-down.key { root.set-volume(max(0, root.volume - 0.05)); root.show-volume(Keys.volume-down.name); return accept; }
             if event.text == Keys.fullscreen.key {
                 if !event.repeat {
                     root.toggle-fullscreen();
-                    root.show-osd(Icons.fullscreen, root.fullscreen ? "Fullscreen" : "Windowed", Keys.fullscreen.name);
+                    root.show-osd(Icons.fullscreen, root.fullscreen ? @tr("Fullscreen") : @tr("Windowed"), Keys.fullscreen.name);
                 }
                 return accept;
             }
@@ -873,7 +873,7 @@ export component AppWindow inherits Window {
             if event.text == Keys.stop.key {
                 if !event.repeat && root.has-media {
                     root.stop();
-                    root.show-osd(Icons.stop, "Stopped", Keys.stop.name);
+                    root.show-osd(Icons.stop, @tr("Stopped"), Keys.stop.name);
                 }
                 return accept;
             }
@@ -881,7 +881,7 @@ export component AppWindow inherits Window {
                 if !event.repeat && root.has-media {
                     let moves = root.has-previous;
                     root.previous();
-                    root.show-osd(Icons.previous, moves ? "Previous: \{root.display-title}" : "From the start", Keys.previous.name);
+                    root.show-osd(Icons.previous, moves ? @tr("Previous: {}", root.display-title) : @tr("From the start"), Keys.previous.name);
                 }
                 return accept;
             }
@@ -889,13 +889,13 @@ export component AppWindow inherits Window {
                 if !event.repeat && root.has-media {
                     let moves = root.has-next;
                     root.next();
-                    root.show-osd(Icons.next, moves ? "Next: \{root.display-title}" : "Last item in the queue", Keys.next.name);
+                    root.show-osd(Icons.next, moves ? @tr("Next: {}", root.display-title) : @tr("Last item in the queue"), Keys.next.name);
                 }
                 return accept;
             }
             if event.text == Keys.record.key {
                 if !event.repeat && root.has-media {
-                    root.show-osd(Icons.record, root.recording ? "Recording stopped" : "Recording", Keys.record.name);
+                    root.show-osd(Icons.record, root.recording ? @tr("Recording stopped") : @tr("Recording"), Keys.record.name);
                     root.toggle-record();
                 }
                 return accept;
@@ -909,7 +909,7 @@ export component AppWindow inherits Window {
             }
             if event.text == Key.Return && root.resume-shown {
                 if !event.repeat {
-                    root.show-osd(Icons.play, "Continuing from \{root.resume-time}", "Enter");
+                    root.show-osd(Icons.play, @tr("Continuing from {}", root.resume-time), @tr("Enter"));
                     root.resume();
                 }
                 return accept;
@@ -925,7 +925,7 @@ export component AppWindow inherits Window {
                 if root.up-next-shown { root.up-next-shown = false; return accept; }
                 if root.fullscreen {
                     root.toggle-fullscreen();
-                    root.show-osd(Icons.fullscreen, "Windowed", "Esc");
+                    root.show-osd(Icons.fullscreen, @tr("Windowed"), @tr("Esc"));
                     return accept;
                 }
             }
@@ -1032,7 +1032,7 @@ export component AppWindow inherits Window {
             }
 
             if !root.has-media: Text {
-                text: "Drop media here, or press Ctrl + O to open a file";
+                text: @tr("Drop media here, or press Ctrl + O to open a file");
                 font-size: 14px;
                 color: Theme.fg-a3;
             }
@@ -1042,7 +1042,7 @@ export component AppWindow inherits Window {
             Text {
                 visible: root.has-media && root.video-failed;
                 width: min(parent.width - 40px, 560px);
-                text: "Can't show the picture: video output failed to start.\nSound keeps playing. For details, turn on Settings › General › Save a log.";
+                text: @tr("Can't show the picture: video output failed to start.\nSound keeps playing. For details, turn on Settings › General › Save a log.");
                 font-size: 14px;
                 color: Theme.fg-a1;
                 horizontal-alignment: center;
@@ -1177,7 +1177,7 @@ export component AppWindow inherits Window {
             animate y { duration: 150ms; easing: ease-out; }
             glass: root.immersive;
             video: root.video;
-            title: root.pref-title-file ? root.display-title : "Ferricone Player";
+            title: root.pref-title-file ? root.display-title : @tr("Ferricone Player");
             folder: root.folder-name;
             start-move => { root.start-move(); }
             toggle-fullscreen => { root.toggle-fullscreen(); }
@@ -1409,7 +1409,7 @@ export component AppWindow inherits Window {
             cycle-repeat => {
                 root.cycle-repeat();
                 root.show-osd(Icons.repeat-right-two-tone,
-                    root.repeat == RepeatMode.off ? "Repeat off" : root.repeat == RepeatMode.all ? "Repeat all" : "Repeat this item", "");
+                    root.repeat == RepeatMode.off ? @tr("Repeat off") : root.repeat == RepeatMode.all ? @tr("Repeat all") : @tr("Repeat this item"), "");
             }
             shuffle => { root.shuffle-queue(); }
             go-mark(i) => { root.go-mark(i); }
@@ -1443,8 +1443,8 @@ export component AppWindow inherits Window {
         PromptPill {
             x: (root.width - self.width) / 2;
             y: controls.y - 24px - self.height;
-            text: "You already watched till \{root.resume-time}.";
-            action: "Continue Watching";
+            text: @tr("You already watched till {}.", root.resume-time);
+            action: @tr("Continue Watching");
             video: root.video;
             opacity: root.resume-shown ? 1 : 0;
             visible: self.opacity > 0;
@@ -1455,8 +1455,8 @@ export component AppWindow inherits Window {
         PromptPill {
             x: (root.width - self.width) / 2;
             y: controls.y - 24px - self.height;
-            text: "Up next: \{root.up-next-title} · in \{root.up-next-left} s";
-            action: "Play Now";
+            text: @tr("Up next: {} · in {} s", root.up-next-title, root.up-next-left);
+            action: @tr("Play Now");
             video: root.video;
             opacity: root.up-next-shown ? 1 : 0;
             visible: self.opacity > 0;
@@ -1600,9 +1600,9 @@ export component AppWindow inherits Window {
                 if root.save-playlist(name) {
                     root.playlist-dialog-open = false;
                     keys.focus();
-                    root.show-osd(Icons.playlist-two-tone, "Saved playlist “\{name}”", "");
+                    root.show-osd(Icons.playlist-two-tone, @tr("Saved playlist “{}”", name), "");
                 } else {
-                    root.show-osd(Icons.playlist-two-tone, "Couldn't save the playlist", "");
+                    root.show-osd(Icons.playlist-two-tone, @tr("Couldn't save the playlist"), "");
                 }
             }
         }

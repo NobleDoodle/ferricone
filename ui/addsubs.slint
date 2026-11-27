@@ -79,7 +79,7 @@ export component AddSubtitlesDialog inherits Rectangle {
                 padding-left: 19px;
                 Text {
                     horizontal-stretch: 1;
-                    text: "Add Subtitles";
+                    text: @tr("Add Subtitles");
                     font-size: 14px;
                     color: Theme.fg-a2;
                     vertical-alignment: center;
@@ -106,14 +106,14 @@ export component AddSubtitlesDialog inherits Rectangle {
                 Dropdown {
                     width: 200px;
                     height: 36px;
-                    options: ["To This File", "To This Folder"];
+                    options: [@tr("To This File"), @tr("To This Folder")];
                     selected: root.folder-mode ? 1 : 0;
                     chosen(i) => { root.set-folder-mode(i == 1); }
                 }
                 Dropdown {
                     width: 230px;
                     height: 36px;
-                    options: ["From Computer", "From OpenSubtitles"];
+                    options: [@tr("From Computer"), @tr("From OpenSubtitles")];
                     selected: root.online ? 1 : 0;
                     chosen(i) => { root.set-online(i == 1); }
                 }
@@ -131,7 +131,7 @@ export component AddSubtitlesDialog inherits Rectangle {
                         overflow: elide;
                     }
                 }
-                if !root.online: Button { text: root.folder-mode ? "Look Elsewhere" : "Browse"; clicked => { root.browse(); } }
+                if !root.online: Button { text: root.folder-mode ? @tr("Look Elsewhere") : @tr("Browse"); clicked => { root.browse(); } }
                 // The search: words (the title, prefilled) and a language.
                 if root.online: HorizontalLayout {
                     horizontal-stretch: 1;
@@ -162,7 +162,7 @@ export component AddSubtitlesDialog inherits Rectangle {
                         chosen(i) => { root.search(query-input.text, i); }
                     }
                     Button {
-                        text: "Search";
+                        text: @tr("Search");
                         clicked => { root.search(query-input.text, language-pick.selected); }
                     }
                 }
@@ -279,10 +279,10 @@ export component AddSubtitlesDialog inherits Rectangle {
 
         HorizontalLayout {
             padding: 20px;
-            Button { text: "Cancel"; clicked => { root.cancel(); } }
+            Button { text: @tr("Cancel"); clicked => { root.cancel(); } }
             Rectangle { horizontal-stretch: 1; }
             Button {
-                text: root.busy ? "Working…" : root.online ? "Download" : "Save";
+                text: root.busy ? @tr("Working…") : root.online ? @tr("Download") : @tr("Save");
                 primary: true;
                 clicked => {
                     if !root.busy { root.save(); }

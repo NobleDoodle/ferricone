@@ -1,0 +1,2458 @@
+# Ferricone's translation template, made by scripts/i18n.py extract: don't edit.
+msgid ""
+msgstr ""
+"Project-Id-Version: Ferricone\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ui/about.slint:52 ui/app.slint:557
+msgid "About Ferricone"
+msgstr ""
+
+#: ui/about.slint:80 ui/app.slint:483 ui/app.slint:1180
+msgid "Ferricone Player"
+msgstr ""
+
+#: ui/about.slint:87
+#. Keep each {} or {n}: it stands for a value.
+msgid "Version {}"
+msgstr ""
+
+#: ui/about.slint:93
+#. Keep each {} or {n}: it stands for a value.
+msgid "Plays with libVLC {}, with an interface in Rust and Slint."
+msgstr ""
+
+#: ui/about.slint:100
+msgid "Free software under the GNU General Public License, version 3 or later."
+msgstr ""
+
+#: ui/about.slint:109
+msgid "Website"
+msgstr ""
+
+#: ui/about.slint:110
+msgid "Source Code"
+msgstr ""
+
+#: ui/about.slint:111
+msgid "Report a Problem"
+msgstr ""
+
+#: ui/about.slint:115
+msgid "Interface design: “VLC Redesign” by Juxtopposed, from the Figma Community, under CC BY 4.0."
+msgstr ""
+
+#: ui/about.slint:122
+msgid "VLC and the VLC cone are trademarks of VideoLAN. Ferricone is not made or endorsed by VideoLAN."
+msgstr ""
+
+#: ui/about.slint:136
+msgid "Close"
+msgstr ""
+
+#: ui/addsubs.slint:82 ui/settings.slint:943 src/library/menu.rs:180
+msgid "Add Subtitles"
+msgstr ""
+
+#: ui/addsubs.slint:109
+msgid "To This File"
+msgstr ""
+
+#: ui/addsubs.slint:109
+msgid "To This Folder"
+msgstr ""
+
+#: ui/addsubs.slint:116
+msgid "From Computer"
+msgstr ""
+
+#: ui/addsubs.slint:116
+msgid "From OpenSubtitles"
+msgstr ""
+
+#: ui/addsubs.slint:134
+msgid "Look Elsewhere"
+msgstr ""
+
+#: ui/addsubs.slint:134 ui/onboarding.slint:367 src/preferences.rs:564
+msgid "Browse"
+msgstr ""
+
+#: ui/addsubs.slint:165 ui/library.slint:303 ui/library.slint:711 ui/preferences.slint:326
+msgid "Search"
+msgstr ""
+
+#: ui/addsubs.slint:282 ui/dialogs.slint:188 ui/dialogs.slint:411 ui/pickers.slint:181 ui/shortcuts.slint:232
+msgid "Cancel"
+msgstr ""
+
+#: ui/addsubs.slint:285
+msgid "Working…"
+msgstr ""
+
+#: ui/addsubs.slint:285 src/update.rs:670
+msgid "Download"
+msgstr ""
+
+#: ui/addsubs.slint:285 ui/dialogs.slint:193 ui/dialogs.slint:416 ui/shortcuts.slint:235
+msgid "Save"
+msgstr ""
+
+#: ui/app.slint:519
+msgid "Pause"
+msgstr ""
+
+#: ui/app.slint:519 src/library/menu.rs:145 src/library/menu.rs:173 src/library/menu.rs:183 src/library/menu.rs:193
+msgid "Play"
+msgstr ""
+
+#: ui/app.slint:519 ui/keys.slint:9 src/shortcuts.rs:72
+msgid "Space"
+msgstr ""
+
+#: ui/app.slint:520 ui/onboarding.slint:461 src/preferences.rs:404 src/shortcuts.rs:28
+msgid "Stop"
+msgstr ""
+
+#: ui/app.slint:521
+msgid "Previous Item"
+msgstr ""
+
+#: ui/app.slint:522
+msgid "Next Item"
+msgstr ""
+
+#: ui/app.slint:523
+msgid "Stop Recording"
+msgstr ""
+
+#: ui/app.slint:523 ui/onboarding.slint:466 ui/onboarding.slint:475 src/shortcuts.rs:35
+msgid "Record"
+msgstr ""
+
+#: ui/app.slint:524
+msgid "Show UI"
+msgstr ""
+
+#: ui/app.slint:524
+msgid "Hide UI"
+msgstr ""
+
+#: ui/app.slint:524 ui/app.slint:827 src/shortcuts.rs:52
+msgid "Ctrl + \\"
+msgstr ""
+
+#: ui/app.slint:525 ui/preferences.slint:370 ui/settings.slint:661 src/preferences.rs:24 src/shortcuts.rs:27 src/shortcuts.rs:28 src/shortcuts.rs:29 src/shortcuts.rs:30 src/shortcuts.rs:31 src/shortcuts.rs:32 src/shortcuts.rs:33 src/shortcuts.rs:34 src/shortcuts.rs:35
+msgid "Playback"
+msgstr ""
+
+#: ui/app.slint:526 ui/panels.slint:148 ui/preferences.slint:371 ui/settings.slint:662 src/preferences.rs:25
+msgid "Video"
+msgstr ""
+
+#: ui/app.slint:527 ui/panels.slint:149 ui/preferences.slint:372 ui/settings.slint:663 src/preferences.rs:26
+msgid "Audio"
+msgstr ""
+
+#: ui/app.slint:528
+msgid "Subtitle"
+msgstr ""
+
+#: ui/app.slint:529
+msgid "More Settings"
+msgstr ""
+
+#: ui/app.slint:530 src/library/menu.rs:414
+msgid "Playlist"
+msgstr ""
+
+#: ui/app.slint:531
+msgid "Open Media"
+msgstr ""
+
+#: ui/app.slint:532 src/preferences.rs:404 src/shortcuts.rs:58
+msgid "Quit"
+msgstr ""
+
+#: ui/app.slint:532 src/shortcuts.rs:58
+msgid "Ctrl + Q"
+msgstr ""
+
+#: ui/app.slint:536 ui/app.slint:545 src/open.rs:154
+msgid "Open File(s)"
+msgstr ""
+
+#: ui/app.slint:536 ui/app.slint:545 src/shortcuts.rs:53
+msgid "Ctrl + O"
+msgstr ""
+
+#: ui/app.slint:537 ui/app.slint:546 src/open.rs:172
+msgid "Open Folder"
+msgstr ""
+
+#: ui/app.slint:537 ui/app.slint:546 src/shortcuts.rs:54
+msgid "Ctrl + F"
+msgstr ""
+
+#: ui/app.slint:538 ui/app.slint:547 ui/dialogs.slint:67
+msgid "Open Network Stream"
+msgstr ""
+
+#: ui/app.slint:538 ui/app.slint:547 src/shortcuts.rs:55
+msgid "Ctrl + N"
+msgstr ""
+
+#: ui/app.slint:539 ui/app.slint:548
+msgid "Open Disc"
+msgstr ""
+
+#: ui/app.slint:539 ui/app.slint:548
+msgid "Ctrl + D"
+msgstr ""
+
+#: ui/app.slint:540 ui/app.slint:549
+msgid "Open Capture Device"
+msgstr ""
+
+#: ui/app.slint:540 ui/app.slint:549
+msgid "Ctrl + C"
+msgstr ""
+
+#: ui/app.slint:541 ui/app.slint:550 src/library/menu.rs:153
+msgid "Convert"
+msgstr ""
+
+#: ui/app.slint:541 ui/app.slint:550
+msgid "Ctrl + R"
+msgstr ""
+
+#: ui/app.slint:542 ui/app.slint:551
+msgid "Open Recent"
+msgstr ""
+
+#: ui/app.slint:552
+msgid "Profile (Movies)"
+msgstr ""
+
+#: ui/app.slint:553 ui/shortcuts.slint:120
+msgid "Keyboard Shortcuts"
+msgstr ""
+
+#: ui/app.slint:554 ui/settings.slint:992 src/preferences.rs:217
+msgid "Appearance"
+msgstr ""
+
+#: ui/app.slint:555
+msgid "Customize Player"
+msgstr ""
+
+#: ui/app.slint:556 src/shortcuts.rs:57
+msgid "Settings"
+msgstr ""
+
+#: ui/app.slint:556 src/shortcuts.rs:57
+msgid "Ctrl + P"
+msgstr ""
+
+#: ui/app.slint:557
+msgid "Shift + F1"
+msgstr ""
+
+#: ui/app.slint:558
+msgid "Show Introduction"
+msgstr ""
+
+#: ui/app.slint:598
+msgid "Muted"
+msgstr ""
+
+#: ui/app.slint:600
+#. Keep each {} or {n}: it stands for a value.
+msgid "Volume {} %"
+msgstr ""
+
+#: ui/app.slint:608
+#. Keep each {} or {n}: it stands for a value.
+msgid "Audio track: {}"
+msgstr ""
+
+#: ui/app.slint:610
+#. Keep each {} or {n}: it stands for a value.
+msgid "Subtitles: {}"
+msgstr ""
+
+#: ui/app.slint:782
+#. Keep each {} or {n}: it stands for a value.
+msgid "{} at {}"
+msgstr ""
+
+#: ui/app.slint:782 src/shortcuts.rs:56
+msgid "Ctrl + B"
+msgstr ""
+
+#: ui/app.slint:827
+msgid "Interface hidden"
+msgstr ""
+
+#: ui/app.slint:827
+msgid "Interface shown"
+msgstr ""
+
+#: ui/app.slint:848
+msgid "Paused"
+msgstr ""
+
+#: ui/app.slint:848
+msgid "Playing"
+msgstr ""
+
+#: ui/app.slint:853
+msgid "Back 10 s"
+msgstr ""
+
+#: ui/app.slint:854
+msgid "Forward 10 s"
+msgstr ""
+
+#: ui/app.slint:860
+msgid "Fullscreen"
+msgstr ""
+
+#: ui/app.slint:860 ui/app.slint:928
+msgid "Windowed"
+msgstr ""
+
+#: ui/app.slint:876
+msgid "Stopped"
+msgstr ""
+
+#: ui/app.slint:884
+#. Keep each {} or {n}: it stands for a value.
+msgid "Previous: {}"
+msgstr ""
+
+#: ui/app.slint:884
+msgid "From the start"
+msgstr ""
+
+#: ui/app.slint:892
+#. Keep each {} or {n}: it stands for a value.
+msgid "Next: {}"
+msgstr ""
+
+#: ui/app.slint:892
+msgid "Last item in the queue"
+msgstr ""
+
+#: ui/app.slint:898
+msgid "Recording stopped"
+msgstr ""
+
+#: ui/app.slint:898 ui/preferences.slint:378 src/preferences.rs:31 src/preferences.rs:49 src/preferences.rs:552
+msgid "Recording"
+msgstr ""
+
+#: ui/app.slint:912
+#. Keep each {} or {n}: it stands for a value.
+msgid "Continuing from {}"
+msgstr ""
+
+#: ui/app.slint:912 src/shortcuts.rs:51
+msgid "Enter"
+msgstr ""
+
+#: ui/app.slint:928 src/shortcuts.rs:50
+msgid "Esc"
+msgstr ""
+
+#: ui/app.slint:1035
+msgid "Drop media here, or press Ctrl + O to open a file"
+msgstr ""
+
+#: ui/app.slint:1045
+msgid "Can't show the picture: video output failed to start.\nSound keeps playing. For details, turn on Settings › General › Save a log."
+msgstr ""
+
+#: ui/app.slint:1412
+msgid "Repeat off"
+msgstr ""
+
+#: ui/app.slint:1412
+msgid "Repeat all"
+msgstr ""
+
+#: ui/app.slint:1412
+msgid "Repeat this item"
+msgstr ""
+
+#: ui/app.slint:1446
+#. Keep each {} or {n}: it stands for a value.
+msgid "You already watched till {}."
+msgstr ""
+
+#: ui/app.slint:1447 src/library.rs:799
+msgid "Continue Watching"
+msgstr ""
+
+#: ui/app.slint:1458
+#. Keep each {} or {n}: it stands for a value.
+msgid "Up next: {} · in {} s"
+msgstr ""
+
+#: ui/app.slint:1459
+msgid "Play Now"
+msgstr ""
+
+#: ui/app.slint:1603
+#. Keep each {} or {n}: it stands for a value.
+msgid "Saved playlist “{}”"
+msgstr ""
+
+#: ui/app.slint:1605
+msgid "Couldn't save the playlist"
+msgstr ""
+
+#: ui/dialogs.slint:90
+msgid "Network URL"
+msgstr ""
+
+#: ui/dialogs.slint:91
+msgid "You can enter multiple links to load, one per line."
+msgstr ""
+
+#: ui/dialogs.slint:135
+msgid "e.g., https://www.example.com/stream.avi"
+msgstr ""
+
+#: ui/dialogs.slint:144
+msgid "Playlist Name (optional)"
+msgstr ""
+
+#: ui/dialogs.slint:145
+msgid "The playlist will be saved and displayed with this title."
+msgstr ""
+
+#: ui/dialogs.slint:175
+msgid "e.g., Favorite TV Channels"
+msgstr ""
+
+#: ui/dialogs.slint:193 src/preferences.rs:213 src/preferences.rs:256 src/preferences.rs:436 src/preferences.rs:445 src/preferences.rs:453 src/preferences.rs:496
+msgid "Open"
+msgstr ""
+
+#: ui/dialogs.slint:261
+msgid "New Playlist"
+msgstr ""
+
+#: ui/dialogs.slint:288
+msgid "Playlist Details"
+msgstr ""
+
+#: ui/dialogs.slint:289
+msgid "The playlist will be saved and shown in the right-click menu."
+msgstr ""
+
+#: ui/dialogs.slint:321
+msgid "e.g., Favorite Videos"
+msgstr ""
+
+#: ui/dialogs.slint:359
+msgid "Select Files"
+msgstr ""
+
+#: ui/dialogs.slint:360
+msgid "These files will be added to the playlist."
+msgstr ""
+
+#: ui/dialogs.slint:375
+msgid "Drag files into the box or click here to add them."
+msgstr ""
+
+#: ui/library.slint:597 src/library.rs:1065 src/shortcuts.rs:82
+msgid "Home"
+msgstr ""
+
+#: ui/library.slint:600 src/library.rs:1098
+msgid "Videos"
+msgstr ""
+
+#: ui/library.slint:605 src/library.rs:1084 src/library.rs:1088 src/library.rs:1099
+msgid "Music"
+msgstr ""
+
+#: ui/library.slint:608 ui/preferences.slint:376 src/library.rs:1066 src/library.rs:1068 src/library.rs:1073 src/preferences.rs:29 src/preferences.rs:47 src/preferences.rs:348
+msgid "Network"
+msgstr ""
+
+#: ui/library.slint:609 src/library.rs:807 src/library.rs:1077 src/library.rs:1079 src/open.rs:156 src/open.rs:277
+msgid "Playlists"
+msgstr ""
+
+#: ui/library.slint:610 src/library.rs:1076
+msgid "Recent"
+msgstr ""
+
+#: ui/library.slint:611
+msgid "Add item"
+msgstr ""
+
+#: ui/library.slint:676
+msgid "Grid View"
+msgstr ""
+
+#: ui/library.slint:676
+msgid "List View"
+msgstr ""
+
+#: ui/onboarding.slint:319
+msgid "Welcome to Ferricone!"
+msgstr ""
+
+#: ui/onboarding.slint:329
+msgid "Ferricone is a free, open media player built on VLC's engine. It plays most video and audio files, network streams and subtitles, and keeps your library close at hand."
+msgstr ""
+
+#: ui/onboarding.slint:343
+msgid "Choose a Media Folder to get started with"
+msgstr ""
+
+#: ui/onboarding.slint:356
+msgid "No folder: add one later from the library"
+msgstr ""
+
+#: ui/onboarding.slint:380
+msgid "Select your preferred theme and color."
+msgstr ""
+
+#: ui/onboarding.slint:391 src/preferences.rs:167
+msgid "Light"
+msgstr ""
+
+#: ui/onboarding.slint:398 src/preferences.rs:167
+msgid "Dark"
+msgstr ""
+
+#: ui/onboarding.slint:405 ui/preferences.slint:375 src/preferences.rs:167 src/preferences.rs:177
+msgid "System"
+msgstr ""
+
+#: ui/onboarding.slint:421 src/preferences.rs:157
+msgid "Use Omarchy theme colors"
+msgstr ""
+
+#: ui/onboarding.slint:423
+msgid "Colors follow your Omarchy theme"
+msgstr ""
+
+#: ui/onboarding.slint:423
+msgid "Pick a theme and color here instead"
+msgstr ""
+
+#: ui/onboarding.slint:444
+msgid "Learn the basic keyboard shortcuts."
+msgstr ""
+
+#: ui/onboarding.slint:456
+msgid "Play / Pause"
+msgstr ""
+
+#: ui/onboarding.slint:457
+msgid "Seek Backward / Forward"
+msgstr ""
+
+#: ui/onboarding.slint:458
+msgid "Previous / Next Item"
+msgstr ""
+
+#: ui/onboarding.slint:459
+msgid "Cycle Subtitle Track"
+msgstr ""
+
+#: ui/onboarding.slint:460
+msgid "Cycle Audio Track"
+msgstr ""
+
+#: ui/onboarding.slint:462 ui/onboarding.slint:471
+msgid "Toggle Fullscreen"
+msgstr ""
+
+#: ui/onboarding.slint:463 ui/onboarding.slint:472
+msgid "Increase / Decrease Volume"
+msgstr ""
+
+#: ui/onboarding.slint:464 ui/onboarding.slint:473 src/shortcuts.rs:39
+msgid "Mute"
+msgstr ""
+
+#: ui/onboarding.slint:465 ui/onboarding.slint:474
+msgid "Slower / Faster"
+msgstr ""
+
+#: ui/onboarding.slint:467 ui/onboarding.slint:476
+msgid "Hide the Interface"
+msgstr ""
+
+#: ui/onboarding.slint:467 ui/onboarding.slint:476
+msgid "Ctrl"
+msgstr ""
+
+#: ui/onboarding.slint:535
+msgid "Find more in the right-click and ⋯ menus."
+msgstr ""
+
+#: ui/onboarding.slint:545
+msgid "Back"
+msgstr ""
+
+#: ui/onboarding.slint:553
+msgid "Done"
+msgstr ""
+
+#: ui/onboarding.slint:553
+msgid "Finish"
+msgstr ""
+
+#: ui/onboarding.slint:553
+msgid "Next"
+msgstr ""
+
+#: ui/panels.slint:150 ui/preferences.slint:373 ui/settings.slint:664 src/addsubs.rs:684 src/preferences.rs:27
+msgid "Subtitles"
+msgstr ""
+
+#: ui/panels.slint:159
+msgid "Embedded Tracks"
+msgstr ""
+
+#: ui/panels.slint:171
+msgid "Output Device"
+msgstr ""
+
+#: ui/panels.slint:191
+msgid "Show Preferences"
+msgstr ""
+
+#: ui/panels.slint:329
+msgid "Queue"
+msgstr ""
+
+#: ui/panels.slint:330
+msgid "Bookmarks"
+msgstr ""
+
+#: ui/panels.slint:331
+msgid "Chapters"
+msgstr ""
+
+#: ui/panels.slint:436
+#. Keep each {} or {n}: it stands for a value.
+msgid "{n} Bookmark"
+msgid_plural "{n} Bookmarks"
+msgstr[0] ""
+msgstr[1] ""
+
+#: ui/panels.slint:482
+msgid "Ctrl + B marks the moment playing."
+msgstr ""
+
+#: ui/panels.slint:528
+msgid "This item has no chapters."
+msgstr ""
+
+#: ui/pickers.slint:184
+msgid "Select Color"
+msgstr ""
+
+#: ui/pickers.slint:191
+msgid "Select"
+msgstr ""
+
+#: ui/pickers.slint:194
+msgid "Grid"
+msgstr ""
+
+#: ui/pickers.slint:194
+msgid "Spectrum"
+msgstr ""
+
+#: ui/pickers.slint:222
+msgid "Custom"
+msgstr ""
+
+#: ui/pickers.slint:372
+msgid "Opacity"
+msgstr ""
+
+#: ui/pickers.slint:402
+#. Keep each {} or {n}: it stands for a value.
+msgid "{} %"
+msgstr ""
+
+#: ui/pickers.slint:531
+msgid "Search fonts"
+msgstr ""
+
+#: ui/pickers.slint:562
+msgid "Aa"
+msgstr ""
+
+#: ui/pickers.slint:574
+msgid "No installed family matches; Enter uses the name as typed."
+msgstr ""
+
+#: ui/preferences.slint:364
+msgid "App"
+msgstr ""
+
+#: ui/preferences.slint:365 src/preferences.rs:20
+msgid "General"
+msgstr ""
+
+#: ui/preferences.slint:366 src/preferences.rs:21
+msgid "Interface"
+msgstr ""
+
+#: ui/preferences.slint:367 src/preferences.rs:22
+msgid "Privacy"
+msgstr ""
+
+#: ui/preferences.slint:368 src/preferences.rs:23 src/preferences.rs:41
+msgid "Controls"
+msgstr ""
+
+#: ui/preferences.slint:369
+msgid "Media"
+msgstr ""
+
+#: ui/preferences.slint:374 src/preferences.rs:28 src/preferences.rs:46
+msgid "Library"
+msgstr ""
+
+#: ui/preferences.slint:377 src/preferences.rs:30 src/preferences.rs:48
+msgid "Performance"
+msgstr ""
+
+#: ui/preferences.slint:379 src/preferences.rs:32 src/preferences.rs:50
+msgid "Extensions"
+msgstr ""
+
+#: ui/preferences.slint:397
+msgid "No setting matches."
+msgstr ""
+
+#: ui/preferences.slint:430
+msgid "Advanced Options"
+msgstr ""
+
+#: ui/settings.slint:36
+msgid "ON"
+msgstr ""
+
+#: ui/settings.slint:36
+msgid "OFF"
+msgstr ""
+
+#: ui/settings.slint:386
+msgid "Collapse Settings"
+msgstr ""
+
+#: ui/settings.slint:386
+msgid "Expand Settings"
+msgstr ""
+
+#: ui/settings.slint:637
+msgid "-10 s"
+msgstr ""
+
+#: ui/settings.slint:637 src/preferences.rs:295
+msgid "0 s"
+msgstr ""
+
+#: ui/settings.slint:637
+msgid "+10 s"
+msgstr ""
+
+#: ui/settings.slint:681
+msgid "Show Subtitle Timeline on Seekbar"
+msgstr ""
+
+#: ui/settings.slint:688
+msgid "Adjust Subtitle Timing on Seekbar"
+msgstr ""
+
+#: ui/settings.slint:689
+msgid "Zooms in; drag a line to shift the subtitles"
+msgstr ""
+
+#: ui/settings.slint:696
+msgid "Show Statistics"
+msgstr ""
+
+#: ui/settings.slint:703
+msgid "Sleep Timer"
+msgstr ""
+
+#: ui/settings.slint:714
+msgid "Speed"
+msgstr ""
+
+#: ui/settings.slint:715
+msgid "[ and ] step it"
+msgstr ""
+
+#: ui/settings.slint:737
+msgid "Play On"
+msgstr ""
+
+#: ui/settings.slint:740
+msgid "Device"
+msgstr ""
+
+#: ui/settings.slint:741
+msgid "Looking for devices on the network…"
+msgstr ""
+
+#: ui/settings.slint:741
+msgid "Chromecast and other devices found nearby"
+msgstr ""
+
+#: ui/settings.slint:752 ui/settings.slint:824 ui/settings.slint:960
+msgid "Defaults"
+msgstr ""
+
+#: ui/settings.slint:755
+msgid "Flip"
+msgstr ""
+
+#: ui/settings.slint:757 ui/shortcuts.slint:37 src/addsubs.rs:347 src/controls.rs:586 src/controls.rs:667 src/settings.rs:118
+msgid "None"
+msgstr ""
+
+#: ui/settings.slint:757
+msgid "Horizontal"
+msgstr ""
+
+#: ui/settings.slint:757
+msgid "Vertical"
+msgstr ""
+
+#: ui/settings.slint:762
+msgid "Rotate"
+msgstr ""
+
+#: ui/settings.slint:769
+msgid "Zoom"
+msgstr ""
+
+#: ui/settings.slint:773
+msgid "Aspect Ratio"
+msgstr ""
+
+#: ui/settings.slint:777 ui/settings.slint:802
+msgid "Crop"
+msgstr ""
+
+#: ui/settings.slint:782 ui/settings.slint:864
+msgid "Filters"
+msgstr ""
+
+#: ui/settings.slint:786
+msgid "Essential and Colors run on the processor, so very large video may stutter while they are on."
+msgstr ""
+
+#: ui/settings.slint:791
+msgid "Essential"
+msgstr ""
+
+#: ui/settings.slint:812
+msgid "Colors"
+msgstr ""
+
+#: ui/settings.slint:827
+msgid "Audio Track"
+msgstr ""
+
+#: ui/settings.slint:828 ui/settings.slint:964
+msgid "For items opened next"
+msgstr ""
+
+#: ui/settings.slint:832
+msgid "Audio Language"
+msgstr ""
+
+#: ui/settings.slint:833 ui/settings.slint:969
+msgid "A code or name, e.g. en, English"
+msgstr ""
+
+#: ui/settings.slint:837
+msgid "Stereo Mode"
+msgstr ""
+
+#: ui/settings.slint:846 ui/settings.slint:974
+msgid "Synchronization"
+msgstr ""
+
+#: ui/settings.slint:849
+msgid "Audio Track Delay"
+msgstr ""
+
+#: ui/settings.slint:850
+msgid "J and K step it by 50 ms"
+msgstr ""
+
+#: ui/settings.slint:867
+msgid "Equalizer"
+msgstr ""
+
+#: ui/settings.slint:879
+msgid "2 Pass"
+msgstr ""
+
+#: ui/settings.slint:880
+msgid "Filters twice, for a stronger effect"
+msgstr ""
+
+#: ui/settings.slint:892
+msgid "Compressor"
+msgstr ""
+
+#: ui/settings.slint:904
+msgid "Spatializer"
+msgstr ""
+
+#: ui/settings.slint:916
+msgid "Stereo Widener"
+msgstr ""
+
+#: ui/settings.slint:927
+msgid "Adjust Pitch"
+msgstr ""
+
+#: ui/settings.slint:940
+msgid "Subtitle Files"
+msgstr ""
+
+#: ui/settings.slint:944
+msgid "Files for this video, or matched for its whole folder"
+msgstr ""
+
+#: ui/settings.slint:951
+msgid "Add…"
+msgstr ""
+
+#: ui/settings.slint:963
+msgid "Subtitle Track"
+msgstr ""
+
+#: ui/settings.slint:968
+msgid "Subtitle Language"
+msgstr ""
+
+#: ui/settings.slint:977
+msgid "Subtitle Track Delay"
+msgstr ""
+
+#: ui/settings.slint:978
+msgid "G and H step it by 50 ms"
+msgstr ""
+
+#: ui/settings.slint:995
+msgid "Changes show from the next subtitle line."
+msgstr ""
+
+#: ui/settings.slint:1001
+msgid "Subtitle Font"
+msgstr ""
+
+#: ui/settings.slint:1002
+msgid "Type to search the installed fonts"
+msgstr ""
+
+#: ui/settings.slint:1006
+msgid "Text Color"
+msgstr ""
+
+#: ui/settings.slint:1010
+msgid "Outline Color"
+msgstr ""
+
+#: ui/settings.slint:1014
+msgid "Subtitle Offset"
+msgstr ""
+
+#: ui/settings.slint:1015
+msgid "Pixels up from the bottom"
+msgstr ""
+
+#: ui/settings.slint:1019
+msgid "Font Size"
+msgstr ""
+
+#: ui/settings.slint:1028
+msgid "Outline Thickness"
+msgstr ""
+
+#: ui/settings.slint:1037
+msgid "Background Opacity"
+msgstr ""
+
+#: ui/settings.slint:1073
+msgid "Open Advanced Settings"
+msgstr ""
+
+#: ui/shortcuts.slint:37
+msgid "Press a key…"
+msgstr ""
+
+#: ui/shortcuts.slint:161
+msgid "Search Keyboard Shortcuts…"
+msgstr ""
+
+#: ui/shortcuts.slint:176
+msgid "Action"
+msgstr ""
+
+#: ui/shortcuts.slint:177
+msgid "Hotkey"
+msgstr ""
+
+#: ui/shortcuts.slint:233
+msgid "Reset to Defaults"
+msgstr ""
+
+#: src/addsubs.rs:376
+#. Keep each {} or {n}: it stands for a value.
+msgid "{n} download"
+msgid_plural "{n} downloads"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/addsubs.rs:378
+msgid "made for this file"
+msgstr ""
+
+#: src/addsubs.rs:391
+msgid "Search to see subtitles from opensubtitles.com."
+msgstr ""
+
+#: src/addsubs.rs:393
+msgid "No subtitle files here. Browse to look in another folder or pick files."
+msgstr ""
+
+#: src/addsubs.rs:555
+msgid "Searching OpenSubtitles…"
+msgstr ""
+
+#: src/addsubs.rs:574
+msgid "OpenSubtitles found nothing; try other words or another language."
+msgstr ""
+
+#: src/addsubs.rs:607
+msgid "Downloading…"
+msgstr ""
+
+#: src/addsubs.rs:623 src/library.rs:371 src/playlists.rs:87
+msgid "there is no data folder"
+msgstr ""
+
+#: src/addsubs.rs:679
+msgid "Look for Subtitles In"
+msgstr ""
+
+#: src/addsubs.rs:683
+msgid "Choose Subtitle Files"
+msgstr ""
+
+#: src/cast.rs:31
+msgid "This Device"
+msgstr ""
+
+#: src/intro.rs:33
+msgid "Choose a Media Folder"
+msgstr ""
+
+#: src/library/menu.rs:140 src/library/menu.rs:220 src/open.rs:231
+msgid "Add to Playlist"
+msgstr ""
+
+#: src/library/menu.rs:147
+msgid "Mark as Unwatched"
+msgstr ""
+
+#: src/library/menu.rs:149
+msgid "Mark as Watched"
+msgstr ""
+
+#: src/library/menu.rs:151 src/library/menu.rs:184
+msgid "Favorite"
+msgstr ""
+
+#: src/library/menu.rs:152
+msgid "Stream"
+msgstr ""
+
+#: src/library/menu.rs:154 src/library/menu.rs:177 src/library/menu.rs:187 src/library/menu.rs:194 src/library/menu.rs:219 src/open.rs:185
+msgid "Add to Queue"
+msgstr ""
+
+#: src/library/menu.rs:158 src/library/menu.rs:179 src/library/menu.rs:234
+msgid "Show in File Explorer"
+msgstr ""
+
+#: src/library/menu.rs:162
+msgid "Go to Source"
+msgstr ""
+
+#: src/library/menu.rs:167 src/library/menu.rs:189
+msgid "Add Audio Tracks"
+msgstr ""
+
+#: src/library/menu.rs:168 src/library/menu.rs:190
+msgid "Properties & Metadata"
+msgstr ""
+
+#: src/library/menu.rs:174 src/library/menu.rs:185 src/library/menu.rs:218
+msgid "Shuffle"
+msgstr ""
+
+#: src/library/menu.rs:175
+msgid "Mark All as Watched"
+msgstr ""
+
+#: src/library/menu.rs:176
+msgid "Mark All as Unwatched"
+msgstr ""
+
+#: src/library/menu.rs:186 src/library/menu.rs:412
+msgid "Export Playlist"
+msgstr ""
+
+#: src/library/menu.rs:188 src/library/menu.rs:201
+msgid "Add Subtitle Tracks"
+msgstr ""
+
+#: src/library/menu.rs:217
+msgid "Play All"
+msgstr ""
+
+#: src/library/menu.rs:225
+msgid "Add File"
+msgstr ""
+
+#: src/library/menu.rs:226 src/library/menu.rs:229
+msgid "Add Folder"
+msgstr ""
+
+#: src/library/menu.rs:244 src/open.rs:331
+msgid "New Playlist…"
+msgstr ""
+
+#: src/library/menu.rs:380
+msgid "Add a Folder to the Playlist"
+msgstr ""
+
+#: src/library/menu.rs:384
+msgid "Add Files to the Playlist"
+msgstr ""
+
+#: src/library/menu.rs:385 src/open.rs:155 src/open.rs:276
+msgid "Media files"
+msgstr ""
+
+#: src/library.rs:138
+msgid "Unwatched First"
+msgstr ""
+
+#: src/library.rs:139
+msgid "Watched First"
+msgstr ""
+
+#: src/library.rs:140
+msgid "Newest First"
+msgstr ""
+
+#: src/library.rs:141
+msgid "Oldest First"
+msgstr ""
+
+#: src/library.rs:142
+msgid "Title A–Z"
+msgstr ""
+
+#: src/library.rs:143
+msgid "Title Z–A"
+msgstr ""
+
+#: src/library.rs:366
+msgid "there are no links"
+msgstr ""
+
+#: src/library.rs:589
+msgid "Add a Video Folder"
+msgstr ""
+
+#: src/library.rs:590
+msgid "Add a Music Folder"
+msgstr ""
+
+#: src/library.rs:637 src/queue.rs:79
+#. Keep each {} or {n}: it stands for a value.
+msgid "{n} item"
+msgid_plural "{n} items"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/library.rs:800
+msgid "Listen Again"
+msgstr ""
+
+#: src/library.rs:802
+msgid "Frequently Visited Folders"
+msgstr ""
+
+#: src/library.rs:815
+msgid "Latest Streams"
+msgstr ""
+
+#: src/library.rs:817 src/preferences.rs:506
+msgid "Add a video folder"
+msgstr ""
+
+#: src/library.rs:818 src/library.rs:832 src/preferences.rs:512
+msgid "Add a music folder"
+msgstr ""
+
+#: src/library.rs:823 src/library.rs:878 src/preferences.rs:508 src/preferences.rs:514
+msgid "Add"
+msgstr ""
+
+#: src/library.rs:824 src/library.rs:1085 src/library.rs:1112
+msgid "Songs"
+msgstr ""
+
+#: src/library.rs:825 src/music.rs:30
+msgid "Albums"
+msgstr ""
+
+#: src/library.rs:826 src/music.rs:31
+msgid "Artists"
+msgstr ""
+
+#: src/library.rs:827 src/music.rs:32
+msgid "Genres"
+msgstr ""
+
+#: src/library.rs:845
+#. Keep each {} or {n}: it stands for a value.
+msgid "Reading tags… {} left"
+msgstr ""
+
+#: src/library.rs:899
+msgid "Add Network Stream"
+msgstr ""
+
+#: src/library.rs:953
+msgid "Reading the playlist…"
+msgstr ""
+
+#: src/library.rs:957
+msgid "Create playlist"
+msgstr ""
+
+#: src/music.rs:38
+msgid "Unknown Album"
+msgstr ""
+
+#: src/music.rs:39
+msgid "Unknown Artist"
+msgstr ""
+
+#: src/music.rs:40
+msgid "Unknown Genre"
+msgstr ""
+
+#: src/open.rs:93
+msgid "Nothing played yet"
+msgstr ""
+
+#: src/open.rs:101
+msgid "Show All in Library"
+msgstr ""
+
+#: src/open.rs:157 src/open.rs:278
+msgid "All files"
+msgstr ""
+
+#: src/open.rs:239
+msgid "Playlist Cover"
+msgstr ""
+
+#: src/open.rs:240
+msgid "Images"
+msgstr ""
+
+#: src/open.rs:327
+msgid "Show Queue"
+msgstr ""
+
+#: src/open.rs:338
+msgid "Save Queue as Playlist…"
+msgstr ""
+
+#: src/opensubtitles.rs:49
+msgid "OpenSubtitles refused the API key or login"
+msgstr ""
+
+#: src/opensubtitles.rs:50
+msgid "OpenSubtitles' download limit for today is reached"
+msgstr ""
+
+#: src/opensubtitles.rs:51
+msgid "OpenSubtitles asks to slow down; try again shortly"
+msgstr ""
+
+#: src/opensubtitles.rs:52
+#. Keep each {} or {n}: it stands for a value.
+msgid "OpenSubtitles answered {}"
+msgstr ""
+
+#: src/opensubtitles.rs:53
+#. Keep each {} or {n}: it stands for a value.
+msgid "couldn't reach OpenSubtitles: {}"
+msgstr ""
+
+#: src/opensubtitles.rs:61
+msgid "Add your OpenSubtitles API key in Settings › Subtitles first."
+msgstr ""
+
+#: src/opensubtitles.rs:93 src/opensubtitles.rs:118
+#. Keep each {} or {n}: it stands for a value.
+msgid "OpenSubtitles sent something unreadable: {}"
+msgstr ""
+
+#: src/opensubtitles.rs:127
+msgid "OpenSubtitles gave no download link"
+msgstr ""
+
+#: src/opensubtitles.rs:161
+msgid "too small to hash"
+msgstr ""
+
+#: src/opensubtitles.rs:177
+msgid "English"
+msgstr ""
+
+#: src/opensubtitles.rs:178
+msgid "Spanish"
+msgstr ""
+
+#: src/opensubtitles.rs:179
+msgid "French"
+msgstr ""
+
+#: src/opensubtitles.rs:180
+msgid "German"
+msgstr ""
+
+#: src/opensubtitles.rs:181
+msgid "Italian"
+msgstr ""
+
+#: src/opensubtitles.rs:182
+msgid "Portuguese"
+msgstr ""
+
+#: src/opensubtitles.rs:183
+msgid "Portuguese (Brazil)"
+msgstr ""
+
+#: src/opensubtitles.rs:184
+msgid "Dutch"
+msgstr ""
+
+#: src/opensubtitles.rs:185
+msgid "Swedish"
+msgstr ""
+
+#: src/opensubtitles.rs:186
+msgid "Danish"
+msgstr ""
+
+#: src/opensubtitles.rs:187
+msgid "Norwegian"
+msgstr ""
+
+#: src/opensubtitles.rs:188
+msgid "Finnish"
+msgstr ""
+
+#: src/opensubtitles.rs:189
+msgid "Polish"
+msgstr ""
+
+#: src/opensubtitles.rs:190
+msgid "Czech"
+msgstr ""
+
+#: src/opensubtitles.rs:191
+msgid "Hungarian"
+msgstr ""
+
+#: src/opensubtitles.rs:192
+msgid "Romanian"
+msgstr ""
+
+#: src/opensubtitles.rs:193
+msgid "Greek"
+msgstr ""
+
+#: src/opensubtitles.rs:194
+msgid "Turkish"
+msgstr ""
+
+#: src/opensubtitles.rs:195
+msgid "Russian"
+msgstr ""
+
+#: src/opensubtitles.rs:196
+msgid "Ukrainian"
+msgstr ""
+
+#: src/opensubtitles.rs:197
+msgid "Arabic"
+msgstr ""
+
+#: src/opensubtitles.rs:198
+msgid "Hebrew"
+msgstr ""
+
+#: src/opensubtitles.rs:199
+msgid "Hindi"
+msgstr ""
+
+#: src/opensubtitles.rs:200
+msgid "Japanese"
+msgstr ""
+
+#: src/opensubtitles.rs:201
+msgid "Korean"
+msgstr ""
+
+#: src/opensubtitles.rs:202
+msgid "Chinese (Simplified)"
+msgstr ""
+
+#: src/opensubtitles.rs:203
+msgid "Chinese (Traditional)"
+msgstr ""
+
+#: src/opensubtitles.rs:204
+msgid "Vietnamese"
+msgstr ""
+
+#: src/opensubtitles.rs:205
+msgid "Thai"
+msgstr ""
+
+#: src/opensubtitles.rs:206
+msgid "Indonesian"
+msgstr ""
+
+#: src/playlists.rs:97
+msgid "the name is empty"
+msgstr ""
+
+#: src/playlists.rs:105
+#. Keep each {} or {n}: it stands for a value.
+msgid "the cover: {}"
+msgstr ""
+
+#: src/preferences.rs:38
+msgid "Global Settings"
+msgstr ""
+
+#: src/preferences.rs:39
+msgid "Interface Settings"
+msgstr ""
+
+#: src/preferences.rs:40
+msgid "Privacy Settings"
+msgstr ""
+
+#: src/preferences.rs:42
+msgid "Playback Preferences"
+msgstr ""
+
+#: src/preferences.rs:43
+msgid "Video Defaults"
+msgstr ""
+
+#: src/preferences.rs:44
+msgid "Audio Defaults"
+msgstr ""
+
+#: src/preferences.rs:45
+msgid "Subtitle Defaults"
+msgstr ""
+
+#: src/preferences.rs:57
+msgid "Takes effect the next time Ferricone starts."
+msgstr ""
+
+#: src/preferences.rs:158
+msgid "Take the colors and light or dark mode of your Omarchy theme, and follow it when the theme changes."
+msgstr ""
+
+#: src/preferences.rs:165
+msgid "Theme"
+msgstr ""
+
+#: src/preferences.rs:166
+msgid "Dark, Light, or System to follow the desktop's light or dark setting."
+msgstr ""
+
+#: src/preferences.rs:185
+msgid "Language"
+msgstr ""
+
+#: src/preferences.rs:186
+msgid "The language of the interface. System follows the desktop's, in English when Ferricone doesn't have it."
+msgstr ""
+
+#: src/preferences.rs:193
+msgid "Accent color"
+msgstr ""
+
+#: src/preferences.rs:194
+msgid "The color of the play button, selections and progress. The last swatch picks any color."
+msgstr ""
+
+#: src/preferences.rs:202
+msgid "Check for updates automatically"
+msgstr ""
+
+#: src/preferences.rs:203
+msgid "Once a day, Ferricone asks GitHub for its newest release. Nothing about you or what you play is sent."
+msgstr ""
+
+#: src/preferences.rs:211
+#. Keep each {} or {n}: it stands for a value.
+msgid "What's new in {}"
+msgstr ""
+
+#: src/preferences.rs:212
+msgid "The release notes on GitHub."
+msgstr ""
+
+#: src/preferences.rs:218
+msgid "Updates"
+msgstr ""
+
+#: src/preferences.rs:220
+msgid "Diagnostics"
+msgstr ""
+
+#: src/preferences.rs:224
+msgid "Save a log"
+msgstr ""
+
+#: src/preferences.rs:225
+msgid "Write the player engine's messages to the log file below."
+msgstr ""
+
+#: src/preferences.rs:228
+msgid "Log file"
+msgstr ""
+
+#: src/preferences.rs:228
+msgid "Where the log is written."
+msgstr ""
+
+#: src/preferences.rs:231
+msgid "Log details"
+msgstr ""
+
+#: src/preferences.rs:232
+msgid "How much the engine reports, in the log and in a terminal."
+msgstr ""
+
+#: src/preferences.rs:233
+msgid "Nothing"
+msgstr ""
+
+#: src/preferences.rs:233
+msgid "Errors only"
+msgstr ""
+
+#: src/preferences.rs:233
+msgid "Errors and warnings"
+msgstr ""
+
+#: src/preferences.rs:233
+msgid "Everything"
+msgstr ""
+
+#: src/preferences.rs:248
+msgid "Additional player engine options"
+msgstr ""
+
+#: src/preferences.rs:249
+msgid "libVLC command-line options, separated by spaces."
+msgstr ""
+
+#: src/preferences.rs:254
+msgid "Open the settings folder"
+msgstr ""
+
+#: src/preferences.rs:255
+msgid "Where app.toml, presets.toml and library.toml are kept."
+msgstr ""
+
+#: src/preferences.rs:260
+msgid "Reset all settings"
+msgstr ""
+
+#: src/preferences.rs:261
+msgid "Puts every setting on these pages back as it was at first. The library, playlists, history and folder presets stay."
+msgstr ""
+
+#: src/preferences.rs:262
+msgid "Really reset?"
+msgstr ""
+
+#: src/preferences.rs:262
+msgid "Reset"
+msgstr ""
+
+#: src/preferences.rs:270
+msgid "Window"
+msgstr ""
+
+#: src/preferences.rs:273
+msgid "Show the file name in the title bar"
+msgstr ""
+
+#: src/preferences.rs:274
+msgid "Otherwise the title bar always reads Ferricone Player."
+msgstr ""
+
+#: src/preferences.rs:279
+msgid "Playback Controls"
+msgstr ""
+
+#: src/preferences.rs:283
+msgid "Auto-hide the controls"
+msgstr ""
+
+#: src/preferences.rs:284
+msgid "When the title and control bars slide away over the video."
+msgstr ""
+
+#: src/preferences.rs:285
+msgid "In fullscreen only"
+msgstr ""
+
+#: src/preferences.rs:285 src/preferences.rs:376
+msgid "Never"
+msgstr ""
+
+#: src/preferences.rs:295 src/preferences.rs:533
+msgid "5 s"
+msgstr ""
+
+#: src/preferences.rs:295 src/preferences.rs:533
+msgid "10 s"
+msgstr ""
+
+#: src/preferences.rs:299
+msgid "Hide after"
+msgstr ""
+
+#: src/preferences.rs:300
+msgid "How long the pointer can rest before the bars and the pointer hide; moving it shows them again."
+msgstr ""
+
+#: src/preferences.rs:308
+msgid "Introduction"
+msgstr ""
+
+#: src/preferences.rs:311
+msgid "Show the introduction again"
+msgstr ""
+
+#: src/preferences.rs:312
+msgid "The welcome, theme and shortcut pages from the first start."
+msgstr ""
+
+#: src/preferences.rs:313
+msgid "Show"
+msgstr ""
+
+#: src/preferences.rs:319
+msgid "History"
+msgstr ""
+
+#: src/preferences.rs:323
+msgid "Save recently played items"
+msgstr ""
+
+#: src/preferences.rs:324
+msgid "Keeps what you play for the library's Recent, Home and watched progress."
+msgstr ""
+
+#: src/preferences.rs:329
+msgid "Remember the playback position"
+msgstr ""
+
+#: src/preferences.rs:330
+msgid "Offers to continue an item where you left it."
+msgstr ""
+
+#: src/preferences.rs:335
+msgid "Never remember items matching"
+msgstr ""
+
+#: src/preferences.rs:336
+msgid "Words, separated by commas: items whose file path or address contains one are left out of the history and positions."
+msgstr ""
+
+#: src/preferences.rs:341
+msgid "Clear history now"
+msgstr ""
+
+#: src/preferences.rs:342
+msgid "Forgets every played item and position. Playlists and the library stay."
+msgstr ""
+
+#: src/preferences.rs:343 src/preferences.rs:524
+msgid "Clear"
+msgstr ""
+
+#: src/preferences.rs:351
+msgid "Fetch titles and cover art from the internet"
+msgstr ""
+
+#: src/preferences.rs:352
+msgid "Lets the player engine look up missing titles and covers online."
+msgstr ""
+
+#: src/preferences.rs:358
+msgid "Keyboard"
+msgstr ""
+
+#: src/preferences.rs:362
+msgid "Keyboard shortcuts"
+msgstr ""
+
+#: src/preferences.rs:363
+msgid "See and change the keys the player acts on."
+msgstr ""
+
+#: src/preferences.rs:364
+msgid "Change"
+msgstr ""
+
+#: src/preferences.rs:370
+msgid "Startup"
+msgstr ""
+
+#: src/preferences.rs:374
+msgid "Continue where you left off"
+msgstr ""
+
+#: src/preferences.rs:375
+msgid "Ask offers it in a pill while the item starts from the top; Always jumps there."
+msgstr ""
+
+#: src/preferences.rs:376
+msgid "Ask"
+msgstr ""
+
+#: src/preferences.rs:376
+msgid "Always"
+msgstr ""
+
+#: src/preferences.rs:385
+msgid "Start playing as soon as a file opens"
+msgstr ""
+
+#: src/preferences.rs:386
+msgid "Otherwise items open paused."
+msgstr ""
+
+#: src/preferences.rs:392
+msgid "Order"
+msgstr ""
+
+#: src/preferences.rs:396
+msgid "Stop after each item"
+msgstr ""
+
+#: src/preferences.rs:397
+msgid "Don't go on to the next item in the queue."
+msgstr ""
+
+#: src/preferences.rs:402
+msgid "When the queue ends"
+msgstr ""
+
+#: src/preferences.rs:403
+msgid "After the last item: offer or play the next file in its folder, stop, or quit."
+msgstr ""
+
+#: src/preferences.rs:404
+msgid "Offer the next in the folder"
+msgstr ""
+
+#: src/preferences.rs:404
+msgid "Play the next in the folder"
+msgstr ""
+
+#: src/preferences.rs:415
+msgid "Seeking"
+msgstr ""
+
+#: src/preferences.rs:419
+msgid "Seek precisely"
+msgstr ""
+
+#: src/preferences.rs:420
+msgid "Land on the exact moment clicked; off jumps to the nearest keyframe, which is quicker on large files."
+msgstr ""
+
+#: src/preferences.rs:425
+msgid "Show a thumbnail while scrubbing"
+msgstr ""
+
+#: src/preferences.rs:426
+msgid "The frame under the pointer above the seek bar."
+msgstr ""
+
+#: src/preferences.rs:432 src/preferences.rs:492
+msgid "Per Folder"
+msgstr ""
+
+#: src/preferences.rs:435
+msgid "Speed, preferred tracks and the sleep timer are in the player's settings sidebar (the gear on the control bar), where they can be kept for a folder."
+msgstr ""
+
+#: src/preferences.rs:444
+msgid "Flip, rotation, zoom, aspect ratio, crop and the video filters are in the player's settings sidebar (the gear on the control bar), where they can be kept for a folder."
+msgstr ""
+
+#: src/preferences.rs:452
+msgid "The equalizer, compressor, spatial audio, stereo widening, pitch and delay are in the player's settings sidebar (the gear on the control bar), where they can be kept for a folder."
+msgstr ""
+
+#: src/preferences.rs:458
+msgid "OpenSubtitles"
+msgstr ""
+
+#: src/preferences.rs:464
+msgid "API key"
+msgstr ""
+
+#: src/preferences.rs:465
+msgid "Add Subtitles searches opensubtitles.com with it. Get a free key from your account there (API consumers); it is kept in app.toml, readable only by you."
+msgstr ""
+
+#: src/preferences.rs:471
+msgid "Username"
+msgstr ""
+
+#: src/preferences.rs:472
+msgid "Optional: logging in raises how many subtitles you can download a day."
+msgstr ""
+
+#: src/preferences.rs:477
+msgid "Password"
+msgstr ""
+
+#: src/preferences.rs:477
+msgid "Your opensubtitles.com password, kept in app.toml, readable only by you."
+msgstr ""
+
+#: src/preferences.rs:481
+msgid "Search language"
+msgstr ""
+
+#: src/preferences.rs:482
+msgid "The language Add Subtitles looks for first."
+msgstr ""
+
+#: src/preferences.rs:495
+msgid "Preferred subtitles, delay, font, colors, size and outline are in the player's settings sidebar (the gear on the control bar), where they can be kept for a folder."
+msgstr ""
+
+#: src/preferences.rs:502
+msgid "Folders"
+msgstr ""
+
+#: src/preferences.rs:507
+msgid "Its videos appear under Videos in the library."
+msgstr ""
+
+#: src/preferences.rs:513
+msgid "Its music appears under Music, read for albums, artists and genres."
+msgstr ""
+
+#: src/preferences.rs:519
+msgid "Thumbnails"
+msgstr ""
+
+#: src/preferences.rs:522
+msgid "Clear the thumbnail cache"
+msgstr ""
+
+#: src/preferences.rs:523
+msgid "Thumbnails are made again as the library shows them."
+msgstr ""
+
+#: src/preferences.rs:529
+msgid "Streaming"
+msgstr ""
+
+#: src/preferences.rs:533
+msgid "0.3 s"
+msgstr ""
+
+#: src/preferences.rs:537
+msgid "Network buffer"
+msgstr ""
+
+#: src/preferences.rs:538
+msgid "How much of a stream is loaded ahead. More rides out a slow connection; less starts sooner."
+msgstr ""
+
+#: src/preferences.rs:543
+msgid "Decoding"
+msgstr ""
+
+#: src/preferences.rs:546
+msgid "Hardware-accelerated decoding"
+msgstr ""
+
+#: src/preferences.rs:547
+msgid "Decode video on the graphics card where it can. Turn off if video shows glitches."
+msgstr ""
+
+#: src/preferences.rs:556
+msgid "Recordings folder"
+msgstr ""
+
+#: src/preferences.rs:557
+msgid "Where R and the menu's Record save to. Empty uses your Videos folder."
+msgstr ""
+
+#: src/preferences.rs:562
+msgid "Choose the recordings folder"
+msgstr ""
+
+#: src/preferences.rs:563
+msgid "Pick the folder with the file chooser instead of typing it."
+msgstr ""
+
+#: src/preferences.rs:570
+msgid "Add-ons and skins arrive in a later update."
+msgstr ""
+
+#: src/preferences.rs:621
+msgid "Search Results"
+msgstr ""
+
+#: src/preferences.rs:836
+msgid "Choose the Recordings Folder"
+msgstr ""
+
+#: src/presets.rs:46
+msgid "As Recorded"
+msgstr ""
+
+#: src/presets.rs:47
+msgid "Stereo"
+msgstr ""
+
+#: src/presets.rs:48
+msgid "Reverse Stereo"
+msgstr ""
+
+#: src/presets.rs:49
+msgid "Left Channel"
+msgstr ""
+
+#: src/presets.rs:50
+msgid "Right Channel"
+msgstr ""
+
+#: src/presets.rs:51
+msgid "Dolby Surround"
+msgstr ""
+
+#: src/presets.rs:52
+msgid "Mono"
+msgstr ""
+
+#: src/queue.rs:299
+#. Keep each {} or {n}: it stands for a value.
+msgid "Chapter {}"
+msgstr ""
+
+#: src/queue.rs:330
+#. Keep each {} or {n}: it stands for a value.
+msgid "{}h {}m"
+msgstr ""
+
+#: src/settings.rs:20
+msgid "Off"
+msgstr ""
+
+#: src/settings.rs:21
+msgid "15 Minutes"
+msgstr ""
+
+#: src/settings.rs:22
+msgid "30 Minutes"
+msgstr ""
+
+#: src/settings.rs:23
+msgid "45 Minutes"
+msgstr ""
+
+#: src/settings.rs:24
+msgid "1 Hour"
+msgstr ""
+
+#: src/settings.rs:25
+msgid "2 Hours"
+msgstr ""
+
+#: src/settings.rs:26
+msgid "End of This Item"
+msgstr ""
+
+#: src/settings.rs:91
+msgid "Auto"
+msgstr ""
+
+#: src/settings.rs:99
+msgid "Any"
+msgstr ""
+
+#: src/settings.rs:118
+msgid "Thin"
+msgstr ""
+
+#: src/settings.rs:118 src/settings.rs:173
+msgid "Normal"
+msgstr ""
+
+#: src/settings.rs:118
+msgid "Thick"
+msgstr ""
+
+#: src/settings.rs:184
+msgid "Default Preset"
+msgstr ""
+
+#: src/settings.rs:190
+#. Keep each {} or {n}: it stands for a value.
+msgid "This Folder: {}"
+msgstr ""
+
+#: src/settings.rs:375 src/settings.rs:807
+#. Keep each {} or {n}: it stands for a value.
+msgid "Speed {}x"
+msgstr ""
+
+#: src/settings.rs:405
+#. Keep each {} or {n}: it stands for a value.
+msgid "Audio delay {}"
+msgstr ""
+
+#: src/settings.rs:435 src/subtimeline.rs:212
+#. Keep each {} or {n}: it stands for a value.
+msgid "Subtitle delay {}"
+msgstr ""
+
+#: src/settings.rs:669
+msgid "Applies to the next item opened"
+msgstr ""
+
+#: src/settings.rs:737
+#. Keep each {} or {n}: it stands for a value.
+msgid "Settings now stick to “{}”"
+msgstr ""
+
+#: src/settings.rs:740
+#. Keep each {} or {n}: it stands for a value.
+msgid "“{}” uses the default preset"
+msgstr ""
+
+#: src/settings.rs:765
+msgid "Sleep timer: paused"
+msgstr ""
+
+#: src/settings.rs:799
+#. Keep each {} or {n}: it stands for a value.
+msgid "Video {} × {}"
+msgstr ""
+
+#: src/settings.rs:802
+#. Keep each {} or {n}: it stands for a value.
+msgid "Frames decoded {}"
+msgstr ""
+
+#: src/settings.rs:803
+#. Keep each {} or {n}: it stands for a value.
+msgid "Frames shown {}"
+msgstr ""
+
+#: src/settings.rs:804
+#. Keep each {} or {n}: it stands for a value.
+msgid "Late {} · lost {}"
+msgstr ""
+
+#: src/shortcuts.rs:27
+msgid "Play / pause"
+msgstr ""
+
+#: src/shortcuts.rs:29
+msgid "Previous item"
+msgstr ""
+
+#: src/shortcuts.rs:30
+msgid "Next item"
+msgstr ""
+
+#: src/shortcuts.rs:31
+msgid "Back 10 seconds"
+msgstr ""
+
+#: src/shortcuts.rs:32
+msgid "Forward 10 seconds"
+msgstr ""
+
+#: src/shortcuts.rs:33
+msgid "Slower"
+msgstr ""
+
+#: src/shortcuts.rs:34
+msgid "Faster"
+msgstr ""
+
+#: src/shortcuts.rs:36 src/shortcuts.rs:37 src/shortcuts.rs:38 src/shortcuts.rs:39 src/shortcuts.rs:40 src/shortcuts.rs:41
+msgid "View and Sound"
+msgstr ""
+
+#: src/shortcuts.rs:36
+msgid "Toggle fullscreen"
+msgstr ""
+
+#: src/shortcuts.rs:37
+msgid "Volume up"
+msgstr ""
+
+#: src/shortcuts.rs:38
+msgid "Volume down"
+msgstr ""
+
+#: src/shortcuts.rs:40
+msgid "Audio tracks"
+msgstr ""
+
+#: src/shortcuts.rs:41
+msgid "Subtitle tracks"
+msgstr ""
+
+#: src/shortcuts.rs:42 src/shortcuts.rs:43 src/shortcuts.rs:44 src/shortcuts.rs:45
+msgid "Sync"
+msgstr ""
+
+#: src/shortcuts.rs:42
+msgid "Audio earlier"
+msgstr ""
+
+#: src/shortcuts.rs:43
+msgid "Audio later"
+msgstr ""
+
+#: src/shortcuts.rs:44
+msgid "Subtitles earlier"
+msgstr ""
+
+#: src/shortcuts.rs:45
+msgid "Subtitles later"
+msgstr ""
+
+#: src/shortcuts.rs:50
+msgid "Close a panel, a menu or fullscreen"
+msgstr ""
+
+#: src/shortcuts.rs:51
+msgid "Continue where you left off, or play the next item"
+msgstr ""
+
+#: src/shortcuts.rs:52
+msgid "Hide the interface"
+msgstr ""
+
+#: src/shortcuts.rs:53
+msgid "Open files"
+msgstr ""
+
+#: src/shortcuts.rs:54
+msgid "Open a folder"
+msgstr ""
+
+#: src/shortcuts.rs:55
+msgid "Open a network stream"
+msgstr ""
+
+#: src/shortcuts.rs:56
+msgid "Add a bookmark"
+msgstr ""
+
+#: src/shortcuts.rs:73
+msgid "Tab"
+msgstr ""
+
+#: src/shortcuts.rs:74
+msgid "Backspace"
+msgstr ""
+
+#: src/shortcuts.rs:75
+msgid "Delete"
+msgstr ""
+
+#: src/shortcuts.rs:81
+msgid "Insert"
+msgstr ""
+
+#: src/shortcuts.rs:83
+msgid "End"
+msgstr ""
+
+#: src/shortcuts.rs:84
+msgid "Page Up"
+msgstr ""
+
+#: src/shortcuts.rs:85
+msgid "Page Down"
+msgstr ""
+
+#: src/shortcuts.rs:156
+msgid "Fixed"
+msgstr ""
+
+#: src/state.rs:158
+#. Keep each {} or {n}: it stands for a value.
+msgid "Bookmark {}"
+msgstr ""
+
+#: src/update.rs:86
+#. Keep each {} or {n}: it stands for a value.
+msgid "Update to {}"
+msgstr ""
+
+#: src/update.rs:87
+msgid "Restart to update"
+msgstr ""
+
+#: src/update.rs:198 src/update.rs:201
+#. Keep each {} or {n}: it stands for a value.
+msgid "couldn't reach GitHub: {}"
+msgstr ""
+
+#: src/update.rs:203
+#. Keep each {} or {n}: it stands for a value.
+msgid "GitHub's answer was unreadable: {}"
+msgstr ""
+
+#: src/update.rs:394
+msgid "no package for this copy"
+msgstr ""
+
+#: src/update.rs:400
+#. Keep each {} or {n}: it stands for a value.
+msgid "the release has no {} file"
+msgstr ""
+
+#: src/update.rs:402
+msgid "the release has no SHA256SUMS"
+msgstr ""
+
+#: src/update.rs:403
+msgid "the release isn't signed"
+msgstr ""
+
+#: src/update.rs:409
+#. Keep each {} or {n}: it stands for a value.
+msgid "SHA256SUMS doesn't list {}"
+msgstr ""
+
+#: src/update.rs:413
+msgid "the AppImage has no folder"
+msgstr ""
+
+#: src/update.rs:414
+msgid "no cache folder"
+msgstr ""
+
+#: src/update.rs:444 src/update.rs:449 src/update.rs:457 src/update.rs:468
+#. Keep each {} or {n}: it stands for a value.
+msgid "download failed: {}"
+msgstr ""
+
+#: src/update.rs:485
+msgid "the download doesn't match its checksum"
+msgstr ""
+
+#: src/update.rs:501 src/update.rs:505
+msgid "the built-in release key is unreadable"
+msgstr ""
+
+#: src/update.rs:506
+msgid "the built-in release key isn't an Ed25519 key"
+msgstr ""
+
+#: src/update.rs:513
+msgid "the release's signature doesn't match Ferricone's release key"
+msgstr ""
+
+#: src/update.rs:544
+#. Keep each {} or {n}: it stands for a value.
+msgid "replacing {}: {}"
+msgstr ""
+
+#: src/update.rs:552
+#. Keep each {} or {n}: it stands for a value.
+msgid "unpacking: {}"
+msgstr ""
+
+#: src/update.rs:558
+msgid "the tarball has no install.sh"
+msgstr ""
+
+#: src/update.rs:566
+#. Keep each {} or {n}: it stands for a value.
+msgid "pkexec isn't installed. Install the update with: sudo {}"
+msgstr ""
+
+#: src/update.rs:573
+msgid "the password prompt was cancelled"
+msgstr ""
+
+#: src/update.rs:574
+#. Keep each {} or {n}: it stands for a value.
+msgid "no permission to install. Install the update with: sudo {}"
+msgstr ""
+
+#: src/update.rs:575
+#. Keep each {} or {n}: it stands for a value.
+msgid "{}. Install the update with: sudo {}"
+msgstr ""
+
+#: src/update.rs:578
+msgid "this copy wasn't installed from a release"
+msgstr ""
+
+#: src/update.rs:583
+#. Keep each {} or {n}: it stands for a value.
+msgid "{} isn't installed"
+msgstr ""
+
+#: src/update.rs:605
+msgid "not a package"
+msgstr ""
+
+#: src/update.rs:660
+#. Keep each {} or {n}: it stands for a value.
+msgid "couldn't start {}: {}"
+msgstr ""
+
+#: src/update.rs:670
+msgid "Update"
+msgstr ""
+
+#: src/update.rs:672 src/update.rs:676 src/update.rs:691
+msgid "Check now"
+msgstr ""
+
+#: src/update.rs:673
+msgid "Checking for updates…"
+msgstr ""
+
+#: src/update.rs:675
+#. Keep each {} or {n}: it stands for a value.
+msgid "Ferricone {} is up to date. Checked {}."
+msgstr ""
+
+#: src/update.rs:678
+#. Keep each {} or {n}: it stands for a value.
+msgid "Ferricone {} is available. You have {}."
+msgstr ""
+
+#: src/update.rs:679
+#. Keep each {} or {n}: it stands for a value.
+msgid "Downloading Ferricone {}… {} %"
+msgstr ""
+
+#: src/update.rs:683
+#. Keep each {} or {n}: it stands for a value.
+msgid "Installing Ferricone {}: confirm with your password…"
+msgstr ""
+
+#: src/update.rs:685
+#. Keep each {} or {n}: it stands for a value.
+msgid "Installing Ferricone {}…"
+msgstr ""
+
+#: src/update.rs:689
+#. Keep each {} or {n}: it stands for a value.
+msgid "Ferricone {} is installed. Restart to use it."
+msgstr ""
+
+#: src/update.rs:689
+msgid "Restart"
+msgstr ""
+
+#: src/update.rs:690
+#. Keep each {} or {n}: it stands for a value.
+msgid "Couldn't update: {}."
+msgstr ""
+
+#: src/update.rs:690
+msgid "Try again"
+msgstr ""
+
+#: src/update.rs:691
+#. Keep each {} or {n}: it stands for a value.
+msgid "Couldn't check for updates: {}."
+msgstr ""
+
+#: src/update.rs:697
+msgid "just now"
+msgstr ""
+
+#: src/update.rs:698
+#. Keep each {} or {n}: it stands for a value.
+msgid "{n} minute ago"
+msgid_plural "{n} minutes ago"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/update.rs:699
+#. Keep each {} or {n}: it stands for a value.
+msgid "{n} hour ago"
+msgid_plural "{n} hours ago"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/update.rs:700
+#. Keep each {} or {n}: it stands for a value.
+msgid "{n} day ago"
+msgid_plural "{n} days ago"
+msgstr[0] ""
+msgstr[1] ""

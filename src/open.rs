@@ -3,6 +3,7 @@
 //! Playlist dialog. Dialogs run beside the event loop, so the video keeps
 //! playing behind them.
 
+use crate::i18n::{n_, tr, ts};
 use crate::{
     AppWindow, Icons, MenuAction, MenuEntry,
     controls::{self, Session, Shared},
@@ -89,7 +90,7 @@ fn refresh_recent(app: &AppWindow, s: &Session) {
         entries.push(MenuEntry {
             action: MenuAction::None,
             icon: icons.get_recent_two_tone(),
-            label: "Nothing played yet".into(),
+            label: tr!("Nothing played yet").into(),
             disabled: true,
             ..Default::default()
         });
@@ -97,7 +98,7 @@ fn refresh_recent(app: &AppWindow, s: &Session) {
     entries.push(MenuEntry {
         action: MenuAction::ShowRecent,
         icon: icons.get_recent_two_tone(),
-        label: "Show All in Library".into(),
+        label: tr!("Show All in Library").into(),
         divider_before: true,
         ..Default::default()
     });
@@ -106,6 +107,13 @@ fn refresh_recent(app: &AppWindow, s: &Session) {
 }
 
 pub fn connect(app: &AppWindow, session: &Shared) {
+    let (ui, s) = (app.as_weak(), session.clone());
+    crate::i18n::on_change(move || {
+        if let Some(app) = ui.upgrade() {
+            refresh_recent(&app, &s);
+            refresh_playlists(&app, &s);
+        }
+    });
     let (ui, s) = (app.as_weak(), session.clone());
     app.on_refresh_recent(move || {
         if let Some(app) = ui.upgrade() {
@@ -143,10 +151,10 @@ pub fn connect(app: &AppWindow, session: &Shared) {
     app.on_open_files(move || {
         o.ask(async {
             let files = rfd::AsyncFileDialog::new()
-                .set_title("Open File(s)")
-                .add_filter("Media files", MEDIA_EXTENSIONS)
-                .add_filter("Playlists", playlists::EXTENSIONS)
-                .add_filter("All files", &["*"])
+                .set_title(tr!("Open File(s)"))
+                .add_filter(tr!("Media files"), MEDIA_EXTENSIONS)
+                .add_filter(tr!("Playlists"), playlists::EXTENSIONS)
+                .add_filter(tr!("All files"), &["*"])
                 .pick_files()
                 .await;
             files
@@ -161,7 +169,7 @@ pub fn connect(app: &AppWindow, session: &Shared) {
     app.on_open_folder(move || {
         o.ask(async {
             let folder = rfd::AsyncFileDialog::new()
-                .set_title("Open Folder")
+                .set_title(tr!("Open Folder"))
                 .pick_folder()
                 .await;
             folder
@@ -174,7 +182,7 @@ pub fn connect(app: &AppWindow, session: &Shared) {
     // The queue panel's add: files after what is queued.
     let o = opener.clone();
     app.on_add_items(move || {
-        o.ask_then(pick_media("Add to Queue"), controls::append);
+        o.ask_then(pick_media(ts(n_!("Add to Queue"))), controls::append);
     });
 
     let o = opener.clone();
@@ -220,7 +228,7 @@ pub fn connect(app: &AppWindow, session: &Shared) {
 
     let o = opener.clone();
     app.on_playlist_add_files(move || {
-        o.ask_then(pick_media("Add to Playlist"), add_to_draft);
+        o.ask_then(pick_media(ts(n_!("Add to Playlist"))), add_to_draft);
     });
 
     let o = opener;
@@ -228,8 +236,8 @@ pub fn connect(app: &AppWindow, session: &Shared) {
         o.ask_then(
             async {
                 let image = rfd::AsyncFileDialog::new()
-                    .set_title("Playlist Cover")
-                    .add_filter("Images", &["png", "jpg", "jpeg", "webp"])
+                    .set_title(tr!("Playlist Cover"))
+                    .add_filter(tr!("Images"), &["png", "jpg", "jpeg", "webp"])
                     .pick_file()
                     .await;
                 image
@@ -265,9 +273,9 @@ pub fn connect(app: &AppWindow, session: &Shared) {
 async fn pick_media(title: &'static str) -> Vec<Source> {
     let files = rfd::AsyncFileDialog::new()
         .set_title(title)
-        .add_filter("Media files", MEDIA_EXTENSIONS)
-        .add_filter("Playlists", playlists::EXTENSIONS)
-        .add_filter("All files", &["*"])
+        .add_filter(tr!("Media files"), MEDIA_EXTENSIONS)
+        .add_filter(tr!("Playlists"), playlists::EXTENSIONS)
+        .add_filter(tr!("All files"), &["*"])
         .pick_files()
         .await;
     files
@@ -316,18 +324,18 @@ pub fn refresh_playlists(app: &AppWindow, s: &Session) {
         entry(
             MenuAction::ShowQueue,
             icons.get_queue_two_tone(),
-            "Show Queue",
+            &tr!("Show Queue"),
         ),
         MenuEntry {
             divider_before: true,
-            ..entry(MenuAction::NewPlaylist, icons.get_add(), "New Playlist…")
+            ..entry(MenuAction::NewPlaylist, icons.get_add(), &tr!("New Playlist…"))
         },
         MenuEntry {
             disabled: s.queue.borrow().items().is_empty(),
             ..entry(
                 MenuAction::SaveQueue,
                 icons.get_save_two_tone(),
-                "Save Queue as Playlist…",
+                &tr!("Save Queue as Playlist…"),
             )
         },
     ];

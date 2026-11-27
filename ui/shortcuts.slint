@@ -34,7 +34,7 @@ component Cap inherits Rectangle {
     border-width: root.fixed ? 0 : 2px;
     border-color: root.waiting ? Theme.accent-main : Theme.divider-bright;
     label := Text {
-        text: root.waiting ? "Press a key…" : root.text == "" ? "None" : root.text;
+        text: root.waiting ? @tr("Press a key…") : root.text == "" ? @tr("None") : root.text;
         font-size: 14px;
         color: root.waiting ? Theme.accent-main : root.text == "" || root.fixed ? Theme.fg-a3 : Theme.fg-1;
     }
@@ -117,7 +117,7 @@ export component ShortcutsDialog inherits Rectangle {
                     padding-left: 10px;
                     Text {
                         horizontal-stretch: 1;
-                        text: "Keyboard Shortcuts";
+                        text: @tr("Keyboard Shortcuts");
                         font-size: 14px;
                         color: Theme.fg-a2;
                         vertical-alignment: center;
@@ -158,7 +158,7 @@ export component ShortcutsDialog inherits Rectangle {
                                     reject
                                 }
                             }
-                            if search.text == "": Text { x: 0; text: "Search Keyboard Shortcuts…"; font-size: 14px; color: Theme.fg-a4; vertical-alignment: center; }
+                            if search.text == "": Text { x: 0; text: @tr("Search Keyboard Shortcuts…"); font-size: 14px; color: Theme.fg-a4; vertical-alignment: center; }
                         }
                     }
                 }
@@ -173,8 +173,8 @@ export component ShortcutsDialog inherits Rectangle {
             vertical-stretch: 1;
             HorizontalLayout {
                 height: 25px;
-                Text { width: 488px; text: "Action"; font-size: 14px; color: Theme.fg-a3; vertical-alignment: center; }
-                Text { text: "Hotkey"; font-size: 14px; color: Theme.fg-a3; vertical-alignment: center; }
+                Text { width: 488px; text: @tr("Action"); font-size: 14px; color: Theme.fg-a3; vertical-alignment: center; }
+                Text { text: @tr("Hotkey"); font-size: 14px; color: Theme.fg-a3; vertical-alignment: center; }
             }
             Flickable {
                 vertical-stretch: 1;
@@ -229,10 +229,10 @@ export component ShortcutsDialog inherits Rectangle {
         HorizontalLayout {
             padding: 20px;
             spacing: 20px;
-            FooterButton { text: "Cancel"; clicked => { root.cancel(); } }
-            FooterButton { text: "Reset to Defaults"; clicked => { root.waiting = -1; root.reset(); } }
+            FooterButton { text: @tr("Cancel"); clicked => { root.cancel(); } }
+            FooterButton { text: @tr("Reset to Defaults"); clicked => { root.waiting = -1; root.reset(); } }
             Rectangle { horizontal-stretch: 1; }
-            FooterButton { text: "Save"; primary: true; clicked => { root.save(); } }
+            FooterButton { text: @tr("Save"); primary: true; clicked => { root.save(); } }
         }
     }
 }

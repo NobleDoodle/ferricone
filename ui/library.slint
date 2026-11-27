@@ -300,7 +300,7 @@ export component LibraryDock inherits Rectangle {
                             }
                             if query.text == "": Text {
                                 x: 8px;
-                                text: "Search";
+                                text: @tr("Search");
                                 font-size: 14px;
                                 color: Theme.fg-a4;
                                 vertical-alignment: center;
@@ -594,21 +594,21 @@ export component FullLibrary inherits Rectangle {
                         padding-right: 16px;
                         spacing: 14px;
                         alignment: start;
-                        NavEntry { icon: root.page == 0 ? Icons.home-active : Icons.home; text: "Home"; clicked => { root.go-page(0); } }
+                        NavEntry { icon: root.page == 0 ? Icons.home-active : Icons.home; text: @tr("Home"); clicked => { root.go-page(0); } }
                         NavEntry {
                             icon: root.page == 1 ? (root.deep ? Icons.videos-selected : Icons.videos-active) : Icons.videos;
-                            text: "Videos";
+                            text: @tr("Videos");
                             clicked => { root.go-page(1); }
                         }
                         NavEntry {
                             icon: root.page == 2 ? (root.deep ? Icons.songs-selected : Icons.songs-active) : Icons.songs;
-                            text: "Music";
+                            text: @tr("Music");
                             clicked => { root.go-page(2); }
                         }
-                        NavEntry { icon: root.page == 3 ? Icons.streaming-active : Icons.streaming; text: "Network"; clicked => { root.go-page(3); } }
-                        NavEntry { icon: root.page == 4 ? Icons.playlist-active : Icons.playlist; text: "Playlists"; clicked => { root.go-page(4); } }
-                        NavEntry { icon: root.page == 5 ? Icons.recent-two-tone : Icons.recent; text: "Recent"; clicked => { root.go-page(5); } }
-                        NavEntry { icon: Icons.add; text: "Add item"; clicked => { root.add-folder(); } }
+                        NavEntry { icon: root.page == 3 ? Icons.streaming-active : Icons.streaming; text: @tr("Network"); clicked => { root.go-page(3); } }
+                        NavEntry { icon: root.page == 4 ? Icons.playlist-active : Icons.playlist; text: @tr("Playlists"); clicked => { root.go-page(4); } }
+                        NavEntry { icon: root.page == 5 ? Icons.recent-two-tone : Icons.recent; text: @tr("Recent"); clicked => { root.go-page(5); } }
+                        NavEntry { icon: Icons.add; text: @tr("Add item"); clicked => { root.add-folder(); } }
                     }
                 }
             }
@@ -673,7 +673,7 @@ export component FullLibrary inherits Rectangle {
                     views := OptionsPopup {
                         x: parent.width;
                         y: 29px;
-                        options: ["Grid View", "List View"];
+                        options: [@tr("Grid View"), @tr("List View")];
                         icons: [Icons.grid, Icons.list];
                         selected: root.grid ? 0 : 1;
                         chosen(i) => { root.set-grid(i == 0); }
@@ -708,7 +708,7 @@ export component FullLibrary inherits Rectangle {
                             }
                             if query.text == "": Text {
                                 x: 0;
-                                text: "Search";
+                                text: @tr("Search");
                                 font-size: 14px;
                                 color: Theme.fg-a4;
                                 vertical-alignment: center;

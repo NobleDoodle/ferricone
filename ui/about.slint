@@ -49,7 +49,7 @@ export component AboutDialog inherits Rectangle {
                 padding-left: 19px;
                 Text {
                     horizontal-stretch: 1;
-                    text: "About Ferricone";
+                    text: @tr("About Ferricone");
                     font-size: 14px;
                     color: Theme.fg-a2;
                     vertical-alignment: center;
@@ -77,27 +77,27 @@ export component AboutDialog inherits Rectangle {
                 }
             }
             Text {
-                text: "Ferricone Player";
+                text: @tr("Ferricone Player");
                 font-size: 26px;
                 font-weight: 300;
                 color: Theme.fg-1;
                 horizontal-alignment: center;
             }
             Text {
-                text: "Version " + root.version;
+                text: @tr("Version {}", root.version);
                 font-size: 14px;
                 color: Theme.fg-a1;
                 horizontal-alignment: center;
             }
             Text {
-                text: "Plays with libVLC " + root.engine + ", with an interface in Rust and Slint.";
+                text: @tr("Plays with libVLC {}, with an interface in Rust and Slint.", root.engine);
                 font-size: 13px;
                 color: Theme.fg-a3;
                 horizontal-alignment: center;
                 wrap: word-wrap;
             }
             Text {
-                text: "Free software under the GNU General Public License, version 3 or later.";
+                text: @tr("Free software under the GNU General Public License, version 3 or later.");
                 font-size: 13px;
                 color: Theme.fg-a3;
                 horizontal-alignment: center;
@@ -106,20 +106,20 @@ export component AboutDialog inherits Rectangle {
             HorizontalLayout {
                 alignment: center;
                 spacing: 10px;
-                LinkButton { text: "Website"; clicked => { root.open-link("https://nobledoodle.github.io/ferricone/"); } }
-                LinkButton { text: "Source Code"; clicked => { root.open-link("https://github.com/NobleDoodle/ferricone"); } }
-                LinkButton { text: "Report a Problem"; clicked => { root.open-link("https://github.com/NobleDoodle/ferricone/issues"); } }
+                LinkButton { text: @tr("Website"); clicked => { root.open-link("https://nobledoodle.github.io/ferricone/"); } }
+                LinkButton { text: @tr("Source Code"); clicked => { root.open-link("https://github.com/NobleDoodle/ferricone"); } }
+                LinkButton { text: @tr("Report a Problem"); clicked => { root.open-link("https://github.com/NobleDoodle/ferricone/issues"); } }
             }
             Rectangle { height: 1px; background: Theme.divider-dim; }
             Text {
-                text: "Interface design: “VLC Redesign” by Juxtopposed, from the Figma Community, under CC BY 4.0.";
+                text: @tr("Interface design: “VLC Redesign” by Juxtopposed, from the Figma Community, under CC BY 4.0.");
                 font-size: 13px;
                 color: Theme.fg-a2;
                 horizontal-alignment: center;
                 wrap: word-wrap;
             }
             Text {
-                text: "VLC and the VLC cone are trademarks of VideoLAN. Ferricone is not made or endorsed by VideoLAN.";
+                text: @tr("VLC and the VLC cone are trademarks of VideoLAN. Ferricone is not made or endorsed by VideoLAN.");
                 font-size: 12px;
                 color: Theme.fg-a3;
                 horizontal-alignment: center;
@@ -133,7 +133,7 @@ export component AboutDialog inherits Rectangle {
                     height: 32px;
                     border-radius: 6px;
                     background: ok.has-hover ? Theme.accent-bright : Theme.accent-main;
-                    Text { text: "Close"; font-size: 14px; font-weight: 600; color: Theme.fg-b1; }
+                    Text { text: @tr("Close"); font-size: 14px; font-weight: 600; color: Theme.fg-b1; }
                     ok := TouchArea { clicked => { root.close(); } }
                 }
             }

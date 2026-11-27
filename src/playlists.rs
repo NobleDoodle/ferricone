@@ -4,6 +4,7 @@
 //! kept the same way in `streams` beside it. A cover, when chosen, sits beside its playlist as
 //! `<name>.<png|jpg|…>`.
 
+use crate::i18n::tr;
 use crate::media::Source;
 use std::{
     fs,
@@ -83,7 +84,7 @@ fn parse(text: &str) -> Vec<Source> {
 /// Saves `items` as playlist `name` (replacing one of that name), with
 /// `cover` copied beside it; returns where it went.
 pub fn save(name: &str, items: &[Source], cover: Option<&Path>) -> Result<PathBuf, String> {
-    save_in(&folder().ok_or("there is no data folder")?, name, items, cover)
+    save_in(&folder().ok_or(tr!("there is no data folder"))?, name, items, cover)
 }
 
 /// `save`, into `dir`.
@@ -93,7 +94,7 @@ pub fn save_in(
     items: &[Source],
     cover: Option<&Path>,
 ) -> Result<PathBuf, String> {
-    let file_name = safe_name(name).ok_or("the name is empty")?;
+    let file_name = safe_name(name).ok_or(tr!("the name is empty"))?;
     fs::create_dir_all(dir).map_err(|e| e.to_string())?;
     let path = dir.join(format!("{file_name}.m3u8"));
     fs::write(&path, write(items)).map_err(|e| e.to_string())?;
@@ -101,7 +102,7 @@ pub fn save_in(
         && let Some(ext) = cover.extension()
     {
         let target = dir.join(&file_name).with_extension(ext);
-        fs::copy(cover, target).map_err(|e| format!("the cover: {e}"))?;
+        fs::copy(cover, target).map_err(|e| tr!("the cover: {}", e))?;
     }
     Ok(path)
 }

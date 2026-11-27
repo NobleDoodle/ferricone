@@ -7,6 +7,7 @@
 //! Recent and Home come from the play history (`state::History`), the
 //! thumbnails from `thumbs`.
 
+use crate::i18n::{n_, t, tr, trn};
 use crate::{
     AppWindow, Icons, LibRow, LibSection,
     controls::{self, Session, Shared},
@@ -134,12 +135,12 @@ impl Sort {
 
     pub fn label(self) -> &'static str {
         match self {
-            Sort::UnwatchedFirst => "Unwatched First",
-            Sort::WatchedFirst => "Watched First",
-            Sort::NewestFirst => "Newest First",
-            Sort::OldestFirst => "Oldest First",
-            Sort::TitleAz => "Title A–Z",
-            Sort::TitleZa => "Title Z–A",
+            Sort::UnwatchedFirst => n_!("Unwatched First"),
+            Sort::WatchedFirst => n_!("Watched First"),
+            Sort::NewestFirst => n_!("Newest First"),
+            Sort::OldestFirst => n_!("Oldest First"),
+            Sort::TitleAz => n_!("Title A–Z"),
+            Sort::TitleZa => n_!("Title Z–A"),
         }
     }
 }
@@ -362,12 +363,12 @@ fn may_be_playlist(url: &str) -> bool {
 /// link); returns where it went.
 fn save_streams(links: &str, name: &str) -> Result<PathBuf, String> {
     let items = media::from_lines(links);
-    let first = items.first().ok_or("there are no links")?;
+    let first = items.first().ok_or(tr!("there are no links"))?;
     let name = match name.trim() {
         "" => first.title(),
         name => name.to_string(),
     };
-    let dir = playlists::streams_folder().ok_or("there is no data folder")?;
+    let dir = playlists::streams_folder().ok_or(tr!("there is no data folder"))?;
     playlists::save_in(&dir, &name, &items, None)
 }
 
@@ -521,9 +522,19 @@ pub fn connect(app: &AppWindow, session: &Shared) {
             add_folder(&app, &s, section);
         }
     });
-    app.set_lib_sort_labels(ModelRc::new(VecModel::from(
-        Sort::ALL.iter().map(|m| SharedString::from(m.label())).collect::<Vec<_>>(),
-    )));
+    let sort_labels = |app: &AppWindow| {
+        app.set_lib_sort_labels(ModelRc::new(VecModel::from(
+            Sort::ALL.iter().map(|m| SharedString::from(t(m.label()).as_ref())).collect::<Vec<_>>(),
+        )));
+    };
+    sort_labels(app);
+    let (ui, s) = (app.as_weak(), session.clone());
+    crate::i18n::on_change(move || {
+        if let Some(app) = ui.upgrade() {
+            sort_labels(&app);
+            refresh(&app, &s);
+        }
+    });
     let (ui, s) = (app.as_weak(), session.clone());
     app.on_lib_set_sort(move |index| {
         let Some(app) = ui.upgrade() else { return };
@@ -575,8 +586,8 @@ pub fn connect(app: &AppWindow, session: &Shared) {
 fn add_folder(app: &AppWindow, s: &Shared, section: Section) {
     let (ui, s) = (app.as_weak(), s.clone());
     let title = match section {
-        Section::Videos => "Add a Video Folder",
-        Section::Music => "Add a Music Folder",
+        Section::Videos => tr!("Add a Video Folder"),
+        Section::Music => tr!("Add a Music Folder"),
     };
     let task = slint::spawn_local(async move {
         let folder = rfd::AsyncFileDialog::new().set_title(title).pick_folder().await;
@@ -623,11 +634,7 @@ pub fn refresh(app: &AppWindow, s: &Session) {
     let count = rows.iter().filter(|r| !r.row.header && !r.row.action).count();
     rows.truncate(MAX_ROWS);
     app.set_lib_count(
-        match count {
-            1 => "1 item".to_string(),
-            n => format!("{n} items"),
-        }
-        .into(),
+        trn!("{n} item", "{n} items", count).into(),
     );
 
     let (names, places) = crumbs(&lib.roots.borrow(), &place);
@@ -789,15 +796,15 @@ fn rows(app: &AppWindow, s: &Session, place: &Place) -> Vec<Row> {
                 }
             };
             let play_one = |src: &Source| file_row(src, Target::Play(vec![src.clone()], 0));
-            section("Continue Watching", Place::Recent, continuing.iter().map(play_one).collect());
-            section("Listen Again", Place::Recent, listened.iter().map(play_one).collect());
+            section(&tr!("Continue Watching"), Place::Recent, continuing.iter().map(play_one).collect());
+            section(&tr!("Listen Again"), Place::Recent, listened.iter().map(play_one).collect());
             section(
-                "Frequently Visited Folders",
+                &tr!("Frequently Visited Folders"),
                 Place::Section(Section::Videos, None),
                 folders.iter().map(|d| folder_row(d)).collect(),
             );
             section(
-                "Playlists",
+                &tr!("Playlists"),
                 Place::Playlists,
                 lists
                     .iter()
@@ -805,24 +812,24 @@ fn rows(app: &AppWindow, s: &Session, place: &Place) -> Vec<Row> {
                     .map(|l| link_row(&l.name, icons.get_playlist(), Target::Go(Place::Playlist(l.path.clone()))))
                     .collect(),
             );
-            section("Latest Streams", Place::Network, streams.iter().map(play_one).collect());
+            section(&tr!("Latest Streams"), Place::Network, streams.iter().map(play_one).collect());
             if out.is_empty() {
-                out.push(action_row("Add a video folder", Target::AddFolder(Section::Videos)));
-                out.push(action_row("Add a music folder", Target::AddFolder(Section::Music)));
+                out.push(action_row(&tr!("Add a video folder"), Target::AddFolder(Section::Videos)));
+                out.push(action_row(&tr!("Add a music folder"), Target::AddFolder(Section::Music)));
             }
             out
         }
         Place::Section(Section::Music, None) => vec![
-            action_row("Add", Target::AddFolder(Section::Music)),
-            link_row("Songs", icons.get_songs(), Target::Go(Place::Songs)),
-            link_row("Albums", icons.get_album(), Target::Go(Place::Tag(Tag::Album, None))),
-            link_row("Artists", icons.get_artist(), Target::Go(Place::Tag(Tag::Artist, None))),
-            link_row("Genres", icons.get_genre(), Target::Go(Place::Tag(Tag::Genre, None))),
+            action_row(&tr!("Add"), Target::AddFolder(Section::Music)),
+            link_row(&tr!("Songs"), icons.get_songs(), Target::Go(Place::Songs)),
+            link_row(&tr!("Albums"), icons.get_album(), Target::Go(Place::Tag(Tag::Album, None))),
+            link_row(&tr!("Artists"), icons.get_artist(), Target::Go(Place::Tag(Tag::Artist, None))),
+            link_row(&tr!("Genres"), icons.get_genre(), Target::Go(Place::Tag(Tag::Genre, None))),
         ],
         Place::Songs => {
             let roots = lib.roots.borrow().music.clone();
             match roots.as_slice() {
-                [] => vec![action_row("Add a music folder", Target::AddFolder(Section::Music))],
+                [] => vec![action_row(&tr!("Add a music folder"), Target::AddFolder(Section::Music))],
                 [only] => folder_rows(only, &mut |d| folder_row(d), &file_row, s),
                 many => many.iter().map(|r| folder_row(r)).collect(),
             }
@@ -835,7 +842,7 @@ fn rows(app: &AppWindow, s: &Session, place: &Place) -> Vec<Row> {
             if music.reading() > 0 {
                 out.push(Row {
                     row: LibRow {
-                        title: format!("Reading tags… {} left", music.reading()).into(),
+                        title: tr!("Reading tags… {} left", music.reading()).into(),
                         icon: icons.get_info(),
                         action: true,
                         ..Default::default()
@@ -868,7 +875,7 @@ fn rows(app: &AppWindow, s: &Session, place: &Place) -> Vec<Row> {
             out
         }
         Place::Section(section, None) => {
-            let mut out = vec![action_row("Add", Target::AddFolder(*section))];
+            let mut out = vec![action_row(&tr!("Add"), Target::AddFolder(*section))];
             let roots = lib.roots.borrow().of(*section).to_vec();
             match roots.as_slice() {
                 [only] => out.extend(folder_rows(only, &mut |d| folder_row(d), &file_row, s)),
@@ -889,7 +896,7 @@ fn rows(app: &AppWindow, s: &Session, place: &Place) -> Vec<Row> {
                 .take(RECENT_ROWS)
                 .collect();
             drop(history);
-            let mut out = vec![action_row("Add Network Stream", Target::AddStream)];
+            let mut out = vec![action_row(&tr!("Add Network Stream"), Target::AddStream)];
             let saved = playlists::streams_folder().map_or_else(Vec::new, |d| playlists::list_in(&d));
             out.extend(saved.into_iter().map(|l| {
                 link_row(&l.name, icons.get_streaming(), Target::Go(Place::Streams(l.path)))
@@ -943,11 +950,11 @@ fn rows(app: &AppWindow, s: &Session, place: &Place) -> Vec<Row> {
                     let source = Source::Location(url.clone());
                     vec![file_row(&source, Target::Play(vec![source.clone()], 0))]
                 }
-                _ => vec![note("Reading the playlist…")],
+                _ => vec![note(&tr!("Reading the playlist…"))],
             }
         }
         Place::Playlists => {
-            let mut out = vec![action_row("Create playlist", Target::NewPlaylist)];
+            let mut out = vec![action_row(&tr!("Create playlist"), Target::NewPlaylist)];
             out.extend(playlists::list().into_iter().map(|l| {
                 link_row(&l.name, icons.get_playlist(), Target::Go(Place::Playlist(l.path)))
             }));
@@ -1055,30 +1062,30 @@ fn crumbs(roots: &Roots, place: &Place) -> (Vec<SharedString>, Vec<Place>) {
             .map_or_else(|| p.to_string_lossy().into_owned(), |n| n.to_string_lossy().into_owned())
     };
     match place {
-        Place::Home => out.push(("Home".into(), Place::Home)),
-        Place::Network => out.push(("Network".into(), Place::Network)),
+        Place::Home => out.push((tr!("Home"), Place::Home)),
+        Place::Network => out.push((tr!("Network"), Place::Network)),
         Place::Streams(path) => {
-            out.push(("Network".into(), Place::Network));
+            out.push((tr!("Network"), Place::Network));
             let stem = path.file_stem().map(|s| s.to_string_lossy().into_owned());
             out.push((stem.unwrap_or_default(), place.clone()));
         }
         Place::Remote(url) => {
-            out.push(("Network".into(), Place::Network));
+            out.push((tr!("Network"), Place::Network));
             out.push((Source::Location(url.clone()).title(), place.clone()));
         }
-        Place::Recent => out.push(("Recent".into(), Place::Recent)),
-        Place::Playlists => out.push(("Playlists".into(), Place::Playlists)),
+        Place::Recent => out.push((tr!("Recent"), Place::Recent)),
+        Place::Playlists => out.push((tr!("Playlists"), Place::Playlists)),
         Place::Playlist(path) => {
-            out.push(("Playlists".into(), Place::Playlists));
+            out.push((tr!("Playlists"), Place::Playlists));
             let stem = path.file_stem().map(|s| s.to_string_lossy().into_owned());
             out.push((stem.unwrap_or_default(), place.clone()));
         }
         Place::Songs => {
-            out.push(("Music".into(), Place::Section(Section::Music, None)));
-            out.push(("Songs".into(), Place::Songs));
+            out.push((tr!("Music"), Place::Section(Section::Music, None)));
+            out.push((tr!("Songs"), Place::Songs));
         }
         Place::Tag(tag, value) => {
-            out.push(("Music".into(), Place::Section(Section::Music, None)));
+            out.push((tr!("Music"), Place::Section(Section::Music, None)));
             out.push((tag.plural().into(), Place::Tag(*tag, None)));
             if let Some(v) = value {
                 out.push((v.clone(), place.clone()));
@@ -1088,8 +1095,8 @@ fn crumbs(roots: &Roots, place: &Place) -> (Vec<SharedString>, Vec<Place>) {
             let top = Place::Section(*section, None);
             out.push((
                 match section {
-                    Section::Videos => "Videos".into(),
-                    Section::Music => "Music".into(),
+                    Section::Videos => tr!("Videos"),
+                    Section::Music => tr!("Music"),
                 },
                 top,
             ));
@@ -1102,7 +1109,7 @@ fn crumbs(roots: &Roots, place: &Place) -> (Vec<SharedString>, Vec<Place>) {
                 let single = roots.of(*section).len() == 1;
                 // Music's folders are under Songs.
                 if *section == Section::Music {
-                    out.push(("Songs".into(), Place::Songs));
+                    out.push((tr!("Songs"), Place::Songs));
                 }
                 if let Some(root) = root {
                     // With one root, the section (or Songs) stands for it.

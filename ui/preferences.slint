@@ -323,7 +323,7 @@ export component PreferencesDialog inherits Rectangle {
                                     reject
                                 }
                             }
-                            if query.text == "": Text { x: 0; text: "Search"; font-size: 14px; color: Theme.fg-a4; vertical-alignment: center; }
+                            if query.text == "": Text { x: 0; text: @tr("Search"); font-size: 14px; color: Theme.fg-a4; vertical-alignment: center; }
                         }
                     }
                 }
@@ -361,22 +361,22 @@ export component PreferencesDialog inherits Rectangle {
                                 padding: 6px;
                                 spacing: 8px;
                                 alignment: start;
-                                GroupName { text: "App"; }
-                                NavEntry { text: "General"; icon: root.page == 0 ? Icons.preferences-active : Icons.preferences; chosen: root.page == 0 && !root.searching; clicked => { root.show-page(0); } }
-                                NavEntry { text: "Interface"; icon: root.page == 1 ? Icons.interface-active : Icons.interface; chosen: root.page == 1 && !root.searching; clicked => { root.show-page(1); } }
-                                NavEntry { text: "Privacy"; icon: root.page == 2 ? Icons.privacy-active : Icons.privacy; chosen: root.page == 2 && !root.searching; clicked => { root.show-page(2); } }
-                                NavEntry { text: "Controls"; icon: root.page == 3 ? Icons.hotkeys-active : Icons.hotkeys; chosen: root.page == 3 && !root.searching; clicked => { root.show-page(3); } }
-                                GroupName { text: "Media"; }
-                                NavEntry { text: "Playback"; icon: root.page == 4 ? Icons.playback-settings-active : Icons.playback-settings; chosen: root.page == 4 && !root.searching; clicked => { root.show-page(4); } }
-                                NavEntry { text: "Video"; icon: root.page == 5 ? Icons.video-active : Icons.video; chosen: root.page == 5 && !root.searching; clicked => { root.show-page(5); } }
-                                NavEntry { text: "Audio"; icon: root.page == 6 ? Icons.audio-active : Icons.audio; chosen: root.page == 6 && !root.searching; clicked => { root.show-page(6); } }
-                                NavEntry { text: "Subtitles"; icon: root.page == 7 ? Icons.subtitles-active : Icons.subtitles; chosen: root.page == 7 && !root.searching; clicked => { root.show-page(7); } }
-                                NavEntry { text: "Library"; icon: root.page == 8 ? Icons.folder-active : Icons.folder; chosen: root.page == 8 && !root.searching; clicked => { root.show-page(8); } }
-                                GroupName { text: "System"; }
-                                NavEntry { text: "Network"; icon: root.page == 9 ? Icons.streaming-active : Icons.streaming; chosen: root.page == 9 && !root.searching; clicked => { root.show-page(9); } }
-                                NavEntry { text: "Performance"; icon: root.page == 10 ? Icons.speed-active : Icons.speed; chosen: root.page == 10 && !root.searching; clicked => { root.show-page(10); } }
-                                NavEntry { text: "Recording"; icon: root.page == 11 ? Icons.record-active : Icons.record; chosen: root.page == 11 && !root.searching; clicked => { root.show-page(11); } }
-                                NavEntry { text: "Extensions"; icon: root.page == 12 ? Icons.plugins-active : Icons.plugins; chosen: root.page == 12 && !root.searching; clicked => { root.show-page(12); } }
+                                GroupName { text: @tr("App"); }
+                                NavEntry { text: @tr("General"); icon: root.page == 0 ? Icons.preferences-active : Icons.preferences; chosen: root.page == 0 && !root.searching; clicked => { root.show-page(0); } }
+                                NavEntry { text: @tr("Interface"); icon: root.page == 1 ? Icons.interface-active : Icons.interface; chosen: root.page == 1 && !root.searching; clicked => { root.show-page(1); } }
+                                NavEntry { text: @tr("Privacy"); icon: root.page == 2 ? Icons.privacy-active : Icons.privacy; chosen: root.page == 2 && !root.searching; clicked => { root.show-page(2); } }
+                                NavEntry { text: @tr("Controls"); icon: root.page == 3 ? Icons.hotkeys-active : Icons.hotkeys; chosen: root.page == 3 && !root.searching; clicked => { root.show-page(3); } }
+                                GroupName { text: @tr("Media"); }
+                                NavEntry { text: @tr("Playback"); icon: root.page == 4 ? Icons.playback-settings-active : Icons.playback-settings; chosen: root.page == 4 && !root.searching; clicked => { root.show-page(4); } }
+                                NavEntry { text: @tr("Video"); icon: root.page == 5 ? Icons.video-active : Icons.video; chosen: root.page == 5 && !root.searching; clicked => { root.show-page(5); } }
+                                NavEntry { text: @tr("Audio"); icon: root.page == 6 ? Icons.audio-active : Icons.audio; chosen: root.page == 6 && !root.searching; clicked => { root.show-page(6); } }
+                                NavEntry { text: @tr("Subtitles"); icon: root.page == 7 ? Icons.subtitles-active : Icons.subtitles; chosen: root.page == 7 && !root.searching; clicked => { root.show-page(7); } }
+                                NavEntry { text: @tr("Library"); icon: root.page == 8 ? Icons.folder-active : Icons.folder; chosen: root.page == 8 && !root.searching; clicked => { root.show-page(8); } }
+                                GroupName { text: @tr("System"); }
+                                NavEntry { text: @tr("Network"); icon: root.page == 9 ? Icons.streaming-active : Icons.streaming; chosen: root.page == 9 && !root.searching; clicked => { root.show-page(9); } }
+                                NavEntry { text: @tr("Performance"); icon: root.page == 10 ? Icons.speed-active : Icons.speed; chosen: root.page == 10 && !root.searching; clicked => { root.show-page(10); } }
+                                NavEntry { text: @tr("Recording"); icon: root.page == 11 ? Icons.record-active : Icons.record; chosen: root.page == 11 && !root.searching; clicked => { root.show-page(11); } }
+                                NavEntry { text: @tr("Extensions"); icon: root.page == 12 ? Icons.plugins-active : Icons.plugins; chosen: root.page == 12 && !root.searching; clicked => { root.show-page(12); } }
                             }
                         }
                     }
@@ -394,7 +394,7 @@ export component PreferencesDialog inherits Rectangle {
                     spacing: 20px;
                     alignment: start;
                     if root.searching && root.groups.length == 0: Text {
-                        text: "No setting matches.";
+                        text: @tr("No setting matches.");
                         font-size: 14px;
                         color: Theme.fg-a3;
                     }
@@ -427,7 +427,7 @@ export component PreferencesDialog inherits Rectangle {
                         HorizontalLayout {
                             alignment: center;
                             spacing: 6px;
-                            Text { text: "Advanced Options"; font-size: 14px; color: Theme.fg-a2; vertical-alignment: center; }
+                            Text { text: @tr("Advanced Options"); font-size: 14px; color: Theme.fg-a2; vertical-alignment: center; }
                             Icon { icon: root.advanced ? Icons.chevron-up : Icons.chevron-down; size: 20px; y: (parent.height - self.height) / 2; }
                         }
                         advanced-touch := TouchArea { clicked => { root.advanced = !root.advanced; } }

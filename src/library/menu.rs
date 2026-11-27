@@ -5,6 +5,7 @@
 //! Entries for what later phases build (streaming, converting, favorites,
 //! track editing, properties) show dimmed, as in the ⋯ menu.
 
+use crate::i18n::tr;
 use super::{Library, Place, Section, Target, add_folder, refresh};
 use crate::{
     AppWindow, Icons, MenuAction, MenuEntry,
@@ -136,68 +137,68 @@ fn submenu(mut e: MenuEntry) -> MenuEntry {
 
 fn row_entries(app: &AppWindow, s: &Session, kind: &Kind) -> Vec<MenuEntry> {
     let i = Icons::get(app);
-    let add_to_playlist = submenu(entry(MenuAction::AddToPlaylist, i.get_playlist_two_tone(), "Add to Playlist"));
+    let add_to_playlist = submenu(entry(MenuAction::AddToPlaylist, i.get_playlist_two_tone(), &tr!("Add to Playlist")));
     match kind {
         Kind::File(source, ..) => {
             let watched = s.history.borrow().get(source).is_some_and(|p| p.watched);
             let mut out = vec![
-                entry(MenuAction::Play, i.get_playback_two_tone(), "Play"),
+                entry(MenuAction::Play, i.get_playback_two_tone(), &tr!("Play")),
                 if watched {
-                    entry(MenuAction::MarkUnwatched, i.get_check_selected_two_tone(), "Mark as Unwatched")
+                    entry(MenuAction::MarkUnwatched, i.get_check_selected_two_tone(), &tr!("Mark as Unwatched"))
                 } else {
-                    entry(MenuAction::MarkWatched, i.get_check_selected_two_tone(), "Mark as Watched")
+                    entry(MenuAction::MarkWatched, i.get_check_selected_two_tone(), &tr!("Mark as Watched"))
                 },
-                later(entry(MenuAction::Favorite, i.get_favorite_two_tone(), "Favorite")),
-                later(entry(MenuAction::Stream, i.get_streaming_two_tone(), "Stream")),
-                later(entry(MenuAction::Convert, i.get_swap_two_tone(), "Convert")),
-                divided(entry(MenuAction::AddToQueue, i.get_queue_two_tone(), "Add to Queue")),
+                later(entry(MenuAction::Favorite, i.get_favorite_two_tone(), &tr!("Favorite"))),
+                later(entry(MenuAction::Stream, i.get_streaming_two_tone(), &tr!("Stream"))),
+                later(entry(MenuAction::Convert, i.get_swap_two_tone(), &tr!("Convert"))),
+                divided(entry(MenuAction::AddToQueue, i.get_queue_two_tone(), &tr!("Add to Queue"))),
                 add_to_playlist,
             ];
             if let Source::File(path) = source {
-                out.push(divided(entry(MenuAction::ShowInFiles, i.get_folder_two_tone(), "Show in File Explorer")));
+                out.push(divided(entry(MenuAction::ShowInFiles, i.get_folder_two_tone(), &tr!("Show in File Explorer"))));
                 // Away from the file's own folder: go there.
                 let here = page_folder(&s.library);
                 if here.as_deref() != path.parent() {
-                    out.push(entry(MenuAction::GoToSource, i.get_link_two_tone(), "Go to Source"));
+                    out.push(entry(MenuAction::GoToSource, i.get_link_two_tone(), &tr!("Go to Source")));
                 }
             }
             out.extend([
                 divided(subtitles_entry(source, &i)),
-                later(entry(MenuAction::AddAudio, i.get_audio_two_tone(), "Add Audio Tracks")),
-                later(entry(MenuAction::Properties, i.get_info_two_tone(), "Properties & Metadata")),
+                later(entry(MenuAction::AddAudio, i.get_audio_two_tone(), &tr!("Add Audio Tracks"))),
+                later(entry(MenuAction::Properties, i.get_info_two_tone(), &tr!("Properties & Metadata"))),
             ]);
             out
         }
         Kind::Folder(_) => vec![
-            entry(MenuAction::Play, i.get_playback_two_tone(), "Play"),
-            entry(MenuAction::Shuffle, i.get_shuffle_right_two_tone(), "Shuffle"),
-            entry(MenuAction::MarkWatched, i.get_check_selected_two_tone(), "Mark All as Watched"),
-            entry(MenuAction::MarkUnwatched, i.get_check_selected_two_tone(), "Mark All as Unwatched"),
-            divided(entry(MenuAction::AddToQueue, i.get_queue_two_tone(), "Add to Queue")),
+            entry(MenuAction::Play, i.get_playback_two_tone(), &tr!("Play")),
+            entry(MenuAction::Shuffle, i.get_shuffle_right_two_tone(), &tr!("Shuffle")),
+            entry(MenuAction::MarkWatched, i.get_check_selected_two_tone(), &tr!("Mark All as Watched")),
+            entry(MenuAction::MarkUnwatched, i.get_check_selected_two_tone(), &tr!("Mark All as Unwatched")),
+            divided(entry(MenuAction::AddToQueue, i.get_queue_two_tone(), &tr!("Add to Queue"))),
             add_to_playlist,
-            divided(entry(MenuAction::ShowInFiles, i.get_folder_two_tone(), "Show in File Explorer")),
-            entry(MenuAction::AddSubtitles, i.get_subtitles_two_tone(), "Add Subtitles"),
+            divided(entry(MenuAction::ShowInFiles, i.get_folder_two_tone(), &tr!("Show in File Explorer"))),
+            entry(MenuAction::AddSubtitles, i.get_subtitles_two_tone(), &tr!("Add Subtitles")),
         ],
         Kind::List(_) => vec![
-            entry(MenuAction::Play, i.get_playback_two_tone(), "Play"),
-            later(entry(MenuAction::Favorite, i.get_favorite_two_tone(), "Favorite")),
-            entry(MenuAction::Shuffle, i.get_shuffle_right_two_tone(), "Shuffle"),
-            entry(MenuAction::ExportPlaylist, i.get_upload_up_two_tone(), "Export Playlist"),
-            divided(entry(MenuAction::AddToQueue, i.get_queue_two_tone(), "Add to Queue")),
-            divided(later(entry(MenuAction::AddSubtitles, i.get_subtitles_two_tone(), "Add Subtitle Tracks"))),
-            later(entry(MenuAction::AddAudio, i.get_audio_two_tone(), "Add Audio Tracks")),
-            later(entry(MenuAction::Properties, i.get_info_two_tone(), "Properties & Metadata")),
+            entry(MenuAction::Play, i.get_playback_two_tone(), &tr!("Play")),
+            later(entry(MenuAction::Favorite, i.get_favorite_two_tone(), &tr!("Favorite"))),
+            entry(MenuAction::Shuffle, i.get_shuffle_right_two_tone(), &tr!("Shuffle")),
+            entry(MenuAction::ExportPlaylist, i.get_upload_up_two_tone(), &tr!("Export Playlist")),
+            divided(entry(MenuAction::AddToQueue, i.get_queue_two_tone(), &tr!("Add to Queue"))),
+            divided(later(entry(MenuAction::AddSubtitles, i.get_subtitles_two_tone(), &tr!("Add Subtitle Tracks")))),
+            later(entry(MenuAction::AddAudio, i.get_audio_two_tone(), &tr!("Add Audio Tracks"))),
+            later(entry(MenuAction::Properties, i.get_info_two_tone(), &tr!("Properties & Metadata"))),
         ],
         Kind::Remote(_) => vec![
-            entry(MenuAction::Play, i.get_playback_two_tone(), "Play"),
-            entry(MenuAction::AddToQueue, i.get_queue_two_tone(), "Add to Queue"),
+            entry(MenuAction::Play, i.get_playback_two_tone(), &tr!("Play")),
+            entry(MenuAction::AddToQueue, i.get_queue_two_tone(), &tr!("Add to Queue")),
         ],
     }
 }
 
 /// Add Subtitle Tracks: for files only (not streams).
 fn subtitles_entry(source: &Source, i: &Icons) -> MenuEntry {
-    let e = entry(MenuAction::AddSubtitles, i.get_subtitles_two_tone(), "Add Subtitle Tracks");
+    let e = entry(MenuAction::AddSubtitles, i.get_subtitles_two_tone(), &tr!("Add Subtitle Tracks"));
     match source {
         Source::File(path) if !media::is_audio(path) => e,
         _ => later(e),
@@ -213,24 +214,24 @@ fn page_entries(app: &AppWindow, s: &Session) -> Vec<MenuEntry> {
         e
     };
     let mut out = vec![
-        dim(entry(MenuAction::PlayAll, i.get_playback_two_tone(), "Play All")),
-        dim(entry(MenuAction::Shuffle, i.get_shuffle_right_two_tone(), "Shuffle")),
-        dim(divided(entry(MenuAction::AddToQueue, i.get_queue_two_tone(), "Add to Queue"))),
-        dim(submenu(entry(MenuAction::AddToPlaylist, i.get_playlist_two_tone(), "Add to Playlist"))),
+        dim(entry(MenuAction::PlayAll, i.get_playback_two_tone(), &tr!("Play All"))),
+        dim(entry(MenuAction::Shuffle, i.get_shuffle_right_two_tone(), &tr!("Shuffle"))),
+        dim(divided(entry(MenuAction::AddToQueue, i.get_queue_two_tone(), &tr!("Add to Queue")))),
+        dim(submenu(entry(MenuAction::AddToPlaylist, i.get_playlist_two_tone(), &tr!("Add to Playlist")))),
     ];
     let at = lib.at.borrow().clone();
     match at {
         Place::Playlist(_) => out.extend([
-            divided(entry(MenuAction::AddFile, i.get_file_two_tone(), "Add File")),
-            entry(MenuAction::AddFolder, i.get_new_folder_two_tone(), "Add Folder"),
+            divided(entry(MenuAction::AddFile, i.get_file_two_tone(), &tr!("Add File"))),
+            entry(MenuAction::AddFolder, i.get_new_folder_two_tone(), &tr!("Add Folder")),
         ]),
         Place::Section(_, None) | Place::Songs => {
-            out.push(divided(entry(MenuAction::AddFolder, i.get_new_folder_two_tone(), "Add Folder")));
+            out.push(divided(entry(MenuAction::AddFolder, i.get_new_folder_two_tone(), &tr!("Add Folder"))));
         }
         _ => {}
     }
     if page_folder(lib).is_some() {
-        out.push(divided(entry(MenuAction::ShowInFiles, i.get_folder_two_tone(), "Show in File Explorer")));
+        out.push(divided(entry(MenuAction::ShowInFiles, i.get_folder_two_tone(), &tr!("Show in File Explorer"))));
     }
     out
 }
@@ -240,7 +241,7 @@ fn playlist_entries(app: &AppWindow) -> Vec<MenuEntry> {
     let i = Icons::get(app);
     let mut out = vec![MenuEntry {
         index: -1,
-        ..entry(MenuAction::ToPlaylist, i.get_add(), "New Playlist…")
+        ..entry(MenuAction::ToPlaylist, i.get_add(), &tr!("New Playlist…"))
     }];
     out.extend(playlists::list().into_iter().enumerate().map(|(n, list)| MenuEntry {
         index: n as i32,
@@ -376,12 +377,12 @@ fn pick_into(app: &AppWindow, s: &Shared, path: PathBuf, folder: bool) {
     let task = slint::spawn_local(async move {
         let dialog = rfd::AsyncFileDialog::new();
         let picked: Vec<Source> = if folder {
-            let folder = dialog.set_title("Add a Folder to the Playlist").pick_folder().await;
+            let folder = dialog.set_title(tr!("Add a Folder to the Playlist")).pick_folder().await;
             folder.map(|f| Source::File(f.path().into())).into_iter().collect()
         } else {
             let files = dialog
-                .set_title("Add Files to the Playlist")
-                .add_filter("Media files", MEDIA_EXTENSIONS)
+                .set_title(tr!("Add Files to the Playlist"))
+                .add_filter(tr!("Media files"), MEDIA_EXTENSIONS)
                 .pick_files()
                 .await;
             files
@@ -408,9 +409,9 @@ fn export(path: PathBuf) {
     let name = path.file_name().map(|n| n.to_string_lossy().into_owned());
     let task = slint::spawn_local(async move {
         let target = rfd::AsyncFileDialog::new()
-            .set_title("Export Playlist")
+            .set_title(tr!("Export Playlist"))
             .set_file_name(name.unwrap_or_default())
-            .add_filter("Playlist", playlists::EXTENSIONS)
+            .add_filter(tr!("Playlist"), playlists::EXTENSIONS)
             .save_file()
             .await;
         if let Some(target) = target

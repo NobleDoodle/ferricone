@@ -81,6 +81,9 @@ pub struct Prefs {
     // General: updates (update.rs)
     /// Ask GitHub for a newer release at most once a day.
     pub check_updates: bool,
+    /// The interface's language, a catalog code (src/i18n.rs); empty
+    /// follows the desktop's.
+    pub language: String,
     // Interface
     pub title_shows_file: bool,
     pub auto_hide: AutoHide,
@@ -129,6 +132,7 @@ impl Default for Prefs {
             log_level: LogLevel::Errors,
             extra_args: String::new(),
             check_updates: true,
+            language: String::new(),
             title_shows_file: true,
             auto_hide: AutoHide::Fullscreen,
             hide_after: 2.0,

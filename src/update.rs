@@ -14,6 +14,7 @@
 //! A copy built from source only points to the release page. Then Restart
 //! starts the new version.
 
+use crate::i18n::{n_, tr, trn};
 use crate::AppWindow;
 use serde::{Deserialize, Serialize};
 use slint::{ComponentHandle, Weak};
@@ -82,8 +83,8 @@ pub fn status() -> Status {
 fn set(app: &AppWindow, status: Status) {
     app.set_update_notice(
         match &status {
-            Status::Available(r) => format!("Update to {}", r.version),
-            Status::Installed(_) => "Restart to update".into(),
+            Status::Available(r) => tr!("Update to {}", r.version),
+            Status::Installed(_) => tr!("Restart to update"),
             _ => String::new(),
         }
         .into(),
@@ -115,6 +116,12 @@ fn now() -> u64 {
 
 pub fn start(app: &AppWindow) {
     install();
+    let ui = app.as_weak();
+    crate::i18n::on_change(move || {
+        if let Some(app) = ui.upgrade() {
+            set(&app, status());
+        }
+    });
     let ui = app.as_weak();
     slint::Timer::single_shot(FIRST_CHECK, move || {
         if let Some(app) = ui.upgrade() {
@@ -188,12 +195,12 @@ fn newest_release(current: &semver::Version) -> Result<Option<Release>, String> 
         .get(&url)
         .header("Accept", "application/vnd.github+json")
         .call()
-        .map_err(|e| format!("couldn't reach GitHub: {e}"))?
+        .map_err(|e| tr!("couldn't reach GitHub: {}", e))?
         .body_mut()
         .read_to_string()
-        .map_err(|e| format!("couldn't reach GitHub: {e}"))?;
+        .map_err(|e| tr!("couldn't reach GitHub: {}", e))?;
     let releases: Vec<GitHubRelease> =
-        serde_json::from_str(&text).map_err(|e| format!("GitHub's answer was unreadable: {e}"))?;
+        serde_json::from_str(&text).map_err(|e| tr!("GitHub's answer was unreadable: {}", e))?;
     Ok(newest(releases, current))
 }
 
@@ -384,27 +391,27 @@ fn update(app: &AppWindow, release: Release) {
 }
 
 fn download_and_install(ui: &Weak<AppWindow>, install: &Install, release: &Release) -> Result<(), String> {
-    let suffix = asset_suffix(install, std::env::consts::ARCH).ok_or("no package for this copy")?;
+    let suffix = asset_suffix(install, std::env::consts::ARCH).ok_or(tr!("no package for this copy"))?;
     let find = |name: &str| release.assets.iter().find(|a| a.name == name);
     let asset = release
         .assets
         .iter()
         .find(|a| a.name.ends_with(&suffix))
-        .ok_or_else(|| format!("the release has no {suffix} file"))?;
+        .ok_or_else(|| tr!("the release has no {} file", suffix))?;
     let (sums, signature) = (
-        find("SHA256SUMS").ok_or("the release has no SHA256SUMS")?,
-        find("SHA256SUMS.sig").ok_or("the release isn't signed")?,
+        find("SHA256SUMS").ok_or(tr!("the release has no SHA256SUMS"))?,
+        find("SHA256SUMS.sig").ok_or(tr!("the release isn't signed"))?,
     );
     let sums = fetch(&sums.browser_download_url)?;
     let signature = fetch(&signature.browser_download_url)?;
     verify_signature(&sums, &signature, &release_key()?)?;
     let expected = expected_hash(&String::from_utf8_lossy(&sums), &asset.name)
-        .ok_or_else(|| format!("SHA256SUMS doesn't list {}", asset.name))?;
+        .ok_or_else(|| tr!("SHA256SUMS doesn't list {}", asset.name))?;
 
     // The AppImage is renamed over itself, so it downloads next to itself.
     let dir = match install {
-        Install::AppImage(file) => file.parent().map(Path::to_path_buf).ok_or("the AppImage has no folder")?,
-        _ => cache_dir().ok_or("no cache folder")?,
+        Install::AppImage(file) => file.parent().map(Path::to_path_buf).ok_or(tr!("the AppImage has no folder"))?,
+        _ => cache_dir().ok_or(tr!("no cache folder"))?,
     };
     std::fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
     let part = dir.join(format!(".{}.part", asset.name));
@@ -434,12 +441,12 @@ fn fetch(url: &str) -> Result<Vec<u8>, String> {
     let mut body = agent(Duration::from_secs(60))
         .get(url)
         .call()
-        .map_err(|e| format!("download failed: {e}"))?
+        .map_err(|e| tr!("download failed: {}", e))?
         .into_body();
     body.with_config()
         .limit(1 << 20)
         .read_to_vec()
-        .map_err(|e| format!("download failed: {e}"))
+        .map_err(|e| tr!("download failed: {}", e))
 }
 
 /// Into `file`, reporting progress, refusing anything but `expected`.
@@ -447,7 +454,7 @@ fn download(ui: &Weak<AppWindow>, release: &Release, url: &str, file: &Path, exp
     let response = agent(Duration::from_secs(60 * 60))
         .get(url)
         .call()
-        .map_err(|e| format!("download failed: {e}"))?;
+        .map_err(|e| tr!("download failed: {}", e))?;
     let total = response
         .headers()
         .get("content-length")
@@ -458,7 +465,7 @@ fn download(ui: &Weak<AppWindow>, release: &Release, url: &str, file: &Path, exp
     let (mut done, mut shown) = (0u64, 0u8);
     let mut buffer = vec![0; 1 << 16];
     loop {
-        let n = reader.read(&mut buffer).map_err(|e| format!("download failed: {e}"))?;
+        let n = reader.read(&mut buffer).map_err(|e| tr!("download failed: {}", e))?;
         if n == 0 {
             break;
         }
@@ -475,7 +482,7 @@ fn download(ui: &Weak<AppWindow>, release: &Release, url: &str, file: &Path, exp
     }
     out.sync_all().map_err(|e| format!("{}: {e}", file.display()))?;
     if hash.finish().as_ref() != expected {
-        return Err("the download doesn't match its checksum".into());
+        return Err(tr!("the download doesn't match its checksum"));
     }
     Ok(())
 }
@@ -491,19 +498,19 @@ fn release_key() -> Result<[u8; 32], String> {
         .collect();
     let der = base64::engine::general_purpose::STANDARD
         .decode(body.trim())
-        .map_err(|_| "the built-in release key is unreadable")?;
+        .map_err(|_| tr!("the built-in release key is unreadable"))?;
     // SEQUENCE { SEQUENCE { OID 1.3.101.112 (Ed25519) }, BIT STRING { key } }
     const PREFIX: [u8; 12] = [0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00];
     match der.split_at_checked(PREFIX.len()) {
-        Some((prefix, key)) if prefix == PREFIX => key.try_into().map_err(|_| "the built-in release key is unreadable".into()),
-        _ => Err("the built-in release key isn't an Ed25519 key".into()),
+        Some((prefix, key)) if prefix == PREFIX => key.try_into().map_err(|_| tr!("the built-in release key is unreadable")),
+        _ => Err(tr!("the built-in release key isn't an Ed25519 key")),
     }
 }
 
 fn verify_signature(sums: &[u8], signature: &[u8], key: &[u8; 32]) -> Result<(), String> {
     ring::signature::UnparsedPublicKey::new(&ring::signature::ED25519, key)
         .verify(sums, signature)
-        .map_err(|_| "the release's signature doesn't match Ferricone's release key".into())
+        .map_err(|_| tr!("the release's signature doesn't match Ferricone's release key"))
 }
 
 /// The SHA-256 that `sha256sum` wrote for `name`.
@@ -534,7 +541,7 @@ fn install_file(install: &Install, file: &Path, dir: &Path) -> Result<(), String
                 std::fs::set_permissions(file, std::fs::Permissions::from_mode(0o755))
                     .map_err(|e| format!("{}: {e}", file.display()))?;
             }
-            std::fs::rename(file, target).map_err(|e| format!("replacing {}: {e}", target.display()))
+            std::fs::rename(file, target).map_err(|e| tr!("replacing {}: {}", target.display(), e))
         }
         Install::Tarball(_) => {
             let unpacked = dir.join("unpacked");
@@ -542,13 +549,13 @@ fn install_file(install: &Install, file: &Path, dir: &Path) -> Result<(), String
             let archive = std::fs::File::open(file).map_err(|e| e.to_string())?;
             tar::Archive::new(flate2::read::GzDecoder::new(archive))
                 .unpack(&unpacked)
-                .map_err(|e| format!("unpacking: {e}"))?;
+                .map_err(|e| tr!("unpacking: {}", e))?;
             let script = std::fs::read_dir(&unpacked)
                 .map_err(|e| e.to_string())?
                 .flatten()
                 .map(|e| e.path().join("install.sh"))
                 .find(|p| p.is_file())
-                .ok_or("the tarball has no install.sh")?;
+                .ok_or(tr!("the tarball has no install.sh"))?;
             let result = run(std::process::Command::new("bash").arg(&script));
             let _ = std::fs::remove_dir_all(&unpacked);
             result
@@ -556,27 +563,24 @@ fn install_file(install: &Install, file: &Path, dir: &Path) -> Result<(), String
         Install::Deb | Install::Rpm | Install::Pacman => {
             let mut command = package_command(install, file)?;
             if find_program("pkexec").is_none() {
-                return Err(format!(
-                    "pkexec isn't installed. Install the update with: sudo {}",
-                    shown(&command)
-                ));
+                return Err(tr!("pkexec isn't installed. Install the update with: sudo {}", shown(&command)));
             }
             let manual = shown(&command);
             let mut pkexec = std::process::Command::new("pkexec");
             pkexec.arg(command.get_program()).args(command.get_args());
             command = pkexec;
             run(&mut command).map_err(|e| match e.as_str() {
-                "exit status: 126" => "the password prompt was cancelled".into(),
-                "exit status: 127" => format!("no permission to install. Install the update with: sudo {manual}"),
-                _ => format!("{e}. Install the update with: sudo {manual}"),
+                "exit status: 126" => tr!("the password prompt was cancelled"),
+                "exit status: 127" => tr!("no permission to install. Install the update with: sudo {}", manual),
+                _ => tr!("{}. Install the update with: sudo {}", e, manual),
             })
         }
-        Install::Other => Err("this copy wasn't installed from a release".into()),
+        Install::Other => Err(tr!("this copy wasn't installed from a release")),
     }
 }
 
 fn package_command(install: &Install, file: &Path) -> Result<std::process::Command, String> {
-    let program = |name: &str| find_program(name).ok_or(format!("{name} isn't installed"));
+    let program = |name: &str| find_program(name).ok_or(tr!("{} isn't installed", name));
     let mut command;
     match install {
         Install::Deb => {
@@ -598,7 +602,7 @@ fn package_command(install: &Install, file: &Path) -> Result<std::process::Comma
             command = std::process::Command::new(program("pacman")?);
             command.args(["-U", "--noconfirm"]).arg(file);
         }
-        _ => return Err("not a package".into()),
+        _ => return Err(tr!("not a package")),
     }
     Ok(command)
 }
@@ -653,43 +657,47 @@ fn restart(app: &AppWindow) {
     let started = command.spawn();
     match started {
         Ok(_) => app.invoke_quit(),
-        Err(e) => set(app, Status::Failed(format!("couldn't start {}: {e}", program.display()), None)),
+        Err(e) => set(app, Status::Failed(tr!("couldn't start {}: {}", program.display(), e), None)),
     }
 }
 
 // What Settings shows ------------------------------------------------------
 
-/// The status line, and its button's label ("" for none).
+/// The status line, translated, and its button's label in the source text
+/// ("" for none): Settings translates its buttons (src/preferences.rs).
 pub fn describe(now: u64) -> (String, &'static str) {
     let current = current();
-    let install_label = if can_install() { "Update" } else { "Download" };
+    let install_label = if can_install() { n_!("Update") } else { n_!("Download") };
     match status() {
-        Status::Idle => (format!("Ferricone {current}"), "Check now"),
-        Status::Checking => ("Checking for updates…".into(), ""),
-        Status::Current(at) => (format!("Ferricone {current} is up to date. Checked {}.", ago(now, at)), "Check now"),
-        Status::Available(r) => (format!("Ferricone {} is available. You have {current}.", r.version), install_label),
-        Status::Downloading(r, percent) => (format!("Downloading Ferricone {}… {percent} %", r.version), ""),
+        Status::Idle => (format!("Ferricone {current}"), n_!("Check now")),
+        Status::Checking => (tr!("Checking for updates…"), ""),
+        Status::Current(at) => (
+            tr!("Ferricone {} is up to date. Checked {}.", current, ago(now, at)),
+            n_!("Check now"),
+        ),
+        Status::Available(r) => (tr!("Ferricone {} is available. You have {}.", r.version, current), install_label),
+        Status::Downloading(r, percent) => (tr!("Downloading Ferricone {}… {} %", r.version, percent), ""),
         Status::Installing(r) => (
             match install() {
                 Install::Deb | Install::Rpm | Install::Pacman => {
-                    format!("Installing Ferricone {}: confirm with your password…", r.version)
+                    tr!("Installing Ferricone {}: confirm with your password…", r.version)
                 }
-                _ => format!("Installing Ferricone {}…", r.version),
+                _ => tr!("Installing Ferricone {}…", r.version),
             },
             "",
         ),
-        Status::Installed(r) => (format!("Ferricone {} is installed. Restart to use it.", r.version), "Restart"),
-        Status::Failed(e, Some(_)) => (format!("Couldn't update: {e}."), "Try again"),
-        Status::Failed(e, None) => (format!("Couldn't check for updates: {e}."), "Check now"),
+        Status::Installed(r) => (tr!("Ferricone {} is installed. Restart to use it.", r.version), n_!("Restart")),
+        Status::Failed(e, Some(_)) => (tr!("Couldn't update: {}.", e), n_!("Try again")),
+        Status::Failed(e, None) => (tr!("Couldn't check for updates: {}.", e), n_!("Check now")),
     }
 }
 
 fn ago(now: u64, then: u64) -> String {
     match now.saturating_sub(then) {
-        s if s < 60 => "just now".into(),
-        s if s < 2 * 60 * 60 => format!("{} minutes ago", (s / 60).max(1)),
-        s if s < 2 * DAY => format!("{} hours ago", s / 3600),
-        s => format!("{} days ago", s / DAY),
+        s if s < 60 => tr!("just now"),
+        s if s < 2 * 60 * 60 => trn!("{n} minute ago", "{n} minutes ago", (s / 60).max(1)),
+        s if s < 2 * DAY => trn!("{n} hour ago", "{n} hours ago", s / 3600),
+        s => trn!("{n} day ago", "{n} days ago", s / DAY),
     }
 }
 

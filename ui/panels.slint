@@ -145,9 +145,9 @@ export component TracksPanel inherits Rectangle {
                 padding-left: 6px;
                 padding-right: 6px;
                 spacing: 1px;
-                Tab { icon: Icons.video; label: "Video"; active: root.tab == TracksTab.video; clicked => { root.tab = TracksTab.video; } }
-                Tab { icon: Icons.audio; label: "Audio"; active: root.tab == TracksTab.audio; clicked => { root.tab = TracksTab.audio; } }
-                Tab { icon: Icons.subtitles; label: "Subtitles"; active: root.tab == TracksTab.subtitles; clicked => { root.tab = TracksTab.subtitles; } }
+                Tab { icon: Icons.video; label: @tr("Video"); active: root.tab == TracksTab.video; clicked => { root.tab = TracksTab.video; } }
+                Tab { icon: Icons.audio; label: @tr("Audio"); active: root.tab == TracksTab.audio; clicked => { root.tab = TracksTab.audio; } }
+                Tab { icon: Icons.subtitles; label: @tr("Subtitles"); active: root.tab == TracksTab.subtitles; clicked => { root.tab = TracksTab.subtitles; } }
             }
         }
 
@@ -156,7 +156,7 @@ export component TracksPanel inherits Rectangle {
             VerticalLayout {
                 alignment: start;
 
-                SectionHeader { text: "Embedded Tracks"; }
+                SectionHeader { text: @tr("Embedded Tracks"); }
                 TrackList {
                     items: root.tab == TracksTab.video ? root.video-tracks
                          : root.tab == TracksTab.audio ? root.audio-tracks
@@ -168,7 +168,7 @@ export component TracksPanel inherits Rectangle {
                     padding-top: 20px;
                     Rectangle { height: 1px; background: Theme.divider-dim; }
                     SectionHeader {
-                        text: "Output Device";
+                        text: @tr("Output Device");
                         refreshable: true;
                         refresh => { root.refresh-devices(); }
                     }
@@ -188,7 +188,7 @@ export component TracksPanel inherits Rectangle {
                 border-radius: 4px;
                 background: prefs.has-hover ? Theme.bg-a1 : Theme.bg-b2;
                 Text {
-                    text: "Show Preferences";
+                    text: @tr("Show Preferences");
                     font-size: 14px;
                     color: Theme.fg-a3;
                 }
@@ -326,9 +326,9 @@ export component QueuePanel inherits Rectangle {
                 padding-left: 6px;
                 padding-right: 6px;
                 spacing: 1px;
-                Tab { icon: Icons.queue; label: "Queue"; active: root.tab == QueueTab.queue; clicked => { root.tab = QueueTab.queue; } }
-                Tab { icon: Icons.bookmarks; label: "Bookmarks"; active: root.tab == QueueTab.bookmarks; clicked => { root.tab = QueueTab.bookmarks; } }
-                Tab { icon: Icons.chapters; label: "Chapters"; active: root.tab == QueueTab.chapters; clicked => { root.tab = QueueTab.chapters; } }
+                Tab { icon: Icons.queue; label: @tr("Queue"); active: root.tab == QueueTab.queue; clicked => { root.tab = QueueTab.queue; } }
+                Tab { icon: Icons.bookmarks; label: @tr("Bookmarks"); active: root.tab == QueueTab.bookmarks; clicked => { root.tab = QueueTab.bookmarks; } }
+                Tab { icon: Icons.chapters; label: @tr("Chapters"); active: root.tab == QueueTab.chapters; clicked => { root.tab = QueueTab.chapters; } }
             }
         }
 
@@ -433,7 +433,7 @@ export component QueuePanel inherits Rectangle {
         if root.tab == QueueTab.bookmarks: VerticalLayout {
             vertical-stretch: 1;
             PanelHeader {
-                text: root.marks.length == 1 ? "1 Bookmark" : "\{root.marks.length} Bookmarks";
+                text: @tr("{n} Bookmark" | "{n} Bookmarks" % root.marks.length);
                 HeaderIcon {
                     icon: Icons.remove;
                     clicked => {
@@ -479,7 +479,7 @@ export component QueuePanel inherits Rectangle {
                         }
                     }
                     if root.marks.length == 0: Text {
-                        text: "Ctrl + B marks the moment playing.";
+                        text: @tr("Ctrl + B marks the moment playing.");
                         font-size: 14px;
                         color: Theme.fg-a3;
                     }
@@ -525,7 +525,7 @@ export component QueuePanel inherits Rectangle {
                     }
                 }
                 if root.chapters.length == 0: Text {
-                    text: "This item has no chapters.";
+                    text: @tr("This item has no chapters.");
                     font-size: 14px;
                     color: Theme.fg-a3;
                 }

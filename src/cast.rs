@@ -4,6 +4,7 @@
 //! it at the same moment, since libVLC takes a renderer only as an item
 //! starts.
 
+use crate::i18n::tr;
 use crate::{
     AppWindow,
     controls::{self, Shared},
@@ -27,7 +28,7 @@ fn show(app: &AppWindow) {
     CAST.with(|c| {
         let c = c.borrow();
         let found = c.discovery.as_ref().map(Discovery::found).unwrap_or_default();
-        let mut options = vec![SharedString::from("This Device")];
+        let mut options = vec![SharedString::from(tr!("This Device"))];
         options.extend(found.iter().map(|r| SharedString::from(r.name.as_str())));
         // The current device stays listed while it is in use.
         let selected = match &c.current {
@@ -48,6 +49,12 @@ fn show(app: &AppWindow) {
 
 pub fn connect(app: &AppWindow, session: &Shared, vlc: Rc<Vlc>) {
     show(app);
+    let ui = app.as_weak();
+    crate::i18n::on_change(move || {
+        if let Some(app) = ui.upgrade() {
+            show(&app);
+        }
+    });
     let ui = app.as_weak();
     app.on_render_start(move || {
         let Some(app) = ui.upgrade() else { return };

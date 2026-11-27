@@ -13,6 +13,7 @@ mod popup;
 mod controls;
 mod diag;
 mod drop;
+mod i18n;
 #[cfg(target_os = "linux")]
 mod fallback;
 mod intro;
@@ -85,6 +86,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     slint::set_xdg_app_id("io.github.nobledoodle.ferricone")?;
 
     let app = AppWindow::new()?;
+    // Before anything builds its text: the chosen language or the desktop's.
+    i18n::select(&prefs::get().language);
     theme::start(&app);
     chrome::connect(&app);
     #[cfg(target_os = "linux")]
